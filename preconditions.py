@@ -1,0 +1,67 @@
+"""Python versions of Guava-like checks."""
+from typing import Any, Union, Tuple, Iterable
+
+# Disable naming convention warnings for type aliases
+# pylint: disable=invalid-name
+# Type annotation from TypeShed for classinfo argument  of isinstance and issubclass
+_ClassInfo = Union[type, Tuple[Union[type, Tuple], ...]]
+
+
+def check_not_none(x: Any, msg: str = None):
+    """
+    Raise an error if the given argument is None.
+
+    This returns its input so you can do::
+        self.x = check_not_none(x)
+
+    check_arg would have the same result but is less clear to the reader
+    """
+    if x is None:
+        if msg:
+            raise ValueError(msg)
+        else:
+            raise ValueError()
+    else:
+        return x
+
+
+def check_arg(result: Any, msg: str = None, msg_args: Tuple = None) -> None:
+    if not result:
+        if msg:
+            raise ValueError(msg % (msg_args or ()))
+        else:
+            raise ValueError()
+
+
+def check_state(result: Any, msg: str = None):
+    if not result:
+        if msg:
+            raise AssertionError(msg)
+        else:
+            raise AssertionError()
+
+
+def check_args_are_none(*args, msg: str = None):
+    for arg in args:
+        check_arg(arg is None, msg)
+
+
+def check_args_not_none(*args, msg: str = None):
+    for arg in args:
+        check_arg(arg is not None, msg)
+
+
+def check_isinstance(item: Any, classinfo: _ClassInfo):
+    if not isinstance(item, classinfo):
+        raise TypeError('Expected instance of type {!r} but got type {!r} for {!r}'
+                        .format(classinfo, type(item), item))
+
+
+def check_all_isinstance(items: Iterable[Any], classinfo: _ClassInfo):
+    for item in items:
+        check_isinstance(item, classinfo)
+
+
+def check_issubclass(item: Any, classinfo: _ClassInfo):
+    if not issubclass(item, classinfo):
+        raise TypeError('Expected subclass of type {!r} but got {!r}'.format(classinfo, type(item)))
