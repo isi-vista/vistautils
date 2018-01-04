@@ -3,7 +3,7 @@ from typing import Iterable, List, Sequence, TypeVar, Any
 
 from typing_extensions import Protocol
 
-from flexnlp.model2.protocols import HasConfidence
+from flexnlp.model.protocols import HasConfidence
 
 T = TypeVar('T')
 
