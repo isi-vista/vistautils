@@ -1,8 +1,8 @@
 import re
 import time
-from typing import Any
+from typing import Any, Type, List, Optional
 
-from flexnlp import Document, Region, Sentence
+from flexnlp import Document, Theory, RegionTheory, SentenceTheory
 
 _WHITESPACE_RE = re.compile(r'\s+')
 
@@ -107,7 +107,8 @@ def fully_qualified_name(obj: Any) -> str:
     return '{}.{}'.format(cls.__module__, cls.__qualname__)
 
 
-def get_theory_id(theory_ids, theory_type):
+# TODO: Use correct type hint for input_theory_ids (circular import problem with TheoryIdMap)
+def get_theory_id(theory_ids, theory_type: Type[Theory]) -> str:
     theory_id = None
     if theory_ids:
         value = theory_ids.get(theory_type)
@@ -123,11 +124,13 @@ def get_theory_id(theory_ids, theory_type):
     return theory_id
 
 
-def get_theory_ids(theory_ids, theory_type, doc):
+# TODO: Use correct type hint for input_theory_ids (circular import problem with TheoryIdMap)
+def get_theory_ids(theory_ids, theory_type: Type[Theory],
+                   doc: Document) -> List[Optional[str]]:
     if theory_ids:
         value = theory_ids.get(theory_type)
         if value == '*':
-            return doc.theory_ids(theory_type)
+            return list(doc.theory_ids(theory_type))
         elif isinstance(value, str) or value is None:
             return [value]
         elif isinstance(value, list):
@@ -138,7 +141,7 @@ def get_theory_ids(theory_ids, theory_type, doc):
     return [None]
 
 
-# TODO: Use correct type hint for input_theory_ids (circular import problem)
+# TODO: Use correct type hint for input_theory_ids (circular import problem with TheoryIdMap)
 def text_span_iterator(doc: Document,
                        input_theory_ids,
                        use_regions: bool, use_sentences: bool):
@@ -159,7 +162,7 @@ def text_span_iterator(doc: Document,
     """
     boundary_set = {0, len(doc.text.text)}
     if use_regions:
-        region_theory_ids = get_theory_ids(input_theory_ids, Region, doc)
+        region_theory_ids = get_theory_ids(input_theory_ids, RegionTheory, doc)
         if not region_theory_ids:
             region_theory_ids = [None]
         for region_theory_id in region_theory_ids:
@@ -169,7 +172,7 @@ def text_span_iterator(doc: Document,
                     boundary_set.add(r.start)
                     boundary_set.add(r.end)
     if use_sentences:
-        sentence_theory_ids = get_theory_ids(input_theory_ids, Sentence, doc)
+        sentence_theory_ids = get_theory_ids(input_theory_ids, SentenceTheory, doc)
         if not sentence_theory_ids:
             sentence_theory_ids = [None]
         for sentence_theory_id in sentence_theory_ids:
