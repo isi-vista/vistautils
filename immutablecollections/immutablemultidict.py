@@ -19,6 +19,9 @@ VT2 = TypeVar('VT2')
 SelfType = TypeVar('SelfType')  # pylint:disable=invalid-name
 
 
+# TODO: it is incorrect to implement mapping because we don't want .values() to return
+# a collection of sets (but rather a collection of VTs). If this is fixed, update
+# DocumentBuilder.build() (at least)
 class ImmutableMultiDict(ImmutableCollection[KT], Mapping[KT, Iterable[VT]], metaclass=ABCMeta):
     __slots__ = ()
 
