@@ -1,5 +1,6 @@
 from abc import ABCMeta
-from typing import Iterable, Mapping, TypeVar, Tuple, Iterator, Union, Generic
+from typing import Iterable, Mapping, TypeVar, Tuple, Iterator, Union, Generic, Callable, \
+    MutableMapping
 
 from attr import attrs, attrib
 from frozendict import frozendict
@@ -38,6 +39,29 @@ class ImmutableDict(ImmutableCollection[KT], Mapping[KT, VT], metaclass=ABCMeta)
     def builder() -> 'ImmutableDict.Builder[KT, VT]':
         return ImmutableDict.Builder()
 
+    def modified_copy_builder(self) -> 'ImmutableDict.Builder[KT, VT]':
+        return ImmutableDict.Builder(source=self)
+
+    def filter_keys(self, predicate: Callable[[KT], bool]) -> 'ImmutableDict[KT, VT]':
+        """
+        Filters an ImmutableDict by a predicate on its keys.
+
+        Returns an ImmutableDict just like this one but with keys for which the predicate
+        returns a false value removed.
+
+        While you can filter with a comprehension, this maintains order (or will when/if
+        ImmutableDict in general is updated to maintain order) and allows us not to do any
+        copying if all keys pass the filter
+        """
+        retained_keys = [key for key in self.keys() if predicate(key)]
+        if len(retained_keys) == len(self.keys()):
+            return self
+        else:
+            ret: ImmutableDict.Builder[KT, VT] = ImmutableDict.builder()
+            for key in retained_keys:
+                ret.put(key, self[key])
+            return ret.build()
+
     def __repr__(self):
         return 'i' + str(self)
 
@@ -45,10 +69,25 @@ class ImmutableDict(ImmutableCollection[KT], Mapping[KT, VT], metaclass=ABCMeta)
         return "{%s}" % ", ".join(["%s: %s" % item for item in self.items()])
 
     class Builder(Generic[KT2, VT2]):
-        def __init__(self):
-            self._dict = {}
+        def __init__(self, source: 'ImmutableDict[KT2,VT2]' = None) -> None:
+            self._dict: MutableMapping[KT2, VT2] = {}
+            self.source = source
 
         def put(self: SelfType, key: KT2, val: VT2) -> SelfType:
+            if self.source:
+                # we only lazily copy the contents of source because if no changes are ever made
+                # we can just reuse it
+                # we need the temporary variable because the call to put_all below will
+                # call this put method again and we need self.source to be None to avoid an
+                # infinite loop
+                tmp_source = self.source
+                # Defend against multithreading scenario where another thread has cleared
+                # self.source already. Not that this code is meant to be thread-safe anyway,
+                # but at least you won't get non-deterministic crashes
+                if tmp_source is not None:
+                    self.source = None
+                    self.put_all(tmp_source)
+
             self._dict[key] = val
             return self
 
@@ -69,6 +108,11 @@ class ImmutableDict(ImmutableCollection[KT], Mapping[KT, VT], metaclass=ABCMeta)
             self.put(key, value)
 
         def build(self) -> 'ImmutableDict[KT2, VT2]':
+            if self.source:
+                # if any puts were done this will be None. If no puts were done we can return
+                # the ImmutableDict we were based on because we will be identical and immutable
+                # objects can be safely shared
+                return self.source
             return FrozenDictBackedImmutableDict(self._dict)
 
 
