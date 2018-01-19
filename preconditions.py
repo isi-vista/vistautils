@@ -57,6 +57,17 @@ def check_isinstance(item: Any, classinfo: _ClassInfo):
                         .format(classinfo, type(item), item))
 
 
+def check_opt_isinstance(item: Any, classinfo: _ClassInfo):
+    """
+    Checks something is ether None or an instance of a given class.
+
+    Raises a TypeError otherwise
+    """
+    if item and not isinstance(item, classinfo):
+        raise TypeError('Expected instance of type {!r} but got type {!r} for {!r}'
+                        .format(classinfo, type(item), item))
+
+
 def check_all_isinstance(items: Iterable[Any], classinfo: _ClassInfo):
     for item in items:
         check_isinstance(item, classinfo)
