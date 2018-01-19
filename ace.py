@@ -1,6 +1,6 @@
 from typing import Optional
 
-from flexnlp import Mention, EntityType
+from flexnlp import EntityType
 from flexnlp.utils.immutablecollections import ImmutableDict, ImmutableSet
 
 VALID_ACE_TYPES = ImmutableSet.of({'PER', 'ORG', 'GPE', 'LOC', 'FAC', 'VEH', 'WEA'})
