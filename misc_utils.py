@@ -126,25 +126,7 @@ def get_theory_id(theory_ids, theory_type: Type[Theory]) -> str:
 
 
 # TODO: Use correct type hint for input_theory_ids (circular import problem with TheoryIdMap)
-def get_theory_ids(theory_ids, theory_type: Type[Theory]) -> TheorySelector:
-    if theory_ids:
-        value = theory_ids.get(theory_type)
-        if value == '*':
-            return AllTheories()
-        elif isinstance(value, str) or value is None:
-            return WithTag(theory_type, [value])
-        elif isinstance(value, list):
-            return WithTag(theory_type, value)
-        else:
-            raise TypeError('theory_ids must "*", a single theory_id, '
-                            'or a list of theory_ids')
-    return OptionalOnly()
-
-
-# TODO: Use correct type hint for input_theory_ids (circular import problem with TheoryIdMap)
-def text_span_iterator(doc: Document,
-                       input_theory_ids,
-                       use_regions: bool, use_sentences: bool):
+def text_span_iterator(doc: Document, use_regions: bool, use_sentences: bool):
     """
     Return an iterator over consecutive, ordered spans of text.
 
@@ -162,15 +144,13 @@ def text_span_iterator(doc: Document,
     """
     boundary_set = {0, len(doc.text.text)}
     if use_regions:
-        region_theory_selector = get_theory_ids(input_theory_ids, RegionTheory)
-        for regions in doc.all_regions(region_theory_selector):
+        for regions in doc.all_regions():
             for r in regions:
                 if r.breaking:
                     boundary_set.add(r.start)
                     boundary_set.add(r.end)
     if use_sentences:
-        sentence_theory_selector = get_theory_ids(input_theory_ids, SentenceTheory)
-        for sentences in doc.all_sentences(sentence_theory_selector):
+        for sentences in doc.all_sentences():
             for s in sentences:
                 boundary_set.add(s.start)
                 boundary_set.add(s.end)
