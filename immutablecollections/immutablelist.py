@@ -1,11 +1,12 @@
 from abc import ABCMeta
-from typing import Iterable, Sequence, TypeVar, Tuple, Iterator
+from typing import Iterable, Sequence, TypeVar, Tuple, Iterator, Generic, List
 
 from attr import attrs, attrib
 
 from flexnlp.utils.immutablecollections.immutablecollection import ImmutableCollection
 
 T = TypeVar('T')
+T2 = TypeVar('T2')
 
 
 class ImmutableList(ImmutableCollection[T], Sequence[T], metaclass=ABCMeta):
@@ -23,6 +24,20 @@ class ImmutableList(ImmutableCollection[T], Sequence[T], metaclass=ABCMeta):
     @staticmethod
     def empty() -> 'ImmutableList[T]':
         return _EMPTY
+
+    @staticmethod
+    def builder() -> 'ImmutableList.Builder[T]':
+        return ImmutableList.Builder()
+
+    class Builder(Generic[T2]):
+        _list: List[T2] = []
+
+        def add(self, item: T2) -> 'ImmutableList.Builder[T2]':
+            self._list.append(item)
+            return self
+
+        def build(self) -> 'ImmutableList[T2]':
+            return ImmutableList.of(self._list)
 
     def __repr__(self):
         return 'i' + str(self)

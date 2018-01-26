@@ -28,6 +28,16 @@ def attrib_immutable(type_: Type[ImmutableCollection], *args, **kwargs):
     return attrib(convert=type_.of, *args, **kwargs)
 
 
+def attrib_private_immutable_builder(type_: Type[ImmutableCollection], *args, **kwargs):
+    """
+    Create an immutable collection builder private attribute.
+
+    This is called "private" because it will not appear as a constructor argument.
+    """
+    _check_immutable_collection(type_)
+    return attrib(default=Factory(type_.builder), init=False, *args, **kwargs)
+
+
 # TODO: The use of Type[ImmutableCollection] causes mypy warnings
 # Perhaps the solution is to make ImmutableCollection a Protocol?
 def attrib_opt_immutable(type_: Type[ImmutableCollection], *args, **kwargs):
