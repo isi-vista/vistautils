@@ -2,8 +2,8 @@ import re
 import time
 from typing import Any, Type
 
-from flexnlp import Document, Theory, RegionTheory, SentenceTheory
-from flexnlp.model.document import TheorySelector, AllTheories, WithTag, OptionalOnly
+from flexnlp.model.document import Document
+from flexnlp.model.theory import Theory
 
 _WHITESPACE_RE = re.compile(r'\s+')
 
