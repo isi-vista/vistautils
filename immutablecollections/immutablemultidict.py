@@ -56,7 +56,31 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
     @staticmethod
     def builder(value_order_key: Callable[[VT], Any] = None) \
             -> 'ImmutableSetMultiDict.Builder[KT, VT]':
-        return ImmutableSetMultiDict.Builder(value_order_key)
+        return ImmutableSetMultiDict.Builder(order_key=value_order_key)
+
+    def modified_copy_builder(self) -> 'ImmutableSetMultiDict.Builder[KT, VT]':
+        return ImmutableSetMultiDict.Builder(source=self)
+
+    def filter_keys(self, predicate: Callable[[KT], bool]) -> 'ImmutableSetMultiDict[KT, VT]':
+        """
+        Filters an ImmutableSetMultiDict by a predicate on its keys.
+
+        Returns an ImmutableSetMultiDict just like this one but with keys for which the predicate
+        returns a false value removed.
+
+        While you can filter with a comprehension, this maintains order (or will when/if
+        ImmutableDict in general is updated to maintain order) and allows us not to do any
+        copying if all keys pass the filter
+        """
+        retained_keys = [key for key in self.keys() if predicate(key)]
+        if len(retained_keys) == len(self.keys()):
+            return self
+        else:
+            ret: ImmutableSetMultiDict.Builder[KT, VT] = ImmutableSetMultiDict.builder()
+            for key in retained_keys:
+                for val in self[key]:
+                    ret.put(key, val)
+            return ret.build()
 
     def __getitem__(self, k: KT) -> ImmutableSet[VT]:
         raise NotImplementedError()
@@ -70,11 +94,29 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
         return "{%s}" % ", ".join("%r: %s" % item for item in self.items())
 
     class Builder(Generic[KT2, VT2]):
-        def __init__(self, order_key: Callable[[VT2], Any] = None) -> None:
+        def __init__(self, *, source: 'Optional[ImmutableMultiDict[KT2,VT2]]' = None,
+                     order_key: Callable[[VT2], Any] = None) -> None:
             self._dict: MutableMapping[KT2, ImmutableSet.Builder[VT2]] = defaultdict(
                 lambda: ImmutableSet.builder(order_key=order_key))
+            self._source = source
 
         def put(self: SelfType, key: KT2, value: VT2) -> SelfType:
+            if self._source:
+                # we only lazily copy the contents of source because if no changes are ever made
+                # we can just reuse it
+                # we need the temporary variable because the call to put_all below will
+                # call this put method again and we need self.source to be None to avoid an
+                # infinite loop
+                tmp_source = self._source
+                # Defend against multithreading scenario where another thread has cleared
+                # self.source already. Not that this code is meant to be thread-safe anyway,
+                # but at least you won't get non-deterministic crashes
+                if tmp_source is not None:
+                    self._source = None
+                    for k in tmp_source.keys():
+                        for v in tmp_source[k]:
+                            self.put(k, v)
+
             self._dict[key].add(value)
             return self
 
