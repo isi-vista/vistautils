@@ -1,6 +1,7 @@
 from abc import ABCMeta
 from collections import defaultdict
-from typing import Iterable, Mapping, TypeVar, Iterator, Generic, Callable, Any, MutableMapping
+from typing import Iterable, Mapping, TypeVar, Iterator, Generic, Callable, Any, MutableMapping,\
+    Optional
 
 from attr import attrs, attrib
 from frozendict import frozendict
