@@ -1,5 +1,5 @@
 from abc import ABCMeta
-from typing import Iterable, Sequence, TypeVar, Tuple, Iterator, Generic, List
+from typing import Iterable, Sequence, TypeVar, Tuple, Iterator, Generic, List, Sized
 
 from attr import attrs, attrib
 
@@ -29,12 +29,16 @@ class ImmutableList(ImmutableCollection[T], Sequence[T], metaclass=ABCMeta):
     def builder() -> 'ImmutableList.Builder[T]':
         return ImmutableList.Builder()
 
-    class Builder(Generic[T2]):
-        _list: List[T2] = []
+    class Builder(Generic[T2], Sized):
+        def __init__(self):
+            self._list: List[T2] = []
 
         def add(self, item: T2) -> 'ImmutableList.Builder[T2]':
             self._list.append(item)
             return self
+
+        def __len__(self) -> int:
+            return len(self._list)
 
         def build(self) -> 'ImmutableList[T2]':
             return ImmutableList.of(self._list)
