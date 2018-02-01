@@ -1,7 +1,7 @@
 from abc import ABCMeta
 from collections import defaultdict
 from typing import Iterable, Mapping, TypeVar, Iterator, Generic, Callable, Any, MutableMapping, \
-    Optional
+    Optional  # pylint:disable=unused-import
 
 from attr import attrs, attrib
 from frozendict import frozendict
@@ -95,7 +95,7 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
         return "{%s}" % ", ".join("%r: %s" % item for item in self.items())
 
     class Builder(Generic[KT2, VT2]):
-        def __init__(self, *, source: 'Optional[ImmutableMultiDict[KT2,VT2]]' = None,
+        def __init__(self, *, source: Optional['ImmutableMultiDict[KT2,VT2]'] = None,
                      order_key: Callable[[VT2], Any] = None) -> None:
             self._dict: MutableMapping[KT2, ImmutableSet.Builder[VT2]] = defaultdict(
                 lambda: ImmutableSet.builder(order_key=order_key))
