@@ -150,10 +150,9 @@ def text_span_iterator(doc: Document, use_regions: bool, use_sentences: bool):
                     boundary_set.add(r.start)
                     boundary_set.add(r.end)
     if use_sentences:
-        for sentences in doc.all_sentences():
-            for s in sentences:
-                boundary_set.add(s.start)
-                boundary_set.add(s.end)
+        for s in doc.sentences():
+            boundary_set.add(s.start)
+            boundary_set.add(s.end)
 
     boundary_list = list(boundary_set)
     boundary_list.sort()
