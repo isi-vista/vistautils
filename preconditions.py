@@ -78,7 +78,7 @@ def check_all_isinstance(items: Iterable[Any], classinfo: _ClassInfo):
         check_isinstance(item, classinfo)
 
 
-def check_issubclass(item: T, classinfo: _ClassInfo) -> T:
+def check_issubclass(item, classinfo: _ClassInfo):
     if not issubclass(item, classinfo):
         raise TypeError('Expected subclass of type {!r} but got {!r}'.format(classinfo, type(item)))
     return item
