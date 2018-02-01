@@ -1,6 +1,6 @@
 from abc import ABCMeta
 from collections import defaultdict
-from typing import Iterable, Mapping, TypeVar, Iterator, Generic, Callable, Any, MutableMapping,\
+from typing import Iterable, Mapping, TypeVar, Iterator, Generic, Callable, Any, MutableMapping, \
     Optional
 
 from attr import attrs, attrib
@@ -100,6 +100,7 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
             self._dict: MutableMapping[KT2, ImmutableSet.Builder[VT2]] = defaultdict(
                 lambda: ImmutableSet.builder(order_key=order_key))
             self._source = source
+            self._dirty = False
 
         def put(self: SelfType, key: KT2, value: VT2) -> SelfType:
             if self._source:
@@ -119,6 +120,7 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
                             self.put(k, v)
 
             self._dict[key].add(value)
+            self._dirty = True
             return self
 
         def put_all(self: SelfType, dict_: Mapping[KT2, Iterable[VT2]]) -> SelfType:
@@ -128,8 +130,11 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
             return self
 
         def build(self) -> 'ImmutableSetMultiDict[KT2, VT2]':
-            return FrozenDictBackedImmutableSetMultiDict(
-                {k: v.build() for (k, v) in self._dict.items()})
+            if self._dirty or self._source is None:
+                return FrozenDictBackedImmutableSetMultiDict(
+                    {k: v.build() for (k, v) in self._dict.items()})
+            else:
+                return self._source  # type: ignore
 
 
 def _freeze_set_multidict(x: Mapping[KT, Iterable[VT]]) -> Mapping[KT, ImmutableSet[VT]]:
