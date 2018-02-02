@@ -1,10 +1,25 @@
 import logging
 import logging.config
 
-from flexnlp.parameters import Parameters
+from flexnlp.parameters import Parameters, ParameterError
+
+log = logging.getLogger(__name__)
+
+# we need to store this mapping here because logging doens't provide a (non-deprecated) way to map
+# from strings to levels
+# https://github.com/python/typeshed/issues/1842
+_LEVEL_STRINGS_TO_LEVELS = {
+    'CRITICAL': logging.CRITICAL,
+    'FATAL': logging.FATAL,
+    'ERROR': logging.ERROR,
+    'WARNING': logging.WARNING,
+    'WARN': logging.WARNING,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG
+}
 
 
-def configure_logging_from(params: Parameters) -> None:
+def configure_logging_from(params: Parameters, *, log_params=True) -> None:
     """
     Configures logging from parameters.
 
@@ -14,22 +29,37 @@ def configure_logging_from(params: Parameters) -> None:
     logger will be set to its value.  For reference, the standard values are CRITICAL, FATAL,
     ERROR, WARNING, INFO, and DEBUG.
     """
-    if 'logging' in params:
-        if 'logging.config_file' in params:
-            logging.config.fileConfig(str(params.existing_file('logging.config_file')))
-            return
+    if 'logging.config_file' in params:
+        logging.config.fileConfig(str(params.existing_file('logging.config_file')))
+    else:
+        _config_logging_from_params(params)
 
+    if log_params:
+        log.info(params)
+
+
+def _config_logging_from_params(params):
+    # Python's default logging level of "warning" is not typically what we want in our programs,
+    # so we change the default level to INFO unless overriden below
+    set_root_level_to = 'INFO'
+
+    if 'logging' in params:
         # if no config file is provided we default to logging to the Console
         logging.getLogger().addHandler(logging.StreamHandler())
         if 'logging.root_level' in params:
-            user_level_string = params.string('logging.root_level')
-            # we need to translate the user provided string into the numeric value used to
-            # specify logging levels.  We need to work around the quirk that if the user string
-            # doesn't correspond to any known level, getLevelName just returns it input
-            # preceded by "Level "
+            set_root_level_to = params.string('logging.root_level')
 
-            # https://github.com/python/typeshed/issues/1842
-            level_name = logging.getLevelName(user_level_string)  # type: ignore
-            if isinstance(level_name, str) and level_name == "Level " + user_level_string:
-                raise ValueError("Invalid logging level " + user_level_string)
-            logging.getLogger().setLevel(level_name)
+    try:
+        level = _LEVEL_STRINGS_TO_LEVELS[set_root_level_to]
+    except KeyError:
+        raise ParameterError("Invalid logging level {!s}. Valid levels "
+                             "are {!s}", set_root_level_to,
+                             list(_LEVEL_STRINGS_TO_LEVELS.keys()))
+    logging.getLogger().setLevel(level)
+
+    # configure a console handler with the default formatter. We could make this
+    # configurable in the future
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
+    console_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+    logging.getLogger().addHandler(console_handler)
