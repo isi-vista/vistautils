@@ -3,7 +3,7 @@ import logging.config
 
 from flexnlp.parameters import Parameters, ParameterError
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(__name__)   # pylint:disable=invalid-name
 
 # we need to store this mapping here because logging doens't provide a (non-deprecated) way to map
 # from strings to levels
@@ -35,7 +35,7 @@ def configure_logging_from(params: Parameters, *, log_params=True) -> None:
         _config_logging_from_params(params)
 
     if log_params:
-        log.info(params)
+        log.info(str(params))
 
 
 def _config_logging_from_params(params):
