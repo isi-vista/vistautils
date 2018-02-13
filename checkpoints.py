@@ -1,7 +1,7 @@
 import shutil
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
-from typing import Container, Any
+from typing import Container, Any, Union
 
 from attr import attrs, attrib
 
@@ -16,6 +16,7 @@ class Checkpoints(Container[str], metaclass=ABCMeta):
 
     Particular implementations may limit what checkpoint strings are legal.
     """
+
     @abstractmethod
     def set(self, name: str) -> None:
         raise NotImplementedError()
@@ -25,12 +26,15 @@ class Checkpoints(Container[str], metaclass=ABCMeta):
         raise NotImplementedError()
 
     @staticmethod
-    def from_directory(directory: Path) -> '_CheckPointDirectory':
+    def from_directory(directory: Union[Path, str]) -> '_CheckPointDirectory':
         """
         Get a checkpoint store backed by a filesystem directory.
 
         Checkpoint names must be legal file names on the underlying filesystem.
         """
+        if isinstance(directory, str):
+            directory = Path(directory)
+
         directory.mkdir(parents=True, exist_ok=True)
         return _CheckPointDirectory(directory)
 
@@ -46,6 +50,7 @@ class _CheckPointDirectory(Checkpoints):
     directory: Path = attrib()
 
     def set(self, name: str) -> None:
+        check_isinstance(name, str)
         Path(self.directory, name).touch(exist_ok=True)
 
     def __contains__(self, item: Any) -> bool:
