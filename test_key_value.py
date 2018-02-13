@@ -18,9 +18,13 @@ class TestKeyValue(TestCase):
         with KeyValueSource.zip_bytes_source(tmp_dir / 'test.zip') as zip_source:
             self.assertIsNotNone(zip_source.keys())
             self.assertEqual(ImmutableSet.of(['hello', 'foo']), zip_source.keys())
-            self.assertEqual('world'.encode('utf-8'), zip_source.get('hello'))
-            self.assertEqual('bar'.encode('utf-8'), zip_source.get('foo'))
-            self.assertIsNone(zip_source.get('not-there'))
+            self.assertEqual('world'.encode('utf-8'), zip_source['hello'])
+            self.assertEqual('bar'.encode('utf-8'), zip_source['foo'])
+            self.assertIsNone(zip_source.get('not-there', None))
+            self.assertEqual('moo'.encode('utf-8'),
+                             zip_source.get('not-there', 'moo'.encode('utf-8')))
+            with self.assertRaises(KeyError):
+                zip_source['not-there']
 
         # test adding to an existing zip
         with KeyValueSink.zip_bytes_sink(tmp_dir / 'test.zip',
@@ -30,10 +34,14 @@ class TestKeyValue(TestCase):
         with KeyValueSource.zip_bytes_source(tmp_dir / 'test.zip') as zip_source:
             self.assertIsNotNone(zip_source.keys())
             self.assertEqual(ImmutableSet.of(['hello', 'foo', 'meep']), zip_source.keys())
-            self.assertEqual('world'.encode('utf-8'), zip_source.get('hello'))
-            self.assertEqual('bar'.encode('utf-8'), zip_source.get('foo'))
-            self.assertEqual('lalala'.encode('utf-8'), zip_source.get('meep'))
-            self.assertIsNone(zip_source.get('not-there'))
+            self.assertEqual('world'.encode('utf-8'), zip_source['hello'])
+            self.assertEqual('bar'.encode('utf-8'), zip_source['foo'])
+            self.assertEqual('lalala'.encode('utf-8'), zip_source['meep'])
+            self.assertIsNone(zip_source.get('not-there', None))
+            self.assertEqual('moo'.encode('utf-8'),
+                             zip_source.get('not-there', 'moo'.encode('utf-8')))
+            with self.assertRaises(KeyError):
+                zip_source['not-there']
 
         shutil.rmtree(str(tmp_dir))
 
@@ -47,9 +55,12 @@ class TestKeyValue(TestCase):
         with KeyValueSource.zip_character_source(tmp_dir / 'test.zip') as zip_source:
             self.assertIsNotNone(zip_source.keys())
             self.assertEqual(ImmutableSet.of(['hello', 'foo']), zip_source.keys())
-            self.assertEqual('world', zip_source.get('hello'))
-            self.assertEqual('bar', zip_source.get('foo'))
-            self.assertIsNone(zip_source.get('not-there'))
+            self.assertEqual('world', zip_source['hello'])
+            self.assertEqual('bar', zip_source['foo'])
+            self.assertIsNone(zip_source.get('not-there', None))
+            self.assertEqual('moo', zip_source.get('not-there', 'moo'))
+            with self.assertRaises(KeyError):
+                zip_source['not-there']
 
         # test adding to an existing zip
         with KeyValueSink.zip_character_sink(tmp_dir / 'test.zip',
@@ -59,10 +70,13 @@ class TestKeyValue(TestCase):
         with KeyValueSource.zip_character_source(tmp_dir / 'test.zip') as zip_source:
             self.assertIsNotNone(zip_source.keys())
             self.assertEqual(ImmutableSet.of(['hello', 'foo', 'meep']), zip_source.keys())
-            self.assertEqual('world', zip_source.get('hello'))
-            self.assertEqual('bar', zip_source.get('foo'))
-            self.assertEqual('lalala', zip_source.get('meep'))
-            self.assertIsNone(zip_source.get('not-there'))
+            self.assertEqual('world', zip_source['hello'])
+            self.assertEqual('bar', zip_source['foo'])
+            self.assertEqual('lalala', zip_source['meep'])
+            self.assertIsNone(zip_source.get('not-there', None))
+            self.assertEqual('moo', zip_source.get('not-there', 'moo'))
+            with self.assertRaises(KeyError):
+                zip_source['not-there']
 
         shutil.rmtree(str(tmp_dir))
 
