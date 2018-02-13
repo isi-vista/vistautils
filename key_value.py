@@ -138,7 +138,16 @@ class KeyValueSource(Generic[K, V], metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def get(self, key: K) -> Optional[V]:
+    def __getitem__(self, item: K) -> V:
+        """
+        Get the value associated with the key.
+
+        If there is no value associated, raises a `KeyError`.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get(self, key: K, _default: Optional[V]) -> Optional[V]:
         """
         Get the value associated with the key.
 
@@ -271,14 +280,23 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
         check_state(self._zip_file, 'Must use zip key-value source as a context manager')
         return self._keys
 
-    def get(self, key: str) -> Optional[V]:
+    def __getitem__(self, key: str) -> V:
+        return self._internal_get(key, has_default_val=False, default_val=None)
+
+    def get(self, key: str, _default: Optional[V]) -> Optional[V]:
+        return self._internal_get(key, has_default_val=True, default_val=_default)
+
+    def _internal_get(self, key: str, *, has_default_val: bool, default_val: Optional[V]) -> \
+            Optional[V]:
         check_state(self._zip_file, 'Must use zip key-value source as a context manager')
         check_not_none(key)
         filename = self._filename_function(key)
         try:
             zip_bytes = self._zip_file.read(filename)
         except KeyError:
-            return None
+            if has_default_val:
+                return default_val
+            raise
         return self._process_bytes(zip_bytes)
 
     @abstractmethod
