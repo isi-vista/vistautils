@@ -6,7 +6,7 @@ from typing import Iterable, Mapping, TypeVar, Iterator, Generic, Callable, Any,
 from attr import attrs, attrib
 from frozendict import frozendict
 
-from flexnlp.utils.immutablecollections import ImmutableSet
+from flexnlp.utils.immutablecollections import ImmutableSet, ImmutableList
 from flexnlp.utils.immutablecollections.immutablecollection import ImmutableCollection
 from flexnlp.utils.preconditions import check_isinstance
 
@@ -163,3 +163,130 @@ class FrozenDictBackedImmutableSetMultiDict(ImmutableSetMultiDict[KT, VT]):
 
 # Singleton instance for empty
 _EMPTY: ImmutableSetMultiDict = FrozenDictBackedImmutableSetMultiDict({})
+
+
+# needs tests: issue #127
+class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableList[VT]],
+                             metaclass=ABCMeta):
+    __slots__ = ()
+
+    # Signature of the of method varies by collection
+    # pylint: disable = arguments-differ
+    @staticmethod
+    def of(dict_: Mapping[KT, Iterable[VT]]) -> 'ImmutableListMultiDict[KT, VT]':
+        if isinstance(dict_, ImmutableListMultiDict):
+            return dict_
+        else:
+            return ImmutableListMultiDict.builder().put_all(dict_).build()  # type: ignore
+
+    @staticmethod
+    def empty() -> 'ImmutableListMultiDict[KT, VT]':
+        return _LIST_EMPTY
+
+    @staticmethod
+    def builder() -> 'ImmutableListMultiDict.Builder[KT, VT]':
+        return ImmutableListMultiDict.Builder()
+
+    def modified_copy_builder(self) -> 'ImmutableListMultiDict.Builder[KT, VT]':
+        return ImmutableListMultiDict.Builder(source=self)
+
+    def filter_keys(self, predicate: Callable[[KT], bool]) -> 'ImmutableListMultiDict[KT, VT]':
+        """
+        Filters an ImmutableListMultiDict by a predicate on its keys.
+
+        Returns an ImmutableListMultiDict just like this one but with keys for which the predicate
+        returns a false value removed.
+
+        While you can filter with a comprehension, this maintains order (or will when/if
+        ImmutableDict in general is updated to maintain order) and allows us not to do any
+        copying if all keys pass the filter
+        """
+        retained_keys = [key for key in self.keys() if predicate(key)]
+        if len(retained_keys) == len(self.keys()):
+            return self
+        else:
+            ret: ImmutableListMultiDict.Builder[KT, VT] = ImmutableListMultiDict.builder()
+            for key in retained_keys:
+                for val in self[key]:
+                    ret.put(key, val)
+            return ret.build()
+
+    def __getitem__(self, k: KT) -> ImmutableList[VT]:
+        raise NotImplementedError()
+
+    def __repr__(self):
+        return 'i' + str(self)
+
+    def __str__(self):
+        # we use %s for the value position because we know these are ImmutableSets and don't
+        # need the "i" prefix they add with repr
+        return "[%s]" % ", ".join("%r: %s" % item for item in self.items())
+
+    class Builder(Generic[KT2, VT2]):
+        def __init__(self, *, source: Optional['ImmutableMultiDict[KT2,VT2]'] = None) -> None:
+            self._dict: MutableMapping[KT2, ImmutableList.Builder[VT2]] = defaultdict(
+                lambda: ImmutableList.builder())
+            self._source = source
+            self._dirty = False
+
+        def put(self: SelfType, key: KT2, value: VT2) -> SelfType:
+            if self._source:
+                # we only lazily copy the contents of source because if no changes are ever made
+                # we can just reuse it
+                # we need the temporary variable because the call to put_all below will
+                # call this put method again and we need self.source to be None to avoid an
+                # infinite loop
+                tmp_source = self._source
+                # Defend against multithreading scenario where another thread has cleared
+                # self.source already. Not that this code is meant to be thread-safe anyway,
+                # but at least you won't get non-deterministic crashes
+                if tmp_source is not None:
+                    self._source = None
+                    for k in tmp_source.keys():
+                        for v in tmp_source[k]:
+                            self.put(k, v)
+
+            self._dict[key].add(value)
+            self._dirty = True
+            return self
+
+        def put_all(self: SelfType, dict_: Mapping[KT2, Iterable[VT2]]) -> SelfType:
+            for (k, values) in dict_.items():
+                for v in values:
+                    self.put(k, v)
+            return self
+
+        def build(self) -> 'ImmutableListMultiDict[KT2, VT2]':
+            if self._dirty or self._source is None:
+                return FrozenDictBackedImmutableListMultiDict(
+                    {k: v.build() for (k, v) in self._dict.items()})
+            else:
+                return self._source  # type: ignore
+
+
+def _freeze_list_multidict(x: Mapping[KT, Iterable[VT]]) -> Mapping[KT, ImmutableList[VT]]:
+    for (_, v) in x.items():
+        check_isinstance(v, Iterable)
+    return frozendict({k: ImmutableList.of(v) for (k, v) in x.items()})
+
+
+@attrs(frozen=True, slots=True, repr=False)
+class FrozenDictBackedImmutableListMultiDict(ImmutableListMultiDict[KT, VT]):
+    _dict = attrib(convert=_freeze_list_multidict)
+
+    def __getitem__(self, k: KT) -> ImmutableSet[VT]:
+        return self._dict.get(k, _LIST_EMPTY)
+
+    def __len__(self) -> int:
+        return self._dict.__len__()
+
+    def __iter__(self) -> Iterator[KT]:
+        return self._dict.__iter__()
+
+    # Could allow the Mapping ABC to do this for us, but this is more direct
+    def __contains__(self, x: object) -> bool:
+        return self._dict.__contains__(x)
+
+
+# Singleton instance for empty
+_LIST_EMPTY: ImmutableListMultiDict = FrozenDictBackedImmutableListMultiDict({})
