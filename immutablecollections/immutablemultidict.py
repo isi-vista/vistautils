@@ -218,9 +218,9 @@ class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableLi
         return 'i' + str(self)
 
     def __str__(self):
-        # we use %s for the value position because we know these are ImmutableSets and don't
+        # we use %s for the value position because we know these are ImmutableLists and don't
         # need the "i" prefix they add with repr
-        return "[%s]" % ", ".join("%r: %s" % item for item in self.items())
+        return "{%s}" % ", ".join("%r: %s" % item for item in self.items())
 
     class Builder(Generic[KT2, VT2]):
         def __init__(self, *, source: Optional['ImmutableMultiDict[KT2,VT2]'] = None) -> None:
