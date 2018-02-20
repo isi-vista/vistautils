@@ -127,7 +127,7 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
 
         def build(self) -> 'ImmutableSetMultiDict[KT2, VT2]':
             if self._dirty or self._source is None:
-                result =  FrozenDictBackedImmutableSetMultiDict(
+                result = FrozenDictBackedImmutableSetMultiDict(
                     {k: v.build() for (k, v) in self._dict.items()})
                 return result if result else _SET_EMPTY
             else:
@@ -222,7 +222,7 @@ class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableLi
     class Builder(Generic[KT2, VT2]):
         def __init__(self, *, source: Optional['ImmutableMultiDict[KT2,VT2]'] = None) -> None:
             self._dict: MutableMapping[KT2, ImmutableList.Builder[VT2]] = defaultdict(
-                lambda: ImmutableList.builder())
+                ImmutableList.builder)
             self._source = source
             self._dirty = False
 
