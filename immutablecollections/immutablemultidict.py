@@ -274,7 +274,7 @@ def _freeze_list_multidict(x: Mapping[KT, Iterable[VT]]) -> Mapping[KT, Immutabl
 class FrozenDictBackedImmutableListMultiDict(ImmutableListMultiDict[KT, VT]):
     _dict = attrib(convert=_freeze_list_multidict)
 
-    def __getitem__(self, k: KT) -> ImmutableSet[VT]:
+    def __getitem__(self, k: KT) -> ImmutableList[VT]:
         return self._dict.get(k, _LIST_EMPTY)
 
     def __len__(self) -> int:
