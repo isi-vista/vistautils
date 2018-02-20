@@ -26,10 +26,6 @@ SelfType = TypeVar('SelfType')  # pylint:disable=invalid-name
 class ImmutableMultiDict(ImmutableCollection[KT], Mapping[KT, Iterable[VT]], metaclass=ABCMeta):
     __slots__ = ()
 
-    @staticmethod
-    def empty() -> 'ImmutableMultiDict[KT, VT]':
-        return ImmutableSetMultiDict.empty()
-
 
 # needs tests: issue #127
 class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet[VT]],
@@ -52,7 +48,7 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
 
     @staticmethod
     def empty() -> 'ImmutableSetMultiDict[KT, VT]':
-        return _EMPTY
+        return _SET_EMPTY
 
     @staticmethod
     def builder(value_order_key: Callable[[VT], Any] = None) \
@@ -131,8 +127,9 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
 
         def build(self) -> 'ImmutableSetMultiDict[KT2, VT2]':
             if self._dirty or self._source is None:
-                return FrozenDictBackedImmutableSetMultiDict(
+                result =  FrozenDictBackedImmutableSetMultiDict(
                     {k: v.build() for (k, v) in self._dict.items()})
+                return result if result else _SET_EMPTY
             else:
                 return self._source  # type: ignore
 
@@ -162,7 +159,7 @@ class FrozenDictBackedImmutableSetMultiDict(ImmutableSetMultiDict[KT, VT]):
 
 
 # Singleton instance for empty
-_EMPTY: ImmutableSetMultiDict = FrozenDictBackedImmutableSetMultiDict({})
+_SET_EMPTY: ImmutableSetMultiDict = FrozenDictBackedImmutableSetMultiDict({})
 
 
 # needs tests: issue #127
@@ -258,8 +255,9 @@ class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableLi
 
         def build(self) -> 'ImmutableListMultiDict[KT2, VT2]':
             if self._dirty or self._source is None:
-                return FrozenDictBackedImmutableListMultiDict(
+                result = FrozenDictBackedImmutableListMultiDict(
                     {k: v.build() for (k, v) in self._dict.items()})
+                return result if result else _LIST_EMPTY
             else:
                 return self._source  # type: ignore
 

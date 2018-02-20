@@ -19,7 +19,7 @@ class ImmutableList(ImmutableCollection[T], Sequence[T], metaclass=ABCMeta):
         if isinstance(seq, ImmutableList):
             return seq
         else:
-            return _TupleBackedImmutableList(seq)
+            return ImmutableList.builder().add_all(seq).build()  # type: ignore
 
     @staticmethod
     def empty() -> 'ImmutableList[T]':
@@ -45,7 +45,10 @@ class ImmutableList(ImmutableCollection[T], Sequence[T], metaclass=ABCMeta):
             return len(self._list)
 
         def build(self) -> 'ImmutableList[T2]':
-            return ImmutableList.of(self._list)
+            if self._list:
+                return _TupleBackedImmutableList(self._list)
+            else:
+                return _EMPTY
 
     def __repr__(self):
         return 'i' + str(self)
