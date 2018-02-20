@@ -37,6 +37,10 @@ class ImmutableList(ImmutableCollection[T], Sequence[T], metaclass=ABCMeta):
             self._list.append(item)
             return self
 
+        def add_all(self, items: Iterable[T2]) -> 'ImmutableList.Builder[T2]':
+            self._list.extend(items)
+            return self
+
         def __len__(self) -> int:
             return len(self._list)
 
