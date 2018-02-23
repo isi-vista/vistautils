@@ -127,10 +127,11 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
 
         def build(self) -> 'ImmutableSetMultiDict[KT2, VT2]':
             if self._dirty or self._source is None:
-                result = FrozenDictBackedImmutableSetMultiDict(
+                result: ImmutableSetMultiDict[KT2, VT2] = FrozenDictBackedImmutableSetMultiDict(
                     {k: v.build() for (k, v) in self._dict.items()})
                 return result if result else _SET_EMPTY
             else:
+                # noinspection PyTypeChecker
                 return self._source  # type: ignore
 
 
@@ -255,10 +256,11 @@ class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableLi
 
         def build(self) -> 'ImmutableListMultiDict[KT2, VT2]':
             if self._dirty or self._source is None:
-                result = FrozenDictBackedImmutableListMultiDict(
+                result: ImmutableListMultiDict[KT2, VT2] = FrozenDictBackedImmutableListMultiDict(
                     {k: v.build() for (k, v) in self._dict.items()})
                 return result if result else _LIST_EMPTY
             else:
+                # noinspection PyTypeChecker
                 return self._source  # type: ignore
 
 
