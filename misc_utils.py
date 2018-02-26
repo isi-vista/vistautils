@@ -1,8 +1,9 @@
 import re
 import time
-from typing import Any, Type, List, Optional
+from typing import Any, Type
 
-from flexnlp import Document, Theory, RegionTheory, SentenceTheory
+from flexnlp.model.document import Document
+from flexnlp.model.theory import Theory
 
 _WHITESPACE_RE = re.compile(r'\s+')
 
@@ -125,26 +126,7 @@ def get_theory_id(theory_ids, theory_type: Type[Theory]) -> str:
 
 
 # TODO: Use correct type hint for input_theory_ids (circular import problem with TheoryIdMap)
-def get_theory_ids(theory_ids, theory_type: Type[Theory],
-                   doc: Document) -> List[Optional[str]]:
-    if theory_ids:
-        value = theory_ids.get(theory_type)
-        if value == '*':
-            return list(doc.theory_ids(theory_type))
-        elif isinstance(value, str) or value is None:
-            return [value]
-        elif isinstance(value, list):
-            return value
-        else:
-            raise TypeError('theory_ids must "*", a single theory_id, '
-                            'or a list of theory_ids')
-    return [None]
-
-
-# TODO: Use correct type hint for input_theory_ids (circular import problem with TheoryIdMap)
-def text_span_iterator(doc: Document,
-                       input_theory_ids,
-                       use_regions: bool, use_sentences: bool):
+def text_span_iterator(doc: Document, use_regions: bool, use_sentences: bool):
     """
     Return an iterator over consecutive, ordered spans of text.
 
@@ -162,24 +144,15 @@ def text_span_iterator(doc: Document,
     """
     boundary_set = {0, len(doc.text.text)}
     if use_regions:
-        region_theory_ids = get_theory_ids(input_theory_ids, RegionTheory, doc)
-        if not region_theory_ids:
-            region_theory_ids = [None]
-        for region_theory_id in region_theory_ids:
-            regions = doc.regions(region_theory_id)
+        for regions in doc.all_regions():
             for r in regions:
                 if r.breaking:
                     boundary_set.add(r.start)
                     boundary_set.add(r.end)
     if use_sentences:
-        sentence_theory_ids = get_theory_ids(input_theory_ids, SentenceTheory, doc)
-        if not sentence_theory_ids:
-            sentence_theory_ids = [None]
-        for sentence_theory_id in sentence_theory_ids:
-            sentences = doc.sentences(sentence_theory_id)
-            for s in sentences:
-                boundary_set.add(s.start)
-                boundary_set.add(s.end)
+        for s in doc.sentences():
+            boundary_set.add(s.start)
+            boundary_set.add(s.end)
 
     boundary_list = list(boundary_set)
     boundary_list.sort()

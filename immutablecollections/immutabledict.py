@@ -113,7 +113,10 @@ class ImmutableDict(ImmutableCollection[KT], Mapping[KT, VT], metaclass=ABCMeta)
                 # the ImmutableDict we were based on because we will be identical and immutable
                 # objects can be safely shared
                 return self.source
-            return FrozenDictBackedImmutableDict(self._dict)
+            if self._dict:
+                return FrozenDictBackedImmutableDict(self._dict)
+            else:
+                return _EMPTY
 
 
 @attrs(frozen=True, slots=True, repr=False)
