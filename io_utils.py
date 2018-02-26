@@ -124,7 +124,7 @@ class _GZipFileSource(CharSource):
     _encoding: str = attrib_instance_of(str)
 
     def open(self) -> TextIO:
-        return gzip.open(self._path, 'rt', encoding=self._encoding)
+        return gzip.open(self._path, 'rt', encoding=self._encoding)  # type: ignore
 
     def is_empty(self) -> bool:
         with gzip.open(self._path) as inp:

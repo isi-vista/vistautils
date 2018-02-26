@@ -53,8 +53,8 @@ def _config_logging_from_params(params):
         level = _LEVEL_STRINGS_TO_LEVELS[set_root_level_to]
     except KeyError:
         raise ParameterError("Invalid logging level {!s}. Valid levels "
-                             "are {!s}", set_root_level_to,
-                             list(_LEVEL_STRINGS_TO_LEVELS.keys()))
+                             "are {!s}".format(set_root_level_to,
+                                               list(_LEVEL_STRINGS_TO_LEVELS.keys())))
     logging.getLogger().setLevel(level)
 
     # configure a console handler with the default formatter. We could make this

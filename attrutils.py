@@ -15,7 +15,7 @@ def attrib_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, **kwargs):
 
 # TODO cannot currently be used with additional validators:
 # https://github.com/isi-nlp/isi-flexnlp/issues/188
-def attrib_opt_instance_of(type_: Union[Type, Tuple[Type, ...]], default=None, *args, **kwargs):
+def attrib_opt_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, default=None, **kwargs):
     return attrib(validator=opt_instance_of(type_), default=default, *args, **kwargs)
 
 
