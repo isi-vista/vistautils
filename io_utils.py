@@ -14,6 +14,21 @@ from attr import attrs
 from flexnlp.utils.attrutils import attrib_instance_of
 
 
+def is_empty_directory(path: Path) -> bool:
+    """
+    Returns if path is a directory with no content.
+    """
+    sentinel = object()
+    return path.is_dir() and next(path.iterdir().__iter__(), sentinel) == sentinel
+
+def strip_all_extensions(path: Path) -> Path:
+    previous = path
+    cur = path.stem
+    while cur != previous:
+        previous = cur
+        cur = cur.stem
+    return cur
+
 class CharSource(metaclass=ABCMeta):
     """
     Something which can provide string data.
