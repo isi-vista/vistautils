@@ -39,6 +39,21 @@ class ImmutableDict(ImmutableCollection[KT], Mapping[KT, VT], metaclass=ABCMeta)
     def builder() -> 'ImmutableDict.Builder[KT, VT]':
         return ImmutableDict.Builder()
 
+    @staticmethod
+    def index(items: Iterable[VT], key_function: Callable[[VT], KT]) -> 'ImmutableDict[KT, VT]':
+        """
+        Get a mapping to each value from the result of applying a key function.
+
+        The result is an `ImmutableDict` where each given item appears as a value which
+        is mapped to from the result of applying `key_function` to the value.
+        """
+        ret: ImmutableDict.Builder[KT, VT] = ImmutableDict.builder()
+
+        for item in items:
+                ret.put(key_function(item), item)
+
+        return ret.build()
+
     def modified_copy_builder(self) -> 'ImmutableDict.Builder[KT, VT]':
         return ImmutableDict.Builder(source=self)
 
