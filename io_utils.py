@@ -197,6 +197,9 @@ class ByteSource(metaclass=ABCMeta):
         raise NotImplementedError()
 
     def read(self, size=-1) -> BinaryIO:
+        """
+        Read and return data from the stream. If size is specified, at most size bytes will be read
+        """
         with self.open() as binary_like:
             return binary_like.read(size)
 
