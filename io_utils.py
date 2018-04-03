@@ -180,6 +180,7 @@ class CharSink(metaclass=ABCMeta):
         with self.open() as out:
             out.write(data)
 
+
 class ByteSource(metaclass=ABCMeta):
     """
     Something which can provide byte data.
@@ -196,7 +197,7 @@ class ByteSource(metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    def read(self, size=-1) -> BinaryIO:
+    def read(self, size=-1) -> bytes:
         """
         Read and return data from the stream.
 
