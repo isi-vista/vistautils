@@ -12,7 +12,6 @@ from zipfile import ZipFile
 from attr import attrs
 
 from flexnlp.utils.attrutils import attrib_instance_of
-from flexnlp.utils.preconditions import check_isinstance
 
 
 def is_empty_directory(path: Path) -> bool:

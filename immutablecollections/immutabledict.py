@@ -50,7 +50,7 @@ class ImmutableDict(ImmutableCollection[KT], Mapping[KT, VT], metaclass=ABCMeta)
         ret: ImmutableDict.Builder[KT, VT] = ImmutableDict.builder()
 
         for item in items:
-                ret.put(key_function(item), item)
+            ret.put(key_function(item), item)
 
         return ret.build()
 
