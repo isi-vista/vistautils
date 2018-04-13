@@ -4,7 +4,13 @@ from pathlib import Path
 from unittest import TestCase
 from zipfile import ZipFile
 
-from flexnlp.utils.io_utils import CharSource, CharSink, ByteSink
+from attr import attrs
+
+from flexnlp.parameters import Parameters
+from flexnlp.utils.attrutils import attrib_instance_of
+from flexnlp.utils.immutablecollections import ImmutableDict
+from flexnlp.utils.io_utils import CharSource, CharSink, ByteSink, write_doc_id_to_file_map, \
+    read_doc_id_to_file_map
 
 
 class TestIOUtils(TestCase):
@@ -83,3 +89,47 @@ class TestIOUtils(TestCase):
             self.assertEqual("foo".encode('utf-8'), zip_file.read('fred'))
 
         shutil.rmtree(str(tmp_dir))
+
+    def test_string_sink(self):
+        string_sink = CharSink.to_string()
+        string_sink.write("hello world")
+        self.assertEqual("hello world", string_sink.last_string_written)
+
+    def test_read_write_doc_id_to_file_map(self):
+        map = ImmutableDict.of([('foo', Path('/home/foo')), ('bar', Path('/home/bar'))])
+        string_sink = CharSink.to_string()
+        write_doc_id_to_file_map(map, string_sink)
+        # note the reordering because it alphabetizes the docids
+        self.assertEqual("bar\t/home/bar\nfoo\t/home/foo\n", string_sink.last_string_written)
+
+        reloaded_map = read_doc_id_to_file_map(
+            CharSource.from_string(string_sink.last_string_written))
+
+        self.assertEqual(map, reloaded_map)
+
+    def test_object_from_parameters(self):
+        @attrs
+        class TestObj:
+            val: int = attrib_instance_of(int)
+
+            @staticmethod
+            def from_parameters(params: Parameters) -> 'TestObj':
+                return TestObj(params.integer('my_int'))
+
+        simple_params = Parameters.from_mapping({'test': {
+            'value': 'TestObj',
+            'my_int': 5
+        }})
+
+        self.assertEqual(TestObj(5), simple_params.object_from_parameters(
+            'test', TestObj, context=locals()))
+
+        # test when object needs no further parameters for instantiation
+        @attrs
+        class ArglessTestObj:
+            pass
+
+        argless_params = Parameters.from_mapping({'test': 'ArglessTestObj'})
+        self.assertEqual(ArglessTestObj(), argless_params.object_from_parameters(
+            'test', ArglessTestObj, context=locals()))
+

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from flexnlp.utils.preconditions import check_arg
+from flexnlp.utils.preconditions import check_arg, check_not_none
 
 
 class TestPreconditions(TestCase):
@@ -10,3 +10,9 @@ class TestPreconditions(TestCase):
             reference = 48
             check_arg(height > reference, "Expected height to exceed %s but got %s",
                       (reference, height))
+
+    def test_not_none(self):
+        with self.assertRaises(ValueError):
+            check_not_none(None)
+        with self.assertRaisesRegex(ValueError, "foo"):
+            check_not_none(None, "foo")
