@@ -1,6 +1,7 @@
+import importlib
 import re
 import time
-from typing import Any, Type
+from typing import Any, Type, List, TypeVar, Optional, Dict
 
 from flexnlp.model.document import Document
 from flexnlp.model.theory import Theory
@@ -193,3 +194,31 @@ class Timer:
 
     def __exit__(self, *args):
         self.stop()
+
+
+T = TypeVar('T')
+
+
+def eval_in_context_of_modules(to_eval: str, context: Dict, *,
+                               context_modules: List[str],
+                               expected_type: Type[T]) -> T:
+    """
+    Evaluate the given expression in the specified context.
+
+    Optionally, enforce that the result is of the expected type, throwing a
+    `RuntimeException` otherwise.
+
+    The context of evaluation will be that given by `context` augmented by the import of the
+    modules whose names are given in `context_modules`.  If you want this to be evaluated in the
+    context of the call site, pass `locals` as the context
+    """
+    # we make a copy so we do not alter the calling context
+    context = dict(context)
+    for module_name in context_modules:
+        context[module_name] = importlib.import_module(module_name)
+    ret = eval(to_eval, context)
+    if isinstance(ret, expected_type):
+        return ret
+    else:
+        raise TypeError("Expected result of evaluating {!s} to be of type {!s} but "
+                        "got {!s}".format(to_eval, expected_type, ret))

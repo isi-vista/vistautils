@@ -1,9 +1,18 @@
+import importlib
+import inspect
 from abc import abstractmethod, ABCMeta
 from pathlib import Path
-from typing import Generic, TypeVar, Callable, Optional, AbstractSet, Set
+from typing import Generic, TypeVar, Callable, Optional, AbstractSet, Set, Mapping, MutableMapping, \
+    Tuple, Iterator, Type, Union, Dict
 from zipfile import ZipFile
 
-from flexnlp.utils.immutablecollections import ImmutableSet
+from attr import attrs
+
+from flexnlp.parameters import Parameters
+from flexnlp.utils.attrutils import attrib_immutable
+from flexnlp.utils.immutablecollections import ImmutableSet, ImmutableDict
+from flexnlp.utils.io_utils import CharSource, CharSink, write_doc_id_to_file_map, \
+    read_doc_id_to_file_map
 from flexnlp.utils.preconditions import check_state, check_arg, check_not_none
 
 K = TypeVar('K')
@@ -83,10 +92,10 @@ class KeyValueSink(Generic[K, V], metaclass=ABCMeta):
         Since these need to match, it is recommended to use a wrapper method around this one
         when overriding.
         """
-        return _ZipCharFileKeyValuesSink(path, filename_function=filename_function,
-                                         overwrite=overwrite,
-                                         keys_in_function=keys_in_function,
-                                         keys_out_function=keys_out_function)
+        return _ZipCharFileKeyValueSink(path, filename_function=filename_function,
+                                        overwrite=overwrite,
+                                        keys_in_function=keys_in_function,
+                                        keys_out_function=keys_out_function)
 
     @staticmethod
     def zip_bytes_sink(path: Path,
@@ -113,15 +122,34 @@ class KeyValueSink(Generic[K, V], metaclass=ABCMeta):
         Since these need to match, it is recommended to use a wrapper method around this one
         when overriding.
         """
-        return _ZipBytesFileKeyValuesSink(path, filename_function=filename_function,
-                                          overwrite=overwrite,
-                                          keys_in_function=keys_in_function,
-                                          keys_out_function=keys_out_function)
+        return _ZipBytesFileKeyValueSink(path, filename_function=filename_function,
+                                         overwrite=overwrite,
+                                         keys_in_function=keys_in_function,
+                                         keys_out_function=keys_out_function)
 
 
-class KeyValueSource(Generic[K, V], metaclass=ABCMeta):
+class KeyValueLinearSource(Generic[K, V], metaclass=ABCMeta):
     """
-    Anything which can accept key-value pairs.
+    Anything which provide a sequence of key-value pairs.
+
+    Many of these will be `KeyValueSources`, which allow random access, but some things, like
+    .tar.gz files, lack efficient random access but can still be iterated over.
+    """
+    def items(self, key_filter: Callable[[K], bool]= lambda: True) -> Iterator[Tuple[K,V]]:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def __enter__(self) -> 'KeyValueLinearSource[K,V]':
+        raise NotImplementedError()
+
+    @abstractmethod
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        raise NotImplementedError()
+
+
+class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMeta):
+    """
+    Anything which can provides a key-value mapping.
 
     This can abstract over writing mappings to dictionaries, file systems, zip files, etc.
 
@@ -163,13 +191,32 @@ class KeyValueSource(Generic[K, V], metaclass=ABCMeta):
         """
         return None
 
+    def items(self, key_filter: Callable[K, bool]= lambda: True) -> Iterator[Tuple[K, V]]:
+        def generator_func() -> Tuple[K,V]:
+            for key in self.keys():
+                if key_filter(key):
+                    yield self[key]
+        return generator_func()
+
     @abstractmethod
     def __enter__(self) -> 'KeyValueSource[K,V]':
         raise NotImplementedError()
 
-    @abstractmethod
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        raise NotImplementedError()
+    @staticmethod
+    def from_path_mapping(id_to_path: Mapping[str, Path]) -> 'KeyValueSource[str, str]':
+        """
+        Create a key-value source from a map of IDs to paths.
+
+        The contents of the paths, interpreted as UTF-8, will be the values.
+        """
+        return _PathMappingCharKeyValueSource(id_to_path)
+
+    @staticmethod
+    def from_doc_id_to_file_map(map_file: Union[str, Path, CharSource]) -> \
+            'KeyValueSource[str,str]':
+        if not isinstance(map_file, CharSource):
+            map_file = CharSource.from_file(map_file)
+        return _PathMappingCharKeyValueSource(read_doc_id_to_file_map(map_file))
 
     @staticmethod
     def zip_character_source(path: Path, filename_function: Callable[[str], str] = _identity,
@@ -206,6 +253,26 @@ class KeyValueSource(Generic[K, V], metaclass=ABCMeta):
         """
         return _ZipBytesFileKeyValuesSource(path, filename_function=filename_function,
                                             keys_function=keys_function)
+
+
+class _DirectoryCharKeyValueSink(KeyValueSink[str, str]):
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self.id_to_file: MutableMapping[str, Path] = dict()
+
+    def put(self, key: str, value: str) -> None:
+        out_file = self._path / key
+        CharSink.to_file(out_file).write(value)
+        self.id_to_file[key] = out_file
+
+    def __enter__(self) -> 'KeyValueSink[K,V]':
+        self._path.rmdir()
+        self._path.mkdir(parents=True, exist_ok=True)
+        self.id_to_file: MutableMapping[str, Path] = dict()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        write_doc_id_to_file_map(self.id_to_file, CharSink.to_file(self._path / '_index'))
 
 
 class _ZipKeyValueSink(Generic[V], KeyValueSink[str, V]):
@@ -256,14 +323,44 @@ class _ZipKeyValueSink(Generic[V], KeyValueSink[str, V]):
         self._zip_file.close()
 
 
-class _ZipCharFileKeyValuesSink(_ZipKeyValueSink[str]):
+class _ZipCharFileKeyValueSink(_ZipKeyValueSink[str]):
     def _to_bytes(self, val: str) -> bytes:
         return val.encode('utf-8')
 
+    @staticmethod
+    def from_parameters(params: Parameters) -> KeyValueSink[str, str]:
+        """
+        Create a key-value sink writing to a zip file.
 
-class _ZipBytesFileKeyValuesSink(_ZipKeyValueSink[bytes]):
+        Right now, these uses all the defaults for `KeyValueSink.zip_character_sink`. In the
+        future, we might examine other parameters to allow greater customization.
+        """
+        return KeyValueSink.zip_character_sink(params.existing_file('path'))
+
+
+class _ZipBytesFileKeyValueSink(_ZipKeyValueSink[bytes]):
     def _to_bytes(self, val: bytes) -> bytes:
         return val
+
+
+@attrs(frozen=True)
+class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
+    id_to_path: ImmutableDict[str, Path] = attrib_immutable(ImmutableDict)
+
+    def __getitem__(self, key: str) -> str:
+        return CharSource.from_file(self.id_to_path[key]).read()
+
+    def get(self, key: str, _default: Optional[str]) -> Optional[str]:
+        if key in self.id_to_path:
+            return self[key]
+        else:
+            return _default
+
+    def __enter__(self) -> 'KeyValueSource[K,V]':
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        pass
 
 
 class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMeta):
@@ -332,3 +429,116 @@ class _ZipCharFileKeyValuesSource(_ZipFileKeyValueSource[str]):
 
     def _process_bytes(self, _bytes: bytes) -> str:
         return _bytes.decode('utf-8')
+
+    @staticmethod
+    def from_parameters(params: Parameters) -> KeyValueSource[str, str]:
+        """
+        Construct a zip file key-value source from parameters.
+
+        The "path" parameter should be the zip file to be opened.
+
+        Currently we assume the zipfile contains a file with the IDs, which it will if it
+        were created by the default CharSink.zip_character_sink(). Support for custom key
+        functions will be added in the future.
+        """
+        return KeyValueSource.zip_character_source(params.existing_file('path'))
+
+
+_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES = {
+    'zip': '_ZipCharFileKeyValuesSource',
+    'file-map': 'DocIdToFileMapCharKeyValueSource'
+}
+
+
+def char_key_value_linear_source_from_params(
+        param_name: str, params: Parameters, *, eval_context: Optional[Dict] = None) \
+        -> KeyValueLinearSource[str, str]:
+    """
+    Get a key-value source based on parameters.
+
+    This should be passed a parameter namespace.  If the "type" field is present, it should
+    be the name of a class or method.  If a class, its static `from_parameters` method will be
+    called with these parameters and should return a `KeyValueLinearSource[str, str]`. If a
+    callable, it will be called with these parameters (and should also return a
+    KeyValueLinearSource[str, str].
+
+    The type 'zip' is a shortcut for a key-value zip file.  'file-map' is a shortcut for a
+    docID to file map.
+
+    If additional imports are needed to resolve 'type', they can be specified as a Python
+    list in
+    the `imports` field.
+
+    If no type is specified, a source will be constructed from the doc-id-to-file map specified
+    by the `docIdToFileMap` parameter.
+
+    This differs from "char_key_value_source_from_params" only in that is relaxes the guarantee
+    on what is returned to only requiring iterability over mappings and not random access.
+    """
+    return params.object_from_parameters(
+        param_name, KeyValueLinearSource[str, str],
+        special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_creator=DocIdToFileMapCharKeyValueSource,
+        context=eval_context)
+
+
+def char_key_value_source_from_params(param_name: str, params: Parameters,
+                                      *, eval_context: Optional[Dict] = None) \
+        -> KeyValueSource[str, str]:
+    """
+    Get a random-access key-value source based on parameters.
+
+    This should be passed a parameter namespace.  If the "type" field is present, it should
+    be the name of a class or method.  If a class, its static `from_parameters` method will be
+    called with these parameters and should return a `KeyValueSource[str, str]`. If a callable,
+    it will be called with these parameters (and should also return a KeyValueSource[str, str].
+
+    The type 'zip' is a shortcut for a key-value zip file.  'file-map' is a shortcut for a
+    docID to file map.
+
+    If additional imports are needed to resolve 'type', they can be specified as a Python
+    list in
+    the `imports` field.
+
+    If no type is specified, a source will be constructed from the doc-id-to-file map specified
+    by the `docIdToFileMap` parameter.
+    """
+    return params.object_from_parameters(
+        param_name, KeyValueSource[str, str],
+        special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_creator=DocIdToFileMapCharKeyValueSource,
+        context=eval_context)
+
+
+T = TypeVar('T')
+
+_CHAR_KEY_VALUE_SINK_SPECIAL_VALUES = {
+    'zip': '_ZipCharFileKeyValueSink',
+    'file-map': '_DirectoryCharKeyValueSink'
+}
+
+
+def char_key_value_sink_from_params(param_name: str, params: Parameters,
+                                    *, eval_context: Optional[Dict] = None)\
+        -> KeyValueSink[str, str]:
+    """
+    Get a key-value sink based on parameters.
+
+    This should be passed a parameter namespace.  If the "type" field is present, it should
+    be the name of a class or method.  If a class, its static `from_parameters` method will be
+    called with these parameters and should return a `KeyValueSink[str, str]`. If a callable,
+    it will be called with these parameters (and should also return a KeyValueSink[str, str].
+
+    The type 'zip' is a shortcut for a key-value zip file.  'directory' is a shortcut for
+    writing the output files to the specified directory.
+
+    If additional imports are needed to resolve 'type', they can be specified as a Python list in
+    the `imports` field.
+
+    If no type is specified, a 'directory' sink will be created.
+    """
+    return params.object_from_parameters(
+        param_name, KeyValueSink[str, str],
+        special_creator_values=_CHAR_KEY_VALUE_SINK_SPECIAL_VALUES,
+        default_creator=_DirectoryCharKeyValueSink,
+        context=eval_context)
