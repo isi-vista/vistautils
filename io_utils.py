@@ -1,18 +1,18 @@
 import gzip
-import os
-from abc import abstractmethod, ABCMeta
 import io
+import os
+import types
+from abc import abstractmethod, ABCMeta
 from io import BytesIO
 from pathlib import Path
-import types
 from types import TracebackType
-from typing import TextIO, AnyStr, Iterable, Optional, Iterator, Type, List, BinaryIO, Any, Mapping, \
-    Tuple
+from typing import TextIO, AnyStr, Iterable, Optional, Iterator, Type, List, BinaryIO, Any, \
+    Mapping, Tuple
 from zipfile import ZipFile
 
 from attr import attrs
 
-from flexnlp.utils.attrutils import attrib_instance_of, attrib_opt_instance_of
+from flexnlp.utils.attrutils import attrib_instance_of
 from flexnlp.utils.immutablecollections import ImmutableDict
 
 

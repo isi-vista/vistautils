@@ -1,9 +1,7 @@
-import importlib
-import inspect
 from abc import abstractmethod, ABCMeta
 from pathlib import Path
-from typing import Generic, TypeVar, Callable, Optional, AbstractSet, Set, Mapping, MutableMapping, \
-    Tuple, Iterator, Type, Union, Dict
+from typing import Generic, TypeVar, Callable, Optional, AbstractSet, Set, Mapping, \
+    MutableMapping, Tuple, Iterator, Union, Dict
 from zipfile import ZipFile
 
 from attr import attrs
@@ -59,6 +57,9 @@ class KeyValueSink(Generic[K, V], metaclass=ABCMeta):
     @abstractmethod
     def put(self, key: K, value: V) -> None:
         raise NotImplementedError()
+
+    def __setitem__(self, key, value) -> None:
+        self.put(key, value)
 
     @abstractmethod
     def __enter__(self) -> 'KeyValueSink[K,V]':
@@ -135,7 +136,8 @@ class KeyValueLinearSource(Generic[K, V], metaclass=ABCMeta):
     Many of these will be `KeyValueSources`, which allow random access, but some things, like
     .tar.gz files, lack efficient random access but can still be iterated over.
     """
-    def items(self, key_filter: Callable[[K], bool]= lambda: True) -> Iterator[Tuple[K,V]]:
+
+    def items(self, key_filter: Callable[[K], bool] = lambda: True) -> Iterator[Tuple[K, V]]:
         raise NotImplementedError()
 
     @abstractmethod
@@ -191,11 +193,12 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         """
         return None
 
-    def items(self, key_filter: Callable[K, bool]= lambda: True) -> Iterator[Tuple[K, V]]:
-        def generator_func() -> Tuple[K,V]:
+    def items(self, key_filter: Callable[[K], bool] = lambda: True) -> Iterator[Tuple[K, V]]:
+        def generator_func() -> Tuple[K, V]:
             for key in self.keys():
                 if key_filter(key):
                     yield self[key]
+
         return generator_func()
 
     @abstractmethod
@@ -335,7 +338,7 @@ class _ZipCharFileKeyValueSink(_ZipKeyValueSink[str]):
         Right now, these uses all the defaults for `KeyValueSink.zip_character_sink`. In the
         future, we might examine other parameters to allow greater customization.
         """
-        return KeyValueSink.zip_character_sink(params.existing_file('path'))
+        return KeyValueSink.zip_character_sink(params.creatable_file('path'))
 
 
 class _ZipBytesFileKeyValueSink(_ZipKeyValueSink[bytes]):
@@ -348,7 +351,7 @@ class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
     id_to_path: ImmutableDict[str, Path] = attrib_immutable(ImmutableDict)
 
     def __getitem__(self, key: str) -> str:
-        return CharSource.from_file(self.id_to_path[key]).read()
+        return CharSource.from_file(self.id_to_path[key]).read_all()
 
     def get(self, key: str, _default: Optional[str]) -> Optional[str]:
         if key in self.id_to_path:
@@ -450,6 +453,10 @@ _CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES = {
 }
 
 
+def _doc_id_source_from_params(params: Parameters) -> KeyValueSource[str, str]:
+    return KeyValueSource.from_doc_id_to_file_map(params.existing_file("path"))
+
+
 def char_key_value_linear_source_from_params(
         param_name: str, params: Parameters, *, eval_context: Optional[Dict] = None) \
         -> KeyValueLinearSource[str, str]:
@@ -475,11 +482,16 @@ def char_key_value_linear_source_from_params(
     This differs from "char_key_value_source_from_params" only in that is relaxes the guarantee
     on what is returned to only requiring iterability over mappings and not random access.
     """
+    # to be sure the default special values can be evaluated, we want to include this module
+    # itself in the evaluation context. We combine it with eval_context, giving priority to
+    # the context specified by the user
+    effective_context = dict(globals())
+    effective_context.update(eval_context or {})
     return params.object_from_parameters(
-        param_name, KeyValueLinearSource[str, str],
+        param_name, KeyValueLinearSource,
         special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
-        default_creator=DocIdToFileMapCharKeyValueSource,
-        context=eval_context)
+        default_creator=_doc_id_source_from_params,
+        context=effective_context)
 
 
 def char_key_value_source_from_params(param_name: str, params: Parameters,
@@ -503,11 +515,16 @@ def char_key_value_source_from_params(param_name: str, params: Parameters,
     If no type is specified, a source will be constructed from the doc-id-to-file map specified
     by the `docIdToFileMap` parameter.
     """
+    # to be sure the default special values can be evaluated, we want to include this module
+    # itself in the evaluation context. We combine it with eval_context, giving priority to
+    # the context specified by the user
+    effective_context = dict(globals())
+    effective_context.update(eval_context or {})
     return params.object_from_parameters(
-        param_name, KeyValueSource[str, str],
+        param_name, KeyValueSource,
         special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
-        default_creator=DocIdToFileMapCharKeyValueSource,
-        context=eval_context)
+        default_creator=_doc_id_source_from_params,
+        context=effective_context)
 
 
 T = TypeVar('T')
@@ -519,7 +536,7 @@ _CHAR_KEY_VALUE_SINK_SPECIAL_VALUES = {
 
 
 def char_key_value_sink_from_params(param_name: str, params: Parameters,
-                                    *, eval_context: Optional[Dict] = None)\
+                                    *, eval_context: Optional[Dict] = None) \
         -> KeyValueSink[str, str]:
     """
     Get a key-value sink based on parameters.
@@ -537,8 +554,13 @@ def char_key_value_sink_from_params(param_name: str, params: Parameters,
 
     If no type is specified, a 'directory' sink will be created.
     """
+    # to be sure the default special values can be evaluated, we want to include this module
+    # itself in the evaluation context. We combine it with eval_context, giving priority to
+    # the context specified by the user
+    effective_context = dict(globals())
+    effective_context.update(eval_context or {})
     return params.object_from_parameters(
-        param_name, KeyValueSink[str, str],
+        param_name, KeyValueSink,
         special_creator_values=_CHAR_KEY_VALUE_SINK_SPECIAL_VALUES,
         default_creator=_DirectoryCharKeyValueSink,
-        context=eval_context)
+        context=effective_context)
