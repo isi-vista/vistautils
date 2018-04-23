@@ -1,7 +1,7 @@
 import importlib
 import re
 import time
-from typing import Any, Type, List, TypeVar, Optional, Dict
+from typing import Any, Type, List, TypeVar, Dict
 
 from flexnlp.model.document import Document
 from flexnlp.model.theory import Theory
@@ -214,8 +214,15 @@ def eval_in_context_of_modules(to_eval: str, context: Dict, *,
     """
     # we make a copy so we do not alter the calling context
     context = dict(context)
+
+    # import into the context to be used for evaluation any additional modules requested
     for module_name in context_modules:
-        context[module_name] = importlib.import_module(module_name)
+        package_parts = module_name.split('.')
+        # emulate the import statement's behavior of importing parent packages
+        for package_part_idx in range(len(package_parts)):
+            package_name = '.'.join(package_parts[0:package_part_idx + 1])
+            if package_name not in context:
+                context[package_name] = importlib.import_module(package_name)
     ret = eval(to_eval, context)
     if isinstance(ret, expected_type):
         return ret
