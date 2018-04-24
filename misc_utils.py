@@ -1,7 +1,8 @@
 import importlib
 import re
 import time
-from typing import Any, Type, List, TypeVar, Dict
+from pathlib import Path
+from typing import Any, Type, List, TypeVar, Dict, Union
 
 from flexnlp.model.document import Document
 from flexnlp.model.theory import Theory
@@ -210,7 +211,10 @@ def eval_in_context_of_modules(to_eval: str, context: Dict, *,
 
     The context of evaluation will be that given by `context` augmented by the import of the
     modules whose names are given in `context_modules`.  If you want this to be evaluated in the
-    context of the call site, pass `locals` as the context
+    context of the call site, pass `locals` as the context.
+
+    Just like with `eval` itself, never pass anything from an uncontrolled source to this method,
+    since it could allow arbitrary code execution.
     """
     # we make a copy so we do not alter the calling context
     context = dict(context)
@@ -223,9 +227,21 @@ def eval_in_context_of_modules(to_eval: str, context: Dict, *,
             package_name = '.'.join(package_parts[0:package_part_idx + 1])
             if package_name not in context:
                 context[package_name] = importlib.import_module(package_name)
-    ret = eval(to_eval, context)
+    ret = eval(to_eval, context)  # pylint:disable=eval-used
     if isinstance(ret, expected_type):
         return ret
     else:
         raise TypeError("Expected result of evaluating {!s} to be of type {!s} but "
                         "got {!s}".format(to_eval, expected_type, ret))
+
+
+def pathify(p: Union[str, Path]) -> Path:
+    """
+    Allow functions to take strings or proper `Path`s
+
+    If the input is a `Path`, it is returned unchanged. If a string, it is changed to a `Path`
+    """
+    if isinstance(p, Path):
+        return p
+    else:
+        return Path(p)

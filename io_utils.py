@@ -7,13 +7,14 @@ from io import BytesIO
 from pathlib import Path
 from types import TracebackType
 from typing import TextIO, AnyStr, Iterable, Optional, Iterator, Type, List, BinaryIO, Any, \
-    Mapping, Tuple
+    Mapping, Tuple, Union
 from zipfile import ZipFile
 
 from attr import attrs
 
 from flexnlp.utils.attrutils import attrib_instance_of
 from flexnlp.utils.immutablecollections import ImmutableDict
+from flexnlp.utils.misc_utils import pathify
 
 
 def is_empty_directory(path: Path) -> bool:
@@ -86,13 +87,13 @@ class CharSource(metaclass=ABCMeta):
         return _StringCharSource(s)
 
     @staticmethod
-    def from_file(p: Path) -> 'CharSource':
+    def from_file(p: Union[str, Path]) -> 'CharSource':
         """
         Get a source whose content is that of the given file.
 
         The file will be interpreted as UTF-8.
         """
-        return _FileCharSource(p)
+        return _FileCharSource(pathify(p))
 
     @staticmethod
     def from_gzipped_file(p: Path, encoding: str = 'utf-8') -> 'CharSource':
@@ -386,8 +387,8 @@ def write_doc_id_to_file_map(doc_id_to_file_map: Mapping[str, Path],
     """
     with sink.open() as out:
         for doc_id in sorted(doc_id_to_file_map.keys()):
-            out.write("{!s}\t{!s}\n".format(doc_id,
-                                          doc_id_to_file_map[doc_id].absolute()))
+            out.write("{!s}\t{!s}\n".format(
+                doc_id, doc_id_to_file_map[doc_id].absolute()))
 
 
 def read_doc_id_to_file_map(source: CharSource) -> Mapping[str, Path]:

@@ -137,7 +137,7 @@ class KeyValueLinearSource(Generic[K, V], metaclass=ABCMeta):
     .tar.gz files, lack efficient random access but can still be iterated over.
     """
 
-    def items(self, key_filter: Callable[[K], bool] = lambda: True) -> Iterator[Tuple[K, V]]:
+    def items(self, key_filter: Callable[[K], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
         raise NotImplementedError()
 
     @abstractmethod
@@ -193,11 +193,11 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         """
         return None
 
-    def items(self, key_filter: Callable[[K], bool] = lambda: True) -> Iterator[Tuple[K, V]]:
-        def generator_func() -> Tuple[K, V]:
+    def items(self, key_filter: Callable[[K], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
+        def generator_func() -> Iterator[Tuple[K, V]]:
             for key in self.keys():
                 if key_filter(key):
-                    yield self[key]
+                    yield (key, self[key])
 
         return generator_func()
 
@@ -268,7 +268,7 @@ class _DirectoryCharKeyValueSink(KeyValueSink[str, str]):
         CharSink.to_file(out_file).write(value)
         self.id_to_file[key] = out_file
 
-    def __enter__(self) -> 'KeyValueSink[K,V]':
+    def __enter__(self) -> 'KeyValueSink[str,str]':
         self._path.rmdir()
         self._path.mkdir(parents=True, exist_ok=True)
         self.id_to_file: MutableMapping[str, Path] = dict()
@@ -359,7 +359,7 @@ class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
         else:
             return _default
 
-    def __enter__(self) -> 'KeyValueSource[K,V]':
+    def __enter__(self) -> 'KeyValueSource[str,str]':
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
