@@ -189,6 +189,50 @@ class CharSink(metaclass=ABCMeta):
             out.write(data)
 
 
+class ByteSource(metaclass=ABCMeta):
+    """
+    Something which can provide byte data.
+
+    This abstracts over whether the byte data is coming from a filesystem path, a database,
+    a compressed file, etc.  This should be viewed as more analogous to a `Path` object than
+    to a file.
+    """
+
+    @abstractmethod
+    def open(self) -> BinaryIO:
+        """
+        Get a file-like object which reads from this ByteSource.
+        """
+        raise NotImplementedError()
+
+    def read(self, size=-1) -> bytes:
+        """
+        Read and return data from the stream.
+
+        If size is specified, at most size bytes will be read
+        """
+        with self.open() as binary_like:
+            return binary_like.read(size)
+
+    @staticmethod
+    def from_file(p: Path) -> 'ByteSource':
+        """
+        Get a source whose content is that of the given file.
+        """
+        return _FileByteSource(p)
+
+
+@attrs(slots=True, frozen=True)
+class _FileByteSource(ByteSource):
+    _path = attrib_instance_of(Path)
+
+    def open(self) -> BinaryIO:
+        return open(self._path, 'rb')
+
+    def is_empty(self) -> bool:
+        return os.path.getsize(self._path) == 0
+
+
 class ByteSink(metaclass=ABCMeta):
     """
     Something which can accept binary data.
