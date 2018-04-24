@@ -2,7 +2,7 @@ import importlib
 import re
 import time
 from pathlib import Path
-from typing import Any, Type, List, TypeVar, Dict, Union
+from typing import Any, Dict, List, Type, TypeVar, Union
 
 from flexnlp.model.document import Document
 from flexnlp.model.theory import Theory
@@ -245,3 +245,14 @@ def pathify(p: Union[str, Path]) -> Path:
         return p
     else:
         return Path(p)
+
+
+def strip_extension(name: str) -> str:
+    """
+    Remove a single extension from a file name, if present.
+    """
+    last_dot = name.rfind('.')
+    if last_dot > -1:
+        return name[:last_dot]
+    else:
+        return name
