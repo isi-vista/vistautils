@@ -2,12 +2,12 @@ import gzip
 import io
 import os
 import types
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
 from io import BytesIO
 from pathlib import Path
 from types import TracebackType
-from typing import TextIO, AnyStr, Iterable, Optional, Iterator, Type, List, BinaryIO, Any, \
-    Mapping, Tuple, Union
+from typing import Any, AnyStr, BinaryIO, Iterable, Iterator, List, Mapping, Optional, TextIO, \
+    Tuple, Type, Union
 from zipfile import ZipFile
 
 from attr import attrs
