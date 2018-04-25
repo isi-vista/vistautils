@@ -1,17 +1,20 @@
 import gzip
-import os
-from abc import abstractmethod, ABCMeta
 import io
+import os
+import types
+from abc import ABCMeta, abstractmethod
 from io import BytesIO
 from pathlib import Path
-import types
 from types import TracebackType
-from typing import TextIO, AnyStr, Iterable, Optional, Iterator, Type, List, BinaryIO, Any
+from typing import Any, AnyStr, BinaryIO, Iterable, Iterator, List, Mapping, Optional, TextIO, \
+    Tuple, Type, Union
 from zipfile import ZipFile
 
 from attr import attrs
 
 from flexnlp.utils.attrutils import attrib_instance_of
+from flexnlp.utils.immutablecollections import ImmutableDict
+from flexnlp.utils.misc_utils import pathify
 
 
 def is_empty_directory(path: Path) -> bool:
@@ -84,13 +87,13 @@ class CharSource(metaclass=ABCMeta):
         return _StringCharSource(s)
 
     @staticmethod
-    def from_file(p: Path) -> 'CharSource':
+    def from_file(p: Union[str, Path]) -> 'CharSource':
         """
         Get a source whose content is that of the given file.
 
         The file will be interpreted as UTF-8.
         """
-        return _FileCharSource(p)
+        return _FileCharSource(pathify(p))
 
     @staticmethod
     def from_gzipped_file(p: Path, encoding: str = 'utf-8') -> 'CharSource':
@@ -177,6 +180,15 @@ class CharSink(metaclass=ABCMeta):
         UTF-8 encoding will be used.
         """
         return _FileCharSink(p)
+
+    @staticmethod
+    def to_string() -> 'StringCharSink':
+        """
+        Gets a sink which writes to a string buffer.
+
+        See 'StringCharSink' for how to retrieve what has been written.
+        """
+        return StringCharSink()
 
     def write(self, data: str) -> None:
         """
@@ -362,12 +374,24 @@ class _NullCharSink(CharSink):
             pass
 
 
-@attrs(slots=True, frozen=True)
-class _StringCharSink(CharSink):
-    _string = attrib_instance_of(str)
+class StringCharSink(CharSink):
+    """
+    A sink which writes to a string buffer.
+
+    The last string written can be recovered from the 'last_string_written' field.
+    """
+    def __init__(self):
+        self.last_string_written = None
 
     def open(self) -> TextIO:
-        return io.StringIO(self._string)
+        outer_self = self
+
+        class StringFileLike(io.StringIO):
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                outer_self.last_string_written = self.getvalue()
+                super().__exit__(exc_type, exc_val, exc_tb)
+
+        return StringFileLike()
 
 
 @attrs(slots=True, frozen=True)
@@ -398,3 +422,31 @@ class _FileInZipByteSink(ByteSink):
 
         ret.close = types.MethodType(new_close, ret)  # type: ignore
         return ret  # type: ignore
+
+
+def write_doc_id_to_file_map(doc_id_to_file_map: Mapping[str, Path],
+                             sink: CharSink) -> None:
+    """
+    Writes a tab-separated docID-to-file-map to the specified sink.
+    """
+    with sink.open() as out:
+        for doc_id in sorted(doc_id_to_file_map.keys()):
+            out.write("{!s}\t{!s}\n".format(
+                doc_id, doc_id_to_file_map[doc_id].absolute()))
+
+
+def read_doc_id_to_file_map(source: CharSource) -> Mapping[str, Path]:
+    """
+    Read a tab-separate docID-to-file map from the specified source.
+    """
+    items: List[Tuple[str, Path]] = []
+    with source.open() as inp:
+        for (line_num, line) in enumerate(inp):
+            if line:
+                parts = line.split('\t')
+                if len(parts) == 2:
+                    items.append((parts[0].strip(), Path(parts[1].strip())))
+                else:
+                    raise IOError("Bad docID to file map line {!s}: {!s}".format(
+                        line_num, line))
+    return ImmutableDict.of(items)

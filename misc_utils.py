@@ -1,6 +1,8 @@
+import importlib
 import re
 import time
-from typing import Any, Type
+from pathlib import Path
+from typing import Any, Dict, List, Type, TypeVar, Union
 
 from flexnlp.model.document import Document
 from flexnlp.model.theory import Theory
@@ -193,3 +195,64 @@ class Timer:
 
     def __exit__(self, *args):
         self.stop()
+
+
+T = TypeVar('T')
+
+
+def eval_in_context_of_modules(to_eval: str, context: Dict, *,
+                               context_modules: List[str],
+                               expected_type: Type[T]) -> T:
+    """
+    Evaluate the given expression in the specified context.
+
+    Optionally, enforce that the result is of the expected type, throwing a
+    `RuntimeException` otherwise.
+
+    The context of evaluation will be that given by `context` augmented by the import of the
+    modules whose names are given in `context_modules`.  If you want this to be evaluated in the
+    context of the call site, pass `locals` as the context.
+
+    Just like with `eval` itself, never pass anything from an uncontrolled source to this method,
+    since it could allow arbitrary code execution.
+    """
+    # we make a copy so we do not alter the calling context
+    context = dict(context)
+
+    # import into the context to be used for evaluation any additional modules requested
+    for module_name in context_modules:
+        package_parts = module_name.split('.')
+        # emulate the import statement's behavior of importing parent packages
+        for package_part_idx in range(len(package_parts)):
+            package_name = '.'.join(package_parts[0:package_part_idx + 1])
+            if package_name not in context:
+                context[package_name] = importlib.import_module(package_name)
+    ret = eval(to_eval, context)  # pylint:disable=eval-used
+    if isinstance(ret, expected_type):
+        return ret
+    else:
+        raise TypeError("Expected result of evaluating {!s} to be of type {!s} but "
+                        "got {!s}".format(to_eval, expected_type, ret))
+
+
+def pathify(p: Union[str, Path]) -> Path:
+    """
+    Allow functions to take strings or proper `Path`s
+
+    If the input is a `Path`, it is returned unchanged. If a string, it is changed to a `Path`
+    """
+    if isinstance(p, Path):
+        return p
+    else:
+        return Path(p)
+
+
+def strip_extension(name: str) -> str:
+    """
+    Remove a single extension from a file name, if present.
+    """
+    last_dot = name.rfind('.')
+    if last_dot > -1:
+        return name[:last_dot]
+    else:
+        return name
