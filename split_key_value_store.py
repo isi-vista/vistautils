@@ -18,7 +18,7 @@ from contextlib import ExitStack
 
 from flexnlp.parameters import Parameters, YAMLParametersLoader
 from flexnlp.utils.io_utils import CharSink
-from flexnlp.utils.key_value import char_key_value_source_from_params, KeyValueSink
+from flexnlp.utils.key_value import char_key_value_linear_source_from_params, KeyValueSink
 
 
 def main(params: Parameters):
@@ -33,10 +33,9 @@ def main(params: Parameters):
     with ExitStack() as exit_stack:
         for output_sink in output_sinks:
             exit_stack.enter_context(output_sink)
-        with char_key_value_source_from_params('input', params) as input_source:
-            for (i, key) in enumerate(input_source.keys()):
-                output_sinks[i % slices].put(key, input_source[key])
-
+        with char_key_value_linear_source_from_params('input', params) as input_source:
+            for (i, v) in enumerate(input_source.items()):
+                output_sinks[i % slices].put(v[0], v[1])
 
 if __name__ == '__main__':
     main(YAMLParametersLoader().load(sys.argv[1]))
