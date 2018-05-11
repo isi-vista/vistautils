@@ -1,10 +1,15 @@
 import shutil
+import tarfile
 import tempfile
 from pathlib import Path
 from unittest import TestCase
 
+from io import BytesIO
+
+from typing import Optional
+
 from flexnlp.utils.immutablecollections import ImmutableSet
-from flexnlp.utils.key_value import KeyValueSink, KeyValueSource
+from flexnlp.utils.key_value import KeyValueSink, KeyValueSource, KeyValueLinearSource
 
 
 class TestKeyValue(TestCase):
@@ -80,3 +85,35 @@ class TestKeyValue(TestCase):
 
         shutil.rmtree(str(tmp_dir))
 
+    def test_tgz_chars(self):
+        tmp_dir = Path(tempfile.mkdtemp())
+
+        def write_string_to_tar(key: str, val: str):
+            val_bytes = BytesIO(val.encode('utf-8'))
+            info = tarfile.TarInfo(name=key)
+            info.size = len(val_bytes.getvalue())
+            tar_file.addfile(info, val_bytes)
+
+        # manually make a three-element tar file for testing
+        with tarfile.open(tmp_dir / 'tmp.tgz', 'w:gz') as tar_file:
+            write_string_to_tar("foo123", "hello")
+            write_string_to_tar("meepbadmeep", "i should get filtered out")
+            write_string_to_tar("bar3435", "world")
+            write_string_to_tar("a", "thrown out because key too short")
+
+        def filter_out_keys_containing_bad(key: str) -> bool:
+            return 'bad' not in key
+
+        def keep_only_first_three_chars_of_key_ban_too_short(key: str) -> Optional[str]:
+            if len(key) < 3:
+                return None
+            else:
+                return key[0:3]
+
+        with KeyValueLinearSource.str_linear_source_from_tar_gz(
+                tmp_dir / 'tmp.tgz', name_filter=filter_out_keys_containing_bad,
+                key_function=keep_only_first_three_chars_of_key_ban_too_short) as source:
+            vals = set([x for x in source.items()])
+            self.assertEqual({("foo", "hello"), ("bar", "world")}, vals)
+
+        shutil.rmtree(str(tmp_dir))
