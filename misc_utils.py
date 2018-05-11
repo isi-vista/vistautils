@@ -1,4 +1,5 @@
 import importlib
+from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Type, TypeVar, Union
 
@@ -87,3 +88,12 @@ def strip_extension(name: str) -> str:
         return name[:last_dot]
     else:
         return name
+
+
+def flatten_once_to_list(iterable_of_iterables: Iterable[Iterable[T]]) -> Iterable[T]:
+    """
+    Removes one level of nesting from nested iterables.
+
+    Taken from the itertools recipes.
+    """
+    return list(chain.from_iterable(iterable_of_iterables))
