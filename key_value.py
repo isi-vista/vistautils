@@ -1,4 +1,6 @@
+import tarfile
 from abc import abstractmethod, ABCMeta
+from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Generic, TypeVar, Callable, Optional, AbstractSet, Set, Mapping, \
     MutableMapping, Tuple, Iterator, Union, Dict
@@ -129,7 +131,7 @@ class KeyValueSink(Generic[K, V], metaclass=ABCMeta):
                                          keys_out_function=keys_out_function)
 
 
-class KeyValueLinearSource(Generic[K, V], metaclass=ABCMeta):
+class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCMeta):
     """
     Anything which provide a sequence of key-value pairs.
 
@@ -140,13 +142,58 @@ class KeyValueLinearSource(Generic[K, V], metaclass=ABCMeta):
     def items(self, key_filter: Callable[[K], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
         raise NotImplementedError()
 
-    @abstractmethod
-    def __enter__(self) -> 'KeyValueLinearSource[K,V]':
-        raise NotImplementedError()
+    @staticmethod
+    def byte_linear_source_from_tar_gz(
+            tgz_file: Path, key_function: Callable[[str], Optional[str]] = lambda x: x,
+            name_filter: Callable[[str], bool] = lambda x: True) \
+            -> 'KeyValueLinearSource[str,bytes]':
+        """
+        Expose a .tar.gz file as a str-bytes `KeyValueLinearSource`.
 
-    @abstractmethod
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        raise NotImplementedError()
+        This returns `KeyValueLinearSource` and not `KeyValueSource` because random-access
+        is slow in TAR files.
+
+        This will expose a sequence of key-value pairs for a .tar.gz file. By default, the keys
+        are the keys within the .tar.gz file structure, which are typically relative paths, and the
+        values are the byte content of that TAR file entry.
+
+        If `name_filter` is specified, it will be call with the TAR file key for an entry; that
+        entry
+        will be processed only if `name_filter` returns `True`.
+
+        If `key_function` is specified, it will be applied to the TAR file key for an entry and the
+        string returned will be used as the key instead.  If `None` is returned, that entry is
+        skipped.
+        """
+        return TarGzipBytesLinearKeyValueSource(tgz_file, key_function, name_filter)
+
+    @staticmethod
+    def str_linear_source_from_tar_gz(
+            tgz_file: Path, key_function: Callable[[str], Optional[str]] = lambda x: x,
+            name_filter: Callable[[str], bool] = lambda x: True) \
+            -> 'KeyValueLinearSource[str,bytes]':
+        """
+        Exposes a .tar.gz file as a str-str `KeyValueLinearSource`.
+
+        Exactly like `byte_linear_source_from_gz`, except the values are interpreted as UTF-8
+        strings.
+        """
+        return KeyValueLinearSource.interpret_values(
+            KeyValueLinearSource.byte_linear_source_from_tar_gz(tgz_file,
+                                                                key_function, name_filter),
+            lambda x: x.decode('utf-8'))
+
+    @staticmethod
+    def interpret_values(wrapped: 'KeyValueLinearSource[str, bytes]',
+                         interpretation_function: Callable[[bytes], V])\
+            -> 'KeyValueLinearSource[str, V]':
+        """
+        Make a key-value linear source which interprets the values of another.
+
+        This returns the same values are the wrapped source, except the values in each key-value
+        pair of the wrapped source are replaced by the result of applying `interpretation_function`
+        """
+        return InterpretedLinearKeyValueSource(wrapped, interpretation_function)
 
 
 class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMeta):
@@ -200,10 +247,6 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
                     yield (key, self[key])
 
         return generator_func()
-
-    @abstractmethod
-    def __enter__(self) -> 'KeyValueSource[K,V]':
-        raise NotImplementedError()
 
     @staticmethod
     def from_path_mapping(id_to_path: Mapping[str, Path]) -> 'KeyValueSource[str, str]':
@@ -359,11 +402,8 @@ class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
         else:
             return _default
 
-    def __enter__(self) -> 'KeyValueSource[str,str]':
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        pass
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
 
 
 class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMeta):
@@ -445,6 +485,81 @@ class _ZipCharFileKeyValuesSource(_ZipFileKeyValueSource[str]):
         functions will be added in the future.
         """
         return KeyValueSource.zip_character_source(params.existing_file('path'))
+
+
+class TarGzipBytesLinearKeyValueSource(KeyValueLinearSource[str, bytes]):
+    """
+    Expose a .tar.gz file as a str-bytes `KeyValueLinearSource`.
+
+    See `KeyValueLinearSource.byte_linear_source_from_tar_gz` for documentation.
+
+    This sub-classes `KeyValueLinearSource` and not `KeyValueSource` because random-access
+    is slow in TAR files.
+
+    This will expose a sequence of key-value pairs for a .tar.gz file. By default, the keys
+    are the keys within the .tar.gz file structure, which are typically relative paths, and the
+    values are the byte content of that TAR file entry.
+
+    If `name_filter` is specified, it will be call with the TAR file key for an entry; that entry
+    will be processed only if `name_filter` returns `True`.
+
+    If `key_function` is specified, it will be applied to the TAR file key for an entry and the
+    string returned will be used as the key instead.  If `None` is returned, that entry is
+    skipped.
+    """
+    def __init__(self, tgz_path: Path, key_function: Callable[[str], Optional[str]] = lambda x: x,
+                                      name_filter: Callable[[str], bool] = lambda x: True):
+        self.tgz_path = tgz_path
+        self.inp: tarfile.TarFile = None
+        self.key_function = key_function
+        self.name_filter = name_filter
+
+    def items(self, key_filter: Callable[[K], bool] = lambda x: True) \
+            -> Iterator[Tuple[str, bytes]]:
+        check_state(self.inp, "Need to enter TarGZipBytesLinearKeyValueSource as context "
+                              "manager before using it.")
+
+        def generator_function() -> Iterator[Tuple[str, bytes]]:
+            for member in self.inp:
+                if member.isfile() and self.name_filter(member.name):
+                    key = self.key_function(member.name)
+                    if key:
+                        with self.inp.extractfile(member) as data:
+                            yield (key, data.read())
+        return generator_function()
+
+    def __enter__(self) -> 'KeyValueLinearSource[K,V]':
+        self.inp = tarfile.open(self.tgz_path, 'r')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        self.inp.close()
+        return False
+
+
+class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
+    """
+    Key-value linear source which interprets the values of another.
+
+    See `KeyValueLinearSource.interpret_values` for details.
+    """
+    def __init__(self, wrapped_source: KeyValueLinearSource[str, bytes],
+                 interpretation_function: Callable[[bytes], V]):
+        self.wrapped_source = wrapped_source
+        self.interpretation_function = interpretation_function
+
+    def items(self, key_filter: Callable[[K], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
+        def generator_function() -> Iterator[Tuple[str, V]]:
+            for wrapped_pair in self.wrapped_source.items():
+                yield wrapped_pair[0], self.interpretation_function(wrapped_pair[1])
+        return generator_function()  # type: ignore
+
+    def __enter__(self) -> 'KeyValueLinearSource[K,V]':
+        self.wrapped_source.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        return self.wrapped_source.__exit__(exc_type, exc_val, exc_tb)
 
 
 _CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES = {
