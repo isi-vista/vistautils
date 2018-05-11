@@ -37,5 +37,6 @@ def main(params: Parameters):
             for (i, v) in enumerate(input_source.items()):
                 output_sinks[i % slices].put(v[0], v[1])
 
+
 if __name__ == '__main__':
     main(YAMLParametersLoader().load(sys.argv[1]))

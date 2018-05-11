@@ -193,5 +193,3 @@ class Timer:
 
     def __exit__(self, *args):
         self.stop()
-
-

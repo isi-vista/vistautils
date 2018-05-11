@@ -1,5 +1,5 @@
 """Python versions of Guava-like checks."""
-from typing import Any, Union, Tuple, Iterable, TypeVar, Container
+from typing import Any, Union, Tuple, Iterable, TypeVar
 
 # Disable naming convention warnings for type aliases
 # pylint: disable=invalid-name

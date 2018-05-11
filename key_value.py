@@ -171,7 +171,7 @@ class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCM
     def str_linear_source_from_tar_gz(
             tgz_file: Path, key_function: Callable[[str], Optional[str]] = lambda x: x,
             name_filter: Callable[[str], bool] = lambda x: True) \
-            -> 'KeyValueLinearSource[str,bytes]':
+            -> 'KeyValueLinearSource[str,str]':
         """
         Exposes a .tar.gz file as a str-str `KeyValueLinearSource`.
 
@@ -185,7 +185,7 @@ class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCM
 
     @staticmethod
     def interpret_values(wrapped: 'KeyValueLinearSource[str, bytes]',
-                         interpretation_function: Callable[[bytes], V])\
+                         interpretation_function: Callable[[bytes], V]) \
             -> 'KeyValueLinearSource[str, V]':
         """
         Make a key-value linear source which interprets the values of another.
@@ -507,14 +507,15 @@ class TarGzipBytesLinearKeyValueSource(KeyValueLinearSource[str, bytes]):
     string returned will be used as the key instead.  If `None` is returned, that entry is
     skipped.
     """
+
     def __init__(self, tgz_path: Path, key_function: Callable[[str], Optional[str]] = lambda x: x,
-                                      name_filter: Callable[[str], bool] = lambda x: True):
+                 name_filter: Callable[[str], bool] = lambda x: True) -> None:
         self.tgz_path = tgz_path
         self.inp: tarfile.TarFile = None
         self.key_function = key_function
         self.name_filter = name_filter
 
-    def items(self, key_filter: Callable[[K], bool] = lambda x: True) \
+    def items(self, key_filter: Callable[[str], bool] = lambda x: True) \
             -> Iterator[Tuple[str, bytes]]:
         check_state(self.inp, "Need to enter TarGZipBytesLinearKeyValueSource as context "
                               "manager before using it.")
@@ -523,12 +524,13 @@ class TarGzipBytesLinearKeyValueSource(KeyValueLinearSource[str, bytes]):
             for member in self.inp:
                 if member.isfile() and self.name_filter(member.name):
                     key = self.key_function(member.name)
-                    if key:
+                    if key and key_filter(key):
                         with self.inp.extractfile(member) as data:
                             yield (key, data.read())
+
         return generator_function()
 
-    def __enter__(self) -> 'KeyValueLinearSource[K,V]':
+    def __enter__(self) -> 'KeyValueLinearSource[str,bytes]':
         self.inp = tarfile.open(self.tgz_path, 'r')
         return self
 
@@ -543,18 +545,20 @@ class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
 
     See `KeyValueLinearSource.interpret_values` for details.
     """
+
     def __init__(self, wrapped_source: KeyValueLinearSource[str, bytes],
-                 interpretation_function: Callable[[bytes], V]):
+                 interpretation_function: Callable[[bytes], V]) -> None:
         self.wrapped_source = wrapped_source
         self.interpretation_function = interpretation_function
 
-    def items(self, key_filter: Callable[[K], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
+    def items(self, key_filter: Callable[[str], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
         def generator_function() -> Iterator[Tuple[str, V]]:
-            for wrapped_pair in self.wrapped_source.items():
+            for wrapped_pair in self.wrapped_source.items(key_filter=key_filter):
                 yield wrapped_pair[0], self.interpretation_function(wrapped_pair[1])
+
         return generator_function()  # type: ignore
 
-    def __enter__(self) -> 'KeyValueLinearSource[K,V]':
+    def __enter__(self) -> 'KeyValueLinearSource[str,V]':
         self.wrapped_source.__enter__()
         return self
 
