@@ -90,7 +90,7 @@ def strip_extension(name: str) -> str:
         return name
 
 
-def flatten_once_to_list(iterable_of_iterables: Iterable[Iterable[T]]) -> Iterable[T]:
+def flatten_once_to_list(iterable_of_iterables: Iterable[Iterable[T]]) -> List[T]:
     """
     Removes one level of nesting from nested iterables.
 
