@@ -94,14 +94,9 @@ class HTMLStyleAnnotationFormatter:
         ret = io.StringIO()
         last_uncopied_offset = 0
         for tag in self._tag_sequence(processed_annotations):
-            if tag.is_start and last_uncopied_offset < tag.offset:
-                # start tag comes *before* the offset it is associated with, hence <
+            if last_uncopied_offset < tag.offset:
                 ret.write(text[last_uncopied_offset:tag.offset])
                 last_uncopied_offset = tag.offset
-            elif (not tag.is_start) and last_uncopied_offset <= tag.offset:
-                # end tag comes *after* the offset it is associated with, hence <=, +1
-                ret.write(text[last_uncopied_offset:tag.offset + 1])
-                last_uncopied_offset = tag.offset + 1
 
             ret.write(tag.string)
 
@@ -164,7 +159,7 @@ class HTMLStyleAnnotationFormatter:
 
         start_tags = (HTMLStyleAnnotationFormatter.Tag(to_start_tag(ann), True, ann.span.start)
                       for ann in sorted(annotations, key=start_tag_key))
-        end_tags = (HTMLStyleAnnotationFormatter.Tag(to_end_tag(ann), True, ann.span.end)
+        end_tags = (HTMLStyleAnnotationFormatter.Tag(to_end_tag(ann), False, ann.span.end)
                     for ann in sorted(annotations, key=end_tag_key))
 
         # interleave the start and end tag lists
@@ -172,6 +167,6 @@ class HTMLStyleAnnotationFormatter:
         # to avoid crossing elements
         # "sorted" is stable so the relative order of start and end tags is maintained
         return sorted(itertools.chain(end_tags, start_tags),
-                      # True is less than False, but we want start tags before ends tags,
-                      # hence the "not"
-                      key=lambda tag: (tag.offset, not tag.is_start))
+                      # True is less than False, which is fine because we want end tags
+                      # before start tags,
+                      key=lambda tag: (tag.offset, tag.is_start))
