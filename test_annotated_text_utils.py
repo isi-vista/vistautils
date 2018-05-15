@@ -20,11 +20,12 @@ class TestAnnotatedTextUtils(TestCase):
             AnnotatedSpan('LINE', Span(36, 75)),
             AnnotatedSpan('PP', Span(61, 75)),
             AnnotatedSpan('ELLIPSES', Span(75, 78)),
-            AnnotatedSpan('FOO', Span(7, 19))]
+            AnnotatedSpan('FOO', Span(7, 19)),
+            AnnotatedSpan('SINGLE_CHAR', Span(61, 62))]
 
         expected_result = ("<LINE><FOO>T<BAR>i</BAR>me present</FOO> and time past</LINE> "
-                           "/ <LINE>Are both perhaps present <PP>in time future</PP></LINE>"
-                           "<ELLIPSES>...</ELLIPSES>")
+                           "/ <LINE>Are both perhaps present <PP><SINGLE_CHAR>i</SINGLE_CHAR>n "
+                           "time future</PP></LINE><ELLIPSES>...</ELLIPSES>")
 
         self.assertEqual(expected_result,
                          HTMLStyleAnnotationFormatter().annotated_text(
