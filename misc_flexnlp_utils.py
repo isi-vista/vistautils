@@ -109,23 +109,6 @@ def fully_qualified_name(obj: Any) -> str:
 
 
 # TODO: Use correct type hint for input_theory_ids (circular import problem with TheoryIdMap)
-def get_theory_id(theory_ids, theory_type: Type[Theory]) -> str:
-    theory_id = None
-    if theory_ids:
-        value = theory_ids.get(theory_type)
-        if value is not None:
-            if isinstance(value, str):
-                if value == '*':
-                    raise TypeError('* not supported for single theory')
-                else:
-                    theory_id = value
-            else:
-                raise TypeError('expected str, got: {}'.format(
-                    type(value)))
-    return theory_id
-
-
-# TODO: Use correct type hint for input_theory_ids (circular import problem with TheoryIdMap)
 def text_span_iterator(doc: Document, use_regions: bool, use_sentences: bool):
     """
     Return an iterator over consecutive, ordered spans of text.
