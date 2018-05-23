@@ -268,6 +268,15 @@ class ByteSink(metaclass=ABCMeta):
         """
         return _FileInZipByteSink(zip_file, filename_in_zip)
 
+    @staticmethod
+    def to_buffer() -> 'BufferByteSink':
+        """
+        Get a sink which writes to a buffer in memory.
+
+        The last bytes written can be read using methods on `BufferByteSink`
+        """
+        return BufferByteSink()
+
     def write(self, data: bytes) -> None:
         """
         Write the given data to the sink.
@@ -422,6 +431,26 @@ class _FileInZipByteSink(ByteSink):
 
         ret.close = types.MethodType(new_close, ret)  # type: ignore
         return ret  # type: ignore
+
+
+class BufferByteSink(ByteSink):
+    """
+    A sink which writes to a byte buffer.
+
+    The last byte string written can be recovered from the 'last_bytes_written' field.
+    """
+    def __init__(self):
+        self.last_bytes_written: bytes = None
+
+    def open(self) -> BytesIO:
+        outer_self = self
+
+        class BytesFileLike(io.BytesIO):
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                outer_self.last_bytes_written = self.getvalue()
+                super().__exit__(exc_type, exc_val, exc_tb)
+
+        return BytesFileLike()
 
 
 def write_doc_id_to_file_map(doc_id_to_file_map: Mapping[str, Path],
