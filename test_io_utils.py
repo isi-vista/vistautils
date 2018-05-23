@@ -95,6 +95,11 @@ class TestIOUtils(TestCase):
         string_sink.write("hello world")
         self.assertEqual("hello world", string_sink.last_string_written)
 
+    def test_byte_buffer_sink(self):
+        byte_sink = ByteSink.to_buffer()
+        byte_sink.write("hello world".encode('utf-8'))
+        self.assertEqual("hello world", byte_sink.last_bytes_written.decode('utf-8'))
+
     def test_read_write_doc_id_to_file_map(self):
         map = ImmutableDict.of([('foo', Path('/home/foo')), ('bar', Path('/home/bar'))])
         string_sink = CharSink.to_string()
