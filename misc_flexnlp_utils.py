@@ -1,9 +1,8 @@
 import re
 import time
-from typing import Any, Type
+from typing import Any
 
 from flexnlp.model.document import Document
-from flexnlp.model.theory import Theory
 
 _WHITESPACE_RE = re.compile(r'\s+')
 
