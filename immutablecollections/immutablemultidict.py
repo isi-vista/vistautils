@@ -1,7 +1,7 @@
 from abc import ABCMeta
 from collections import defaultdict
 from typing import Iterable, Mapping, TypeVar, Iterator, Generic, Callable, Any, MutableMapping, \
-    Optional  # pylint:disable=unused-import
+    Optional, Tuple, Union  # pylint:disable=unused-import
 
 from attr import attrs, attrib
 from frozendict import frozendict
@@ -12,10 +12,13 @@ from flexnlp.utils.preconditions import check_isinstance
 
 KT = TypeVar('KT')
 VT = TypeVar('VT')
+IT = Tuple[KT, VT]  # item type
 
 # cannot share type variables between out and inner classes
 KT2 = TypeVar('KT2')
 VT2 = TypeVar('VT2')
+IT2 = Tuple[KT2, VT2]  # item type
+
 
 SelfType = TypeVar('SelfType')  # pylint:disable=invalid-name
 
@@ -40,11 +43,22 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
     # Signature of the of method varies by collection
     # pylint: disable = arguments-differ
     @staticmethod
-    def of(dict_: Mapping[KT, Iterable[VT]]) -> 'ImmutableSetMultiDict[KT, VT]':
-        if isinstance(dict_, ImmutableSetMultiDict):
-            return dict_
+    def of(data: Union[Mapping[KT, Iterable[VT]], Iterable[IT]]) -> \
+            'ImmutableSetMultiDict[KT, VT]':
+        """
+        Creates an ImmutableSetMultiDict from existing data.
+
+        If an existing ImmutableSetMultiDict is passed, it is simply returned.
+        If a mapping from keys to sequences of values is passed, each key paired with each
+        of its corresponding values it added to the mapping.
+        If a sequence of key-value pair tuples is passed, each is added to the mapping.
+        """
+        if isinstance(data, ImmutableSetMultiDict):
+            return data
+        elif isinstance(data, Mapping):
+            return ImmutableSetMultiDict.builder().put_all(data).build()  # type: ignore
         else:
-            return ImmutableSetMultiDict.builder().put_all(dict_).build()  # type: ignore
+            return ImmutableSetMultiDict.builder().put_all_items(data).build()  # type: ignore
 
     @staticmethod
     def empty() -> 'ImmutableSetMultiDict[KT, VT]':
@@ -119,10 +133,18 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
             self._dirty = True
             return self
 
-        def put_all(self: SelfType, dict_: Mapping[KT2, Iterable[VT2]]) -> SelfType:
-            for (k, values) in dict_.items():
+        def put_all(self: SelfType, data: Mapping[KT2, Iterable[VT2]]) -> SelfType:
+            for (k, values) in data.items():
                 for v in values:
                     self.put(k, v)
+            return self
+
+        def put_all_items(self: SelfType, data: Iterable[IT2]) -> SelfType:
+            """
+            Adds each key-value mapping from a sequence of key-value tuples.
+            """
+            for (k, v) in data:
+                self.put(k, v)
             return self
 
         def build(self) -> 'ImmutableSetMultiDict[KT2, VT2]':
@@ -171,11 +193,14 @@ class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableLi
     # Signature of the of method varies by collection
     # pylint: disable = arguments-differ
     @staticmethod
-    def of(dict_: Mapping[KT, Iterable[VT]]) -> 'ImmutableListMultiDict[KT, VT]':
-        if isinstance(dict_, ImmutableListMultiDict):
-            return dict_
+    def of(data: Union[Mapping[KT, Iterable[VT]], Iterable[IT]]) -> \
+            'ImmutableListMultiDict[KT, VT]':
+        if isinstance(data, ImmutableListMultiDict):
+            return data
+        elif isinstance(data, Mapping):
+            return ImmutableListMultiDict.builder().put_all(data).build()  # type: ignore
         else:
-            return ImmutableListMultiDict.builder().put_all(dict_).build()  # type: ignore
+            return ImmutableListMultiDict.builder().put_all_items(data).build()  # type: ignore
 
     @staticmethod
     def empty() -> 'ImmutableListMultiDict[KT, VT]':
@@ -252,6 +277,14 @@ class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableLi
             for (k, values) in dict_.items():
                 for v in values:
                     self.put(k, v)
+            return self
+
+        def put_all_items(self: SelfType, data: Iterable[IT2]) -> SelfType:
+            """
+            Adds each key-value mapping from a sequence of key-value tuples.
+            """
+            for (k, v) in data:
+                self.put(k, v)
             return self
 
         def build(self) -> 'ImmutableListMultiDict[KT2, VT2]':
