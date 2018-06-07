@@ -1,6 +1,7 @@
 import gzip
 import io
 import os
+import tarfile
 import types
 from abc import ABCMeta, abstractmethod
 from io import BytesIO
@@ -106,6 +107,17 @@ class CharSource(metaclass=ABCMeta):
         """
         return _GZipFileSource(p, encoding)
 
+    @staticmethod
+    def from_file_in_tgz(tgz_path: Path,
+                         path_within_tgz: str, encoding: str = 'utf-8') -> 'CharSource':
+        """
+        Gets a source whose content is that of the file at the given path within a .tar.gz file.
+
+        Note that because .tar.gz files don't support random access, using this can be slow. In
+        particular, avoid using this in a loop.
+        """
+        return _FileWithinTgzCharSource(tgz_path, path_within_tgz, encoding)
+
 
 @attrs(slots=True, frozen=True)
 class _StringCharSource(CharSource):
@@ -141,6 +153,34 @@ class _GZipFileSource(CharSource):
         with gzip.open(self._path) as inp:
             data = inp.read(1)
         return len(data) == 0
+
+
+@attrs(slots=True, frozen=True)
+class _FileWithinTgzCharSource(CharSource):
+    _tgz_path: Path = attrib_instance_of(Path)
+    _path_within_tgz: str = attrib_instance_of(str)
+    _encoding: str = attrib_instance_of(str)
+
+    def open(self) -> TextIO:
+        tgz_file = tarfile.open(self._tgz_path, 'r:gz', encoding=self._encoding)
+        # extractfile here returns  binary file object. We are lazy here and load it all into
+        # memory to make dealing with the encoding issues simple
+        ret = CharSource.from_string(tgz_file.extractfile(self._path_within_tgz).read().decode(
+            self._encoding)).open()
+        # we need to fiddle with the close method on the returned TextIO so that when it is
+        # closed the containing zip file is closed as well
+        old_close = ret.close
+
+        def new_close(self):
+            old_close()
+            tgz_file.close()
+
+        ret.close = types.MethodType(new_close, ret)  # type: ignore
+        return ret
+
+    def is_empty(self) -> bool:
+        tgz_file = tarfile.open(self._tgz_path, 'r:gz', encoding=self._encoding)
+        return tgz_file.getmember(self._path_within_tgz).size == 0
 
 
 class CharSink(metaclass=ABCMeta):
