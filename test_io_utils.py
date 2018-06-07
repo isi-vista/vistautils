@@ -1,9 +1,11 @@
 import shutil
+import tarfile
 import tempfile
 from pathlib import Path
 from unittest import TestCase
 from zipfile import ZipFile
 
+import os
 from attr import attrs
 
 from flexnlp.parameters import Parameters
@@ -53,6 +55,13 @@ class TestIOUtils(TestCase):
             Path(__file__).parent / 'empty_gzip.txt.gz')
         self.assertTrue(source.is_empty())
         self.assertEqual("", source.read_all())
+
+    def test_from_within_tgz_file(self):
+        # prepare test archive
+        file_path = Path(__file__).parent / 'test_read_from_tar.tgz'
+        path_within_tgz = './hello/world'
+        self.assertEqual('hello\nworld\n', CharSource.from_file_in_tgz(file_path, path_within_tgz,
+                                                                     'utf-8').read_all())
 
     def test_null_sink(self):
         sink = CharSink.to_nowhere()
