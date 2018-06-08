@@ -173,7 +173,7 @@ class CharSink(metaclass=ABCMeta):
         return _NullCharSink()
 
     @staticmethod
-    def to_file(p: Path) -> 'CharSink':
+    def to_file(p: Union[Path, str]) -> 'CharSink':
         """
         Get a sink which writes to the given path.
 
@@ -405,7 +405,7 @@ class StringCharSink(CharSink):
 
 @attrs(slots=True, frozen=True)
 class _FileCharSink(CharSink):
-    _path = attrib_instance_of(Path)
+    _path: Union[Path, str] = attrib_instance_of((Path, str))
 
     def open(self) -> TextIO:
         return open(self._path, 'w')
