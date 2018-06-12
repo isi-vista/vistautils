@@ -7,8 +7,8 @@ from abc import ABCMeta, abstractmethod
 from io import BytesIO
 from pathlib import Path
 from types import TracebackType
-from typing import Any, AnyStr, BinaryIO, Iterable, Iterator, List, Mapping, Optional, TextIO, \
-    Tuple, Type, Union
+from typing import Any, AnyStr, BinaryIO, Callable, Iterable, Iterator, List, Mapping, Optional, \
+    TextIO, Tuple, Type, Union
 from zipfile import ZipFile
 
 from attr import attrs
@@ -169,10 +169,10 @@ class _FileWithinTgzCharSource(CharSource):
             self._encoding)).open()
         # we need to fiddle with the close method on the returned TextIO so that when it is
         # closed the containing zip file is closed as well
-        old_close = ret.close
+        old_close: Callable = ret.close
 
-        def new_close(self):
-            old_close()
+        def new_close(_):
+            old_close()  # pylint:disable=not-callable
             tgz_file.close()
 
         ret.close = types.MethodType(new_close, ret)  # type: ignore
