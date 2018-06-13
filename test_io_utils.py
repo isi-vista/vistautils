@@ -11,8 +11,8 @@ from attr import attrs
 from flexnlp.parameters import Parameters
 from flexnlp.utils.attrutils import attrib_instance_of
 from flexnlp.utils.immutablecollections import ImmutableDict
-from flexnlp.utils.io_utils import CharSource, CharSink, ByteSink, write_doc_id_to_file_map, \
-    read_doc_id_to_file_map
+from flexnlp.utils.io_utils import ByteSink, CharSink, CharSource, read_doc_id_to_file_map, \
+    write_doc_id_to_file_map
 
 
 class TestIOUtils(TestCase):
@@ -75,6 +75,15 @@ class TestIOUtils(TestCase):
         sink = CharSink.to_file(file_path)
         sink.write('hello\n\nworld\n')
         source = CharSource.from_file(file_path)
+        self.assertEqual('hello\n\nworld\n', source.read_all())
+        shutil.rmtree(str(tmp_dir))
+
+    def test_to_file_write_string_arg(self):
+        tmp_dir = Path(tempfile.mkdtemp())
+        file_path = tmp_dir / 'test.txt'
+        sink = CharSink.to_file(str(file_path))
+        sink.write('hello\n\nworld\n')
+        source = CharSource.from_file(str(file_path))
         self.assertEqual('hello\n\nworld\n', source.read_all())
         shutil.rmtree(str(tmp_dir))
 
