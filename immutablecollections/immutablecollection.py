@@ -1,10 +1,10 @@
-from abc import abstractmethod, ABCMeta
-from typing import Generic, TypeVar, Iterator
+from abc import ABCMeta, abstractmethod
+from typing import Generic, Iterable, Iterator, TypeVar
 
 T = TypeVar('T')
 
 
-class ImmutableCollection(Generic[T], metaclass=ABCMeta):
+class ImmutableCollection(Generic[T], Iterable[T], metaclass=ABCMeta):
     __slots__ = ()
 
     @abstractmethod

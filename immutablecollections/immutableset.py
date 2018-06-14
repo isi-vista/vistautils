@@ -16,7 +16,7 @@ SelfType = TypeVar('SelfType')  # pylint:disable=invalid-name
 
 
 # typing.AbstractSet matches collections.abc.Set
-class ImmutableSet(ImmutableCollection[T], AbstractSet[T], metaclass=ABCMeta):
+class ImmutableSet(Generic[T], ImmutableCollection[T], AbstractSet[T], metaclass=ABCMeta):
     __slots__ = ()
     """
     A immutable set with deterministic iteration order.

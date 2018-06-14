@@ -1,12 +1,13 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from collections import defaultdict
-from typing import Iterable, Mapping, TypeVar, Iterator, Generic, Callable, Any, MutableMapping, \
-    Optional, Tuple, Union  # pylint:disable=unused-import
+from typing import AbstractSet, Any, Callable, Collection, Generic, Iterable, Iterator, Mapping, \
+    MutableMapping, Optional, Tuple, TypeVar, Union, \
+    ValuesView  # pylint:disable=unused-import
 
-from attr import attrs, attrib
+from attr import attrib, attrs
 from frozendict import frozendict
 
-from flexnlp.utils.immutablecollections import ImmutableSet, ImmutableList
+from flexnlp.utils.immutablecollections import ImmutableList, ImmutableSet
 from flexnlp.utils.immutablecollections.immutablecollection import ImmutableCollection
 from flexnlp.utils.preconditions import check_isinstance
 
@@ -19,20 +20,63 @@ KT2 = TypeVar('KT2')
 VT2 = TypeVar('VT2')
 IT2 = Tuple[KT2, VT2]  # item type
 
-
 SelfType = TypeVar('SelfType')  # pylint:disable=invalid-name
 
 
-# TODO: it is incorrect to implement mapping because we don't want .values() to return
-# a collection of sets (but rather a collection of VTs). If this is fixed, update
-# DocumentBuilder.build() (at least)
-class ImmutableMultiDict(ImmutableCollection[KT], Mapping[KT, Iterable[VT]], metaclass=ABCMeta):
+class ImmutableMultiDict(ImmutableCollection[KT], Generic[KT, VT], metaclass=ABCMeta):
     __slots__ = ()
+
+    def value_groups(self) -> ValuesView[Collection[VT]]:
+        """
+        Gets an object containing the groups of values for keys in this MultiDict.
+
+        If you iterate over this you will get collections, where each collection contains
+        the values corresponding to a single key
+        """
+        return self.as_dict().values()
+
+    @abstractmethod
+    def __getitem__(self, key: KT) -> Collection[VT]:
+        """
+        Gets the collection of values a key maps to.
+
+        If there are not such values, an empty collection is returned.
+        """
+
+    def __contains__(self, key: KT) -> bool:
+        """
+        Returns true if there is at least one value associated with `key`
+        """
+        return key in self.as_dict()
+
+    def keys(self) -> AbstractSet:
+        """
+        Gets a set-like object containing the keys of this multidict.
+        """
+        return self.as_dict().keys()
+
+    @abstractmethod
+    def __len__(self) -> int:
+        """
+        Get the number of key-value mappings in this multidict.
+        """
+
+    @abstractmethod
+    def as_dict(self) -> Mapping[KT, Collection[VT]]:
+        """
+        Gets a map where each key in this multidict is mapped to the collection of its values.
+
+        Note to implementers: many other ImmutableMultiDict methods are defined in terms of this,
+        so its implementation should be fast (either by directly exposing an internal data
+        structure, when safe to do so, or by caching a map view).
+        """
+
+    def __iter__(self) -> Iterator[KT]:
+        return self.as_dict().__iter__()
 
 
 # needs tests: issue #127
-class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet[VT]],
-                            metaclass=ABCMeta):
+class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], metaclass=ABCMeta):
     __slots__ = ()
 
     # of() does not allow a value_comparator to be passed in, since it's not clear what
@@ -64,6 +108,32 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
     def empty() -> 'ImmutableSetMultiDict[KT, VT]':
         return _SET_EMPTY
 
+    # we need to repeat all these inherited/abstract methods with specialized type signatures
+    # because mypy doesn't support type parameters which are themselves generic (e.g. parameterizing
+    # ImmutableMultiDict by a collection type)
+    @abstractmethod
+    def __getitem__(self, k: KT) -> ImmutableSet[VT]:
+        """
+       Gets the set of values a key maps to.
+
+       If there are no such values, an empty collection is returned.
+       """
+
+    def value_groups(self) -> ValuesView[ImmutableSet[VT]]:
+        """
+        Gets an object containing the set of values for keys in this MultiDict.
+
+        If you iterate over this you will get sets, where each set contains
+        the values corresponding to a single key
+        """
+        return self.as_dict().values()
+
+    @abstractmethod
+    def as_dict(self) -> Mapping[KT, ImmutableSet[VT]]:
+        """
+        Gets a map where each key in this multidict is mapped to the collection of its values
+        """
+
     @staticmethod
     def builder(value_order_key: Callable[[VT], Any] = None) \
             -> 'ImmutableSetMultiDict.Builder[KT, VT]':
@@ -93,16 +163,13 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableSet
                     ret.put(key, val)
             return ret.build()
 
-    def __getitem__(self, k: KT) -> ImmutableSet[VT]:
-        raise NotImplementedError()
-
     def __repr__(self):
         return 'i' + str(self)
 
     def __str__(self):
         # we use %s for the value position because we know these are ImmutableSets and don't
         # need the "i" prefix they add with repr
-        return "{%s}" % ", ".join("%r: %s" % item for item in self.items())
+        return "{%s}" % ", ".join("%r: %s" % item for item in self.as_dict().items())
 
     class Builder(Generic[KT2, VT2]):
         def __init__(self, *, source: Optional['ImmutableMultiDict[KT2,VT2]'] = None,
@@ -165,20 +232,31 @@ def _freeze_set_multidict(x: Mapping[KT, Iterable[VT]]) -> Mapping[KT, Immutable
 
 @attrs(frozen=True, slots=True, repr=False)
 class FrozenDictBackedImmutableSetMultiDict(ImmutableSetMultiDict[KT, VT]):
-    _dict = attrib(convert=_freeze_set_multidict)
+    _dict: Mapping[KT, ImmutableSet[VT]] = attrib(convert=_freeze_set_multidict)
+    _len: Optional[int] = attrib(init=False, cmp=False, default=None)
+
+    def as_dict(self) -> Mapping[KT, ImmutableSet[VT]]:
+        """
+        Gets a map where each key in this multidict is mapped to the collection of its values
+        """
+        return self._dict
+
+    def value_groups(self) -> ValuesView[ImmutableSet[VT]]:
+        """
+        Get the sets of values for keys in this MultiDict.
+        """
+        return self._dict.values()
+
+    def __len__(self) -> int:  # pylint:disable=invalid-length-returned
+        """
+        Get the numeber of key-value mappings in this multidict.
+        """
+        if self._len is None:
+            object.__setattr__(self, '_len', sum((len(x) for x in self.value_groups()), 0))
+        return self._len
 
     def __getitem__(self, k: KT) -> ImmutableSet[VT]:
         return self._dict.get(k, ImmutableSet.empty())
-
-    def __len__(self) -> int:
-        return self._dict.__len__()
-
-    def __iter__(self) -> Iterator[KT]:
-        return self._dict.__iter__()
-
-    # Could allow the Mapping ABC to do this for us, but this is more direct
-    def __contains__(self, x: object) -> bool:
-        return self._dict.__contains__(x)
 
 
 # Singleton instance for empty
@@ -186,8 +264,7 @@ _SET_EMPTY: ImmutableSetMultiDict = FrozenDictBackedImmutableSetMultiDict({})
 
 
 # needs tests: issue #127
-class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableList[VT]],
-                             metaclass=ABCMeta):
+class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], metaclass=ABCMeta):
     __slots__ = ()
 
     # Signature of the of method varies by collection
@@ -209,6 +286,32 @@ class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableLi
     @staticmethod
     def builder() -> 'ImmutableListMultiDict.Builder[KT, VT]':
         return ImmutableListMultiDict.Builder()
+
+    # we need to repeat all these inherited/abstract methods with specialized type signatures
+    # because mypy doesn't support type paramters which are themselves generic (e.g. parameterizing
+    # ImmutableMultiDict by a collection type)
+    @abstractmethod
+    def __getitem__(self, k: KT) -> ImmutableList[VT]:
+        """
+       Gets the list of values a key maps to.
+
+       If there are no such values, an empty list is returned.
+       """
+
+    @abstractmethod
+    def as_dict(self) -> Mapping[KT, ImmutableList[VT]]:
+        """
+        Gets a map where each key in this multidict is mapped to the list of its values
+        """
+
+    def value_groups(self) -> ValuesView[ImmutableList[VT]]:
+        """
+        Gets an object containing the list of values for keys in this MultiDict.
+
+        If you iterate over this you will get lists, where each list contains
+        the values corresponding to a single key
+        """
+        return self.as_dict().values()
 
     def modified_copy_builder(self) -> 'ImmutableListMultiDict.Builder[KT, VT]':
         return ImmutableListMultiDict.Builder(source=self)
@@ -234,16 +337,13 @@ class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], Mapping[KT, ImmutableLi
                     ret.put(key, val)
             return ret.build()
 
-    def __getitem__(self, k: KT) -> ImmutableList[VT]:
-        raise NotImplementedError()
-
     def __repr__(self):
         return 'i' + str(self)
 
     def __str__(self):
         # we use %s for the value position because we know these are ImmutableLists and don't
         # need the "i" prefix they add with repr
-        return "{%s}" % ", ".join("%r: %s" % item for item in self.items())
+        return "{%s}" % ", ".join("%r: %s" % item for item in self.as_dict().items())
 
     class Builder(Generic[KT2, VT2]):
         def __init__(self, *, source: Optional['ImmutableMultiDict[KT2,VT2]'] = None) -> None:
@@ -306,19 +406,21 @@ def _freeze_list_multidict(x: Mapping[KT, Iterable[VT]]) -> Mapping[KT, Immutabl
 @attrs(frozen=True, slots=True, repr=False)
 class FrozenDictBackedImmutableListMultiDict(ImmutableListMultiDict[KT, VT]):
     _dict = attrib(convert=_freeze_list_multidict)
+    _len: Optional[int] = attrib(init=False, cmp=False, default=None)
+
+    def as_dict(self) -> Mapping[KT, ImmutableList[VT]]:
+        return self._dict
 
     def __getitem__(self, k: KT) -> ImmutableList[VT]:
         return self._dict.get(k, _LIST_EMPTY)
 
-    def __len__(self) -> int:
-        return self._dict.__len__()
-
-    def __iter__(self) -> Iterator[KT]:
-        return self._dict.__iter__()
-
-    # Could allow the Mapping ABC to do this for us, but this is more direct
-    def __contains__(self, x: object) -> bool:
-        return self._dict.__contains__(x)
+    def __len__(self) -> int:  # pylint:disable=invalid-length-returned
+        """
+        Get the numeber of key-value mappings in this multidict.
+        """
+        if self._len is None:
+            object.__setattr__(self, '_len', sum((len(x) for x in self.value_groups()), 0))
+        return self._len
 
 
 # Singleton instance for empty
