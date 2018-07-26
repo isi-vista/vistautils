@@ -119,7 +119,7 @@ class CharSource(metaclass=ABCMeta):
         return _FileWithinTgzCharSource(tgz_path, path_within_tgz, encoding)
 
 
-@attrs(slots=True, frozen=True)
+@attrs(slots=True, frozen=True, repr=False)
 class _StringCharSource(CharSource):
     _string = attrib_instance_of(str)
 
@@ -128,6 +128,13 @@ class _StringCharSource(CharSource):
 
     def is_empty(self) -> bool:
         return not self._string
+
+    def __repr__(self) -> str:
+        if len(self._string) > 100:
+            s = self._string[:100] + "..."
+        else:
+            s = self._string
+        return f"_StringCharSource({s})"
 
 
 @attrs(slots=True, frozen=True)
