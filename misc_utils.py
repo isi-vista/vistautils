@@ -5,7 +5,7 @@ from typing import Any, Dict, Generic, Iterable, List, Type, TypeVar, Union
 
 from attr import attrib, attrs
 
-from flexnlp.utils import attrutils, preconditions
+from flexnlp.utils import preconditions
 
 
 def str_list_limited(_list: Iterable[Any], limit: int) -> str:
@@ -128,7 +128,7 @@ class Scored(Generic[T]):
     An item together with a score.
     """
     item: T = attrib()
-    score: float = attrutils.attrib_instance_of(float)
+    score: float = attrib()
 
     def __attrs_post_init__(self) -> None:
         preconditions.check_arg(self.item is not None, "Item of a scored may not be None")
