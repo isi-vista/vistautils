@@ -86,6 +86,8 @@ def check_issubclass(item, classinfo: _ClassInfo):
 
 
 def check_in(item: Any, legal_values: Iterable[Any], item_name: str = None) -> None:
+    import flexnlp.utils.misc_utils
+
     if item not in legal_values:
         # dynamic import here to break circular dependency
         # performance impact is minimal since import only happens on precondition failure,
