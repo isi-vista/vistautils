@@ -1,13 +1,12 @@
 from abc import ABCMeta, abstractmethod
-from typing import Iterable, TypeVar, FrozenSet, AbstractSet, Iterator, Generic, Type, List, \
-    Sequence, Container, Any, Callable, Optional
+from typing import AbstractSet, Any, Callable, Container, FrozenSet, Generic, Iterable, Iterator, \
+    List, Optional, Sequence, Type, TypeVar
 
 import attr
-from attr import attrs, attrib, validators
+from attr import attrib, attrs, validators
 
-from flexnlp.utils.immutablecollections.immutablecollection import ImmutableCollection
-from flexnlp.utils.immutablecollections.immutablelist import ImmutableList
-from flexnlp.utils.preconditions import check_isinstance, check_issubclass, check_all_isinstance
+from flexnlp.utils import preconditions
+from flexnlp.utils.immutablecollections import immutablecollection, immutablelist
 
 T = TypeVar('T')
 # necessary because inner classes cannot share typevars
@@ -16,7 +15,8 @@ SelfType = TypeVar('SelfType')  # pylint:disable=invalid-name
 
 
 # typing.AbstractSet matches collections.abc.Set
-class ImmutableSet(Generic[T], ImmutableCollection[T], AbstractSet[T], metaclass=ABCMeta):
+class ImmutableSet(Generic[T], immutablecollection.ImmutableCollection[T], AbstractSet[T],
+                   metaclass=ABCMeta):
     __slots__ = ()
     """
     A immutable set with deterministic iteration order.
@@ -69,9 +69,10 @@ class ImmutableSet(Generic[T], ImmutableCollection[T], AbstractSet[T], metaclass
             if check_top_type_matches:
                 # we assume each sub-class provides _top_level_type
                 if seq._top_level_type:  # type: ignore
-                    check_issubclass(seq._top_level_type, check_top_type_matches)  # type: ignore
+                    preconditions.check_issubclass(  # type: ignore
+                        seq._top_level_type, check_top_type_matches)  # type: ignore
                 else:
-                    check_all_isinstance(seq, check_top_type_matches)
+                    preconditions.check_all_isinstance(seq, check_top_type_matches)
             return seq
         else:
             return (ImmutableSet.builder(check_top_type_matches=check_top_type_matches,
@@ -86,7 +87,7 @@ class ImmutableSet(Generic[T], ImmutableCollection[T], AbstractSet[T], metaclass
         return _EMPTY
 
     @abstractmethod
-    def as_list(self) -> ImmutableList[T]:
+    def as_list(self) -> immutablelist.ImmutableList[T]:
         """
         Get a view of this set's items as a list in insertion order.
         """
@@ -100,7 +101,7 @@ class ImmutableSet(Generic[T], ImmutableCollection[T], AbstractSet[T], metaclass
         If check top level types is provided, all elements of both sets must match the specified
         type.
         """
-        check_isinstance(other, AbstractSet)
+        preconditions.check_isinstance(other, AbstractSet)
         return (ImmutableSet.builder(check_top_type_matches)
                 .add_all(self).add_all(other).build())
 
@@ -122,7 +123,7 @@ class ImmutableSet(Generic[T], ImmutableCollection[T], AbstractSet[T], metaclass
         should have already been in this set, so you can type check this set itself if you are
         concerned.
         """
-        check_isinstance(other, AbstractSet)
+        preconditions.check_isinstance(other, AbstractSet)
         return (ImmutableSet.builder(check_top_type_matches=self._top_level_type)  # type: ignore
                 .add_all(x for x in self if x in other).build())
 
@@ -333,11 +334,11 @@ class _FrozenSetBackedImmutableSet(ImmutableSet[T]):
     _set: FrozenSet[T] = attrib(convert=frozenset)
     # because only the set contents should matter for equality, we set cmp=False hash=False
     # on the remaining attributes
-    _iteration_order: ImmutableList[T] = attrib(convert=ImmutableList.of,
-                                                cmp=False, hash=False)
+    _iteration_order: immutablelist.ImmutableList[T] = attrib(
+        convert=immutablelist.ImmutableList.of, cmp=False, hash=False)
     _top_level_type: Optional[Type] = attrib(cmp=False, hash=False)
 
-    def as_list(self) -> ImmutableList[T]:
+    def as_list(self) -> immutablelist.ImmutableList[T]:
         return self._iteration_order
 
     def __iter__(self) -> Iterator[T]:

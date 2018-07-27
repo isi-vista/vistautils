@@ -5,7 +5,7 @@ from typing import Any, Dict, Generic, Iterable, List, Type, TypeVar, Union
 
 from attr import attrib, attrs
 
-from flexnlp.utils import preconditions
+from flexnlp.utils import attrutils, preconditions
 
 
 def str_list_limited(_list: Iterable[Any], limit: int) -> str:
@@ -117,5 +117,19 @@ class WithId(Generic[T]):
     item: T = attrib()
 
     def __attrs_post_init__(self) -> None:
+        preconditions.check_arg(self.item is not None)
         preconditions.check_arg(isinstance(self.id, str), "Id must be a string")
         preconditions.check_arg(self.id, "Doc IDs may not be empty")
+
+
+@attrs(frozen=True)
+class Scored(Generic[T]):
+    """
+    An item together with a score.
+    """
+    item: T = attrib()
+    score: float = attrutils.attrib_instance_of(float)
+
+    def __attrs_post_init__(self) -> None:
+        preconditions.check_arg(self.item is not None, "Item of a scored may not be None")
+        preconditions.check_arg(isinstance(self.score, float))

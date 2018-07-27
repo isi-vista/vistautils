@@ -1,10 +1,9 @@
 """Python versions of Guava-like checks."""
-from typing import Any, Union, Tuple, Iterable, TypeVar
+from typing import Any, Iterable, Tuple, TypeVar, Union
 
 # Disable naming convention warnings for type aliases
 # pylint: disable=invalid-name
 # Type annotation from TypeShed for classinfo argument  of isinstance and issubclass
-from flexnlp.utils.misc_utils import str_list_limited
 
 _ClassInfo = Union[type, Tuple[Union[type, Tuple], ...]]
 
@@ -88,6 +87,10 @@ def check_issubclass(item, classinfo: _ClassInfo):
 
 def check_in(item: Any, legal_values: Iterable[Any], item_name: str = None) -> None:
     if item not in legal_values:
+        # dynamic import here to break circular dependency
+        # performance impact is minimal since import only happens on precondition failure,
+        # which will presumably crash the program
+        import flexnlp.utils.misc_utils
         item_msg = " {!s} to be".format(item_name) if item_name else ""
         raise ValueError("Expected{!s} one of {!s} but got {!s}".format(
-            item_msg, str_list_limited(legal_values, 10), item))
+            item_msg, flexnlp.utils.misc_utils.str_list_limited(legal_values, 10), item))
