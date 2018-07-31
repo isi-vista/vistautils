@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Any
+from typing import Any, Iterator, Tuple, Type
 
 from flexnlp.model.document import Document
 
@@ -107,8 +107,9 @@ def fully_qualified_name(obj: Any) -> str:
     return '{}.{}'.format(cls.__module__, cls.__qualname__)
 
 
-# TODO: Use correct type hint for input_theory_ids (circular import problem with TheoryIdMap)
-def text_span_iterator(doc: Document, use_regions: bool, use_sentences: bool):
+# TODO: make this return Span objects
+def text_span_iterator(doc: Document, use_regions: bool, use_sentences: bool) \
+        -> Iterator[Tuple[int, int]]:
     """
     Return an iterator over consecutive, ordered spans of text.
 
