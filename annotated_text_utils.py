@@ -39,11 +39,11 @@ class AnnotatedSpan:
 
     @staticmethod
     def create_div_of_class(span: Span, clazz: str) -> 'AnnotatedSpan':
-        return AnnotatedSpan(span, DIV, {'class': clazz})
+        return AnnotatedSpan(DIV, span, {'class': clazz})
 
     @staticmethod
     def create_span_of_class(span: Span, clazz: str) -> 'AnnotatedSpan':
-        return AnnotatedSpan(span, SPAN, {'class': clazz})
+        return AnnotatedSpan(SPAN, span, {'class': clazz})
 
 
 def to_start_tag(annotated_range: AnnotatedSpan) -> str:

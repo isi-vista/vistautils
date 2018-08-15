@@ -1,13 +1,14 @@
 import gzip
 import io
 import os
+import tarfile
 import types
 from abc import ABCMeta, abstractmethod
 from io import BytesIO
 from pathlib import Path
 from types import TracebackType
-from typing import Any, AnyStr, BinaryIO, Iterable, Iterator, List, Mapping, Optional, TextIO, \
-    Tuple, Type, Union
+from typing import Any, AnyStr, BinaryIO, Callable, Iterable, Iterator, List, Mapping, Optional, \
+    TextIO, Tuple, Type, Union
 from zipfile import ZipFile
 
 from attr import attrs
@@ -106,8 +107,19 @@ class CharSource(metaclass=ABCMeta):
         """
         return _GZipFileSource(p, encoding)
 
+    @staticmethod
+    def from_file_in_tgz(tgz_path: Path,
+                         path_within_tgz: str, encoding: str = 'utf-8') -> 'CharSource':
+        """
+        Gets a source whose content is that of the file at the given path within a .tar.gz file.
 
-@attrs(slots=True, frozen=True)
+        Note that because .tar.gz files don't support random access, using this can be slow. In
+        particular, avoid using this in a loop.
+        """
+        return _FileWithinTgzCharSource(tgz_path, path_within_tgz, encoding)
+
+
+@attrs(slots=True, frozen=True, repr=False)
 class _StringCharSource(CharSource):
     _string = attrib_instance_of(str)
 
@@ -116,6 +128,13 @@ class _StringCharSource(CharSource):
 
     def is_empty(self) -> bool:
         return not self._string
+
+    def __repr__(self) -> str:
+        if len(self._string) > 100:
+            s = self._string[:100] + "..."
+        else:
+            s = self._string
+        return f"_StringCharSource({s})"
 
 
 @attrs(slots=True, frozen=True)
@@ -141,6 +160,34 @@ class _GZipFileSource(CharSource):
         with gzip.open(self._path) as inp:
             data = inp.read(1)
         return len(data) == 0
+
+
+@attrs(slots=True, frozen=True)
+class _FileWithinTgzCharSource(CharSource):
+    _tgz_path: Path = attrib_instance_of(Path)
+    _path_within_tgz: str = attrib_instance_of(str)
+    _encoding: str = attrib_instance_of(str)
+
+    def open(self) -> TextIO:
+        tgz_file = tarfile.open(self._tgz_path, 'r:gz', encoding=self._encoding)
+        # extractfile here returns  binary file object. We are lazy here and load it all into
+        # memory to make dealing with the encoding issues simple
+        ret = CharSource.from_string(tgz_file.extractfile(self._path_within_tgz).read().decode(
+            self._encoding)).open()
+        # we need to fiddle with the close method on the returned TextIO so that when it is
+        # closed the containing zip file is closed as well
+        old_close: Callable = ret.close
+
+        def new_close(_):
+            old_close()  # pylint:disable=not-callable
+            tgz_file.close()
+
+        ret.close = types.MethodType(new_close, ret)  # type: ignore
+        return ret
+
+    def is_empty(self) -> bool:
+        tgz_file = tarfile.open(self._tgz_path, 'r:gz', encoding=self._encoding)
+        return tgz_file.getmember(self._path_within_tgz).size == 0
 
 
 class CharSink(metaclass=ABCMeta):
@@ -173,7 +220,7 @@ class CharSink(metaclass=ABCMeta):
         return _NullCharSink()
 
     @staticmethod
-    def to_file(p: Path) -> 'CharSink':
+    def to_file(p: Union[Path, str]) -> 'CharSink':
         """
         Get a sink which writes to the given path.
 
@@ -267,6 +314,15 @@ class ByteSink(metaclass=ABCMeta):
         Get a sink which writes to the given path in a zip file.
         """
         return _FileInZipByteSink(zip_file, filename_in_zip)
+
+    @staticmethod
+    def to_buffer() -> 'BufferByteSink':
+        """
+        Get a sink which writes to a buffer in memory.
+
+        The last bytes written can be read using methods on `BufferByteSink`
+        """
+        return BufferByteSink()
 
     def write(self, data: bytes) -> None:
         """
@@ -396,7 +452,7 @@ class StringCharSink(CharSink):
 
 @attrs(slots=True, frozen=True)
 class _FileCharSink(CharSink):
-    _path = attrib_instance_of(Path)
+    _path: Union[Path, str] = attrib_instance_of((Path, str))
 
     def open(self) -> TextIO:
         return open(self._path, 'w')
@@ -422,6 +478,26 @@ class _FileInZipByteSink(ByteSink):
 
         ret.close = types.MethodType(new_close, ret)  # type: ignore
         return ret  # type: ignore
+
+
+class BufferByteSink(ByteSink):
+    """
+    A sink which writes to a byte buffer.
+
+    The last byte string written can be recovered from the 'last_bytes_written' field.
+    """
+    def __init__(self):
+        self.last_bytes_written: bytes = None
+
+    def open(self) -> BytesIO:
+        outer_self = self
+
+        class BytesFileLike(io.BytesIO):
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                outer_self.last_bytes_written = self.getvalue()
+                super().__exit__(exc_type, exc_val, exc_tb)
+
+        return BytesFileLike()
 
 
 def write_doc_id_to_file_map(doc_id_to_file_map: Mapping[str, Path],

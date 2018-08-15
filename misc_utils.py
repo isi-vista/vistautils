@@ -1,7 +1,11 @@
 import importlib
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Type, TypeVar, Union
+from typing import Any, Dict, Generic, Iterable, List, Type, TypeVar, Union
+
+from attr import attrib, attrs
+
+from flexnlp.utils import attrutils, preconditions
 
 
 def str_list_limited(_list: Iterable[Any], limit: int) -> str:
@@ -97,3 +101,35 @@ def flatten_once_to_list(iterable_of_iterables: Iterable[Iterable[T]]) -> List[T
     Taken from the itertools recipes.
     """
     return list(chain.from_iterable(iterable_of_iterables))
+
+
+# can't set slots=True or you get https://github.com/python-attrs/attrs/issues/313
+@attrs(frozen=True)
+class WithId(Generic[T]):
+    """
+    Pair some object with some ID.
+
+    This is typically used as an input to an Ingester when no document ID can be extracted
+    from the data itself.
+    """
+    # can't use attr_instance_of due to circular import problems
+    id: str = attrib()
+    item: T = attrib()
+
+    def __attrs_post_init__(self) -> None:
+        preconditions.check_arg(self.item is not None)
+        preconditions.check_arg(isinstance(self.id, str), "Id must be a string")
+        preconditions.check_arg(self.id, "Doc IDs may not be empty")
+
+
+@attrs(frozen=True)
+class Scored(Generic[T]):
+    """
+    An item together with a score.
+    """
+    item: T = attrib()
+    score: float = attrutils.attrib_instance_of(float)
+
+    def __attrs_post_init__(self) -> None:
+        preconditions.check_arg(self.item is not None, "Item of a scored may not be None")
+        preconditions.check_arg(isinstance(self.score, float))

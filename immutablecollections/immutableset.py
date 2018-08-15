@@ -1,13 +1,12 @@
 from abc import ABCMeta, abstractmethod
-from typing import Iterable, TypeVar, FrozenSet, AbstractSet, Iterator, Generic, Type, List, \
-    Sequence, Container, Any, Callable
+from typing import AbstractSet, Any, Callable, Container, FrozenSet, Generic, Iterable, Iterator, \
+    List, Optional, Sequence, Type, TypeVar
 
 import attr
-from attr import attrs, attrib, validators
+from attr import attrib, attrs, validators
 
-from flexnlp.utils.immutablecollections.immutablecollection import ImmutableCollection
-from flexnlp.utils.immutablecollections.immutablelist import ImmutableList
-from flexnlp.utils.preconditions import check_isinstance, check_issubclass, check_all_isinstance
+from flexnlp.utils import preconditions
+from flexnlp.utils.immutablecollections import immutablecollection, immutablelist
 
 T = TypeVar('T')
 # necessary because inner classes cannot share typevars
@@ -16,7 +15,8 @@ SelfType = TypeVar('SelfType')  # pylint:disable=invalid-name
 
 
 # typing.AbstractSet matches collections.abc.Set
-class ImmutableSet(ImmutableCollection[T], AbstractSet[T], metaclass=ABCMeta):
+class ImmutableSet(Generic[T], immutablecollection.ImmutableCollection[T], AbstractSet[T],
+                   metaclass=ABCMeta):
     __slots__ = ()
     """
     A immutable set with deterministic iteration order.
@@ -69,14 +69,15 @@ class ImmutableSet(ImmutableCollection[T], AbstractSet[T], metaclass=ABCMeta):
             if check_top_type_matches:
                 # we assume each sub-class provides _top_level_type
                 if seq._top_level_type:  # type: ignore
-                    check_issubclass(seq._top_level_type, check_top_type_matches)  # type: ignore
+                    preconditions.check_issubclass(  # type: ignore
+                        seq._top_level_type, check_top_type_matches)  # type: ignore
                 else:
-                    check_all_isinstance(seq, check_top_type_matches)
+                    preconditions.check_all_isinstance(seq, check_top_type_matches)
             return seq
         else:
             return (ImmutableSet.builder(check_top_type_matches=check_top_type_matches,
                                          require_ordered_input=require_ordered_input)
-                .add_all(seq).build())  # pylint:disable=bad-continuation
+                    .add_all(seq).build())
 
     @staticmethod
     def empty() -> 'ImmutableSet[T]':
@@ -86,7 +87,7 @@ class ImmutableSet(ImmutableCollection[T], AbstractSet[T], metaclass=ABCMeta):
         return _EMPTY
 
     @abstractmethod
-    def as_list(self) -> ImmutableList[T]:
+    def as_list(self) -> immutablelist.ImmutableList[T]:
         """
         Get a view of this set's items as a list in insertion order.
         """
@@ -100,9 +101,9 @@ class ImmutableSet(ImmutableCollection[T], AbstractSet[T], metaclass=ABCMeta):
         If check top level types is provided, all elements of both sets must match the specified
         type.
         """
-        check_isinstance(other, AbstractSet)
+        preconditions.check_isinstance(other, AbstractSet)
         return (ImmutableSet.builder(check_top_type_matches)
-            .add_all(self).add_all(other).build())  # pylint:disable=bad-continuation
+                .add_all(self).add_all(other).build())
 
     # we deliberately tighten the type bounds from our parent
     def __or__(self, other: AbstractSet[T]) -> 'ImmutableSet[T]':  # type: ignore
@@ -122,9 +123,9 @@ class ImmutableSet(ImmutableCollection[T], AbstractSet[T], metaclass=ABCMeta):
         should have already been in this set, so you can type check this set itself if you are
         concerned.
         """
-        check_isinstance(other, AbstractSet)
+        preconditions.check_isinstance(other, AbstractSet)
         return (ImmutableSet.builder(check_top_type_matches=self._top_level_type)  # type: ignore
-            .add_all(x for x in self if x in other).build())  # pylint:disable=bad-continuation
+                .add_all(x for x in self if x in other).build())
 
     def __and__(self, other: AbstractSet[Any]) -> 'ImmutableSet[T]':
         """
@@ -172,52 +173,153 @@ class ImmutableSet(ImmutableCollection[T], AbstractSet[T], metaclass=ABCMeta):
 
         You can check item containment before building the set by using "in" on the builder.
         """
-        return ImmutableSet.Builder(top_level_type=check_top_type_matches,
-                                    require_ordered_input=require_ordered_input,
-                                    order_key=order_key)
+        # Optimization: We use two different implementations, one that checks types and one that
+        # does not. Profiling revealed that this is faster than a single implementation that
+        # conditionally checks types based on a member variable. Two separate classes are needed;
+        # if you use a single class that conditionally defines add and add_all upon construction,
+        # Python's method-lookup optimizations are defeated and you don't get any benefit.
+        if check_top_type_matches is not None:
+            return _TypeCheckingBuilder(top_level_type=check_top_type_matches,
+                                        require_ordered_input=require_ordered_input,
+                                        order_key=order_key)
+        else:
+            return _NoTypeCheckingBuilder(require_ordered_input=require_ordered_input,
+                                          order_key=order_key)
 
-    @attrs
-    class Builder(Generic[T2], Container[T2]):
-        _set: AbstractSet[T2] = attrib(default=attr.Factory(set))
-        _iteration_order: List[T2] = attrib(default=attr.Factory(list))
-        # this is messy because we can't use attrutils or we would end up with a circular import
-        _top_level_type: Type = attrib(validator=validators.instance_of((Type, type(None))),
-                                       default=None)
-        _require_ordered_input = attrib(validator=validators.instance_of(bool), default=False)
-        _order_key: Callable[[T2], Any] = attrib(default=None)
+    class Builder(Generic[T2], Container[T2], metaclass=ABCMeta):
 
+        @abstractmethod
         def add(self: SelfType, item: T2) -> SelfType:
-            if self._top_level_type:
-                check_isinstance(item, self._top_level_type)
-            if item not in self._set:
-                self._set.add(item)
-                self._iteration_order.append(item)
-            return self
+            raise NotImplementedError()
 
+        @abstractmethod
         def add_all(self: SelfType, items: Iterable[T2]) -> SelfType:
-            if self._require_ordered_input and not (isinstance(items, Sequence) or isinstance(
-                    items, ImmutableSet)) and not self._order_key:
-                raise ValueError("Builder has require_ordered_input on, but provided collection "
-                                 "is neither a sequence or another ImmutableSet.  A common cause "
-                                 "of this is initializing an ImmutableSet from a set literal; "
-                                 "prefer to initialize from a list instead to help preserve "
-                                 "determinism.")
-            for item in items:
-                self.add(item)
-            return self
+            raise NotImplementedError()
 
+        @abstractmethod
         def __contains__(self, item):
-            return self._set.__contains__(item)
+            raise NotImplementedError()
 
+        @abstractmethod
         def build(self) -> 'ImmutableSet[T2]':
-            if self._set:
-                if self._order_key:
-                    # mypy is confused
-                    self._iteration_order.sort(key=self._order_key)  # type: ignore
-                return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
-                                                    top_level_type=self._top_level_type)
-            else:
-                return _EMPTY
+            raise NotImplementedError()
+
+
+# When modifying this class, make sure any relevant changes are also made to _NoTypeCheckingBuilder
+@attrs
+class _TypeCheckingBuilder(ImmutableSet.Builder[T]):
+    _set: AbstractSet[T] = attrib(default=attr.Factory(set))
+    _iteration_order: List[T] = attrib(default=attr.Factory(list))
+    # this is messy because we can't use attrutils or we would end up with a circular import
+    _top_level_type: Type = attrib(validator=validators.instance_of((Type, type(None))),
+                                   default=None)
+    _require_ordered_input = attrib(validator=validators.instance_of(bool), default=False)
+    _order_key: Callable[[T], Any] = attrib(default=None)
+
+    def add(self: SelfType, item: T) -> SelfType:
+        # Any changes made to add should also be made to add_all
+        if item not in self._set:
+            # Optimization: Don't use use check_isinstance to cut down on method calls
+            if not isinstance(item, self._top_level_type):
+                raise TypeError('Expected instance of type {!r} but got type {!r} for {!r}'
+                                .format(self._top_level_type, type(item), item))
+            self._set.add(item)
+            self._iteration_order.append(item)
+        return self
+
+    def add_all(self: SelfType, items: Iterable[T]) -> SelfType:
+        if self._require_ordered_input and not (isinstance(items, Sequence) or isinstance(
+                items, ImmutableSet)) and not self._order_key:
+            raise ValueError("Builder has require_ordered_input on, but provided collection "
+                             "is neither a sequence or another ImmutableSet.  A common cause "
+                             "of this is initializing an ImmutableSet from a set literal; "
+                             "prefer to initialize from a list instead to help preserve "
+                             "determinism.")
+
+        # Optimization: These methods are looked up once outside the inner loop. Note that applying
+        # the same approach to the containment check does not improve performance, probably because
+        # the containment check syntax itself is already optimized.
+        add = self._set.add
+        append = self._iteration_order.append
+        # Optimization: Store self._top_level_type to avoid repeated lookups
+        top_level_type = self._top_level_type
+        for item in items:
+            # Optimization: to save method call overhead in an inner loop, we don't call add and
+            # instead do the same thing. We don't use check_isinstance for the same reason.
+            if item not in self._set:
+                if not isinstance(item, top_level_type):
+                    raise TypeError('Expected instance of type {!r} but got type {!r} for {!r}'
+                                    .format(top_level_type, type(item), item))
+                add(item)
+                append(item)
+
+        return self
+
+    def __contains__(self, item):
+        return self._set.__contains__(item)
+
+    def build(self) -> 'ImmutableSet[T]':
+        if self._set:
+            if self._order_key:
+                # mypy is confused
+                self._iteration_order.sort(key=self._order_key)  # type: ignore
+            return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
+                                                top_level_type=self._top_level_type)
+        else:
+            return _EMPTY
+
+
+# When modifying this class, make sure any relevant changes are also made to _TypeCheckingBuilder
+@attrs
+class _NoTypeCheckingBuilder(ImmutableSet.Builder[T]):
+    _set: AbstractSet[T] = attrib(default=attr.Factory(set))
+    _iteration_order: List[T] = attrib(default=attr.Factory(list))
+    # this is messy because we can't use attrutils or we would end up with a circular import
+    _require_ordered_input = attrib(validator=validators.instance_of(bool), default=False)
+    _order_key: Callable[[T], Any] = attrib(default=None)
+
+    def add(self: SelfType, item: T) -> SelfType:
+        # Any changes made to add should also be made to add_all
+        if item not in self._set:
+            self._set.add(item)
+            self._iteration_order.append(item)
+        return self
+
+    def add_all(self: SelfType, items: Iterable[T]) -> SelfType:
+        if self._require_ordered_input and not (isinstance(items, Sequence) or isinstance(
+                items, ImmutableSet)) and not self._order_key:
+            raise ValueError("Builder has require_ordered_input on, but provided collection "
+                             "is neither a sequence or another ImmutableSet.  A common cause "
+                             "of this is initializing an ImmutableSet from a set literal; "
+                             "prefer to initialize from a list instead to help preserve "
+                             "determinism.")
+
+        # Optimization: These methods are looked up once outside the inner loop. Note that applying
+        # the same approach to the containment check does not improve performance, probably because
+        # the containment check syntax itself is already optimized.
+        add = self._set.add
+        append = self._iteration_order.append
+        for item in items:
+            # Optimization: to save method call overhead in an inner loop, we don't call add and
+            # instead do the same thing.
+            if item not in self._set:
+                add(item)
+                append(item)
+
+        return self
+
+    def __contains__(self, item):
+        return self._set.__contains__(item)
+
+    def build(self) -> 'ImmutableSet[T]':
+        if self._set:
+            if self._order_key:
+                # mypy is confused
+                self._iteration_order.sort(key=self._order_key)  # type: ignore
+            return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
+                                                top_level_type=None)
+        else:
+            return _EMPTY
 
 
 @attrs(frozen=True, slots=True, repr=False)
@@ -232,11 +334,11 @@ class _FrozenSetBackedImmutableSet(ImmutableSet[T]):
     _set: FrozenSet[T] = attrib(convert=frozenset)
     # because only the set contents should matter for equality, we set cmp=False hash=False
     # on the remaining attributes
-    _iteration_order: ImmutableList[T] = attrib(convert=ImmutableList.of,
-                                                cmp=False, hash=False)
-    _top_level_type: Type = attrib(cmp=False, hash=False)
+    _iteration_order: immutablelist.ImmutableList[T] = attrib(
+        convert=immutablelist.ImmutableList.of, cmp=False, hash=False)
+    _top_level_type: Optional[Type] = attrib(cmp=False, hash=False)
 
-    def as_list(self) -> ImmutableList[T]:
+    def as_list(self) -> immutablelist.ImmutableList[T]:
         return self._iteration_order
 
     def __iter__(self) -> Iterator[T]:

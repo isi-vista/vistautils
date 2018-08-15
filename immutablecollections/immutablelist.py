@@ -1,7 +1,7 @@
 from abc import ABCMeta
-from typing import Iterable, Sequence, TypeVar, Tuple, Iterator, Generic, List, Sized
+from typing import Generic, Iterable, Iterator, List, Sequence, Sized, Tuple, TypeVar
 
-from attr import attrs, attrib
+from attr import attrib, attrs
 
 from flexnlp.utils.immutablecollections.immutablecollection import ImmutableCollection
 
@@ -9,7 +9,7 @@ T = TypeVar('T')
 T2 = TypeVar('T2')
 
 
-class ImmutableList(ImmutableCollection[T], Sequence[T], metaclass=ABCMeta):
+class ImmutableList(Generic[T], ImmutableCollection[T], Sequence[T], metaclass=ABCMeta):
     __slots__ = ()
 
     # Signature of the of method varies by collection
