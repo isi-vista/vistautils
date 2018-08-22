@@ -260,11 +260,15 @@ class _TypeCheckingBuilder(ImmutableSet.Builder[T]):
 
     def build(self) -> 'ImmutableSet[T]':
         if self._set:
-            if self._order_key:
-                # mypy is confused
-                self._iteration_order.sort(key=self._order_key)  # type: ignore
-            return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
-                                                top_level_type=self._top_level_type)
+            if len(self._set) > 1:
+                if self._order_key:
+                    # mypy is confused
+                    self._iteration_order.sort(key=self._order_key)  # type: ignore
+                return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
+                                                    top_level_type=self._top_level_type)
+            else:
+                return _SingletonImmutableSet(self._set.__iter__().__next__(),
+                                              top_level_type=self._top_level_type)
         else:
             return _EMPTY
 
@@ -313,11 +317,15 @@ class _NoTypeCheckingBuilder(ImmutableSet.Builder[T]):
 
     def build(self) -> 'ImmutableSet[T]':
         if self._set:
-            if self._order_key:
-                # mypy is confused
-                self._iteration_order.sort(key=self._order_key)  # type: ignore
-            return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
-                                                top_level_type=None)
+            if len(self._set) > 1:
+                if self._order_key:
+                    # mypy is confused
+                    self._iteration_order.sort(key=self._order_key)  # type: ignore
+                return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
+                                                    top_level_type=None)
+            else:
+                return _SingletonImmutableSet(self._set.__iter__().__next__(),
+                                              top_level_type=None)
         else:
             return _EMPTY
 
@@ -359,6 +367,34 @@ class _FrozenSetBackedImmutableSet(ImmutableSet[T]):
 
     def __hash__(self):
         return self._set.__hash__()
+
+
+@attrs(frozen=True, slots=True, repr=False)
+class _SingletonImmutableSet(ImmutableSet[T]):
+    _single_value: T = attrib()
+    _top_level_type: Optional[Type] = attrib(cmp=False, hash=False)
+
+    def as_list(self) -> immutablelist.ImmutableList[T]:
+        return immutablelist.ImmutableList.of([self._single_value])
+
+    def __iter__(self) -> Iterator[T]:
+        return iter((self._single_value,))
+
+    def __len__(self) -> int:
+        return 1
+
+    def __contains__(self, item) -> bool:
+        return self._single_value == item
+
+    def __eq__(self, other):
+        # pylint:disable=protected-access
+        if isinstance(other, _SingletonImmutableSet):
+            return self._single_value == other._single_value
+        else:
+            return False
+
+    def __hash__(self):
+        return 1 + self._single_value.__hash__()
 
 
 # Singleton instance for empty
