@@ -93,6 +93,12 @@ class ImmutableSet(Generic[T], immutablecollection.ImmutableCollection[T], Abstr
         """
         raise NotImplementedError()
 
+    @abstractmethod
+    def __getitem__(self, item) -> T:
+        """
+        Get the item at the given index in the set's iteration order
+        """
+
     # we would really like this to be AbstractSet[ExtendsT] but Python doesn't support it
     def union(self, other: AbstractSet[T], check_top_type_matches=None) -> 'ImmutableSet[T]':
         """
@@ -358,6 +364,9 @@ class _FrozenSetBackedImmutableSet(ImmutableSet[T]):
     def __contains__(self, item) -> bool:
         return self._set.__contains__(item)
 
+    def __getitem__(self, item) -> T:
+        return self._iteration_order[item]
+
     def __eq__(self, other):
         # pylint:disable=protected-access
         if isinstance(other, _FrozenSetBackedImmutableSet):
@@ -385,6 +394,12 @@ class _SingletonImmutableSet(ImmutableSet[T]):
 
     def __contains__(self, item) -> bool:
         return self._single_value == item
+
+    def __getitem__(self, item) -> T:
+        if item == 0:
+            return self._single_value
+        else:
+            raise IndexError(f"Index {item} out-of-bounds for size 1 ImmutableSet")
 
     def __eq__(self, other):
         # pylint:disable=protected-access
