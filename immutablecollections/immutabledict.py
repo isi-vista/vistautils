@@ -137,7 +137,8 @@ class ImmutableDict(ImmutableCollection[KT], Mapping[KT, VT], metaclass=ABCMeta)
 @attrs(frozen=True, slots=True, repr=False)
 class FrozenDictBackedImmutableDict(ImmutableDict[KT, VT]):
 
-    _dict = attrib(converter=frozendict)
+    # Mypy does not believe this is a valid converter, but it is
+    _dict = attrib(converter=frozendict)  # type:ignore
 
     def __getitem__(self, k: KT) -> VT:
         return self._dict.__getitem__(k)

@@ -10,23 +10,28 @@ import flexnlp.utils.preconditions
 # TODO cannot currently be used with additional validators:
 # https://github.com/isi-nlp/isi-flexnlp/issues/188
 def attrib_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, **kwargs):
-    return attrib(validator=validators.instance_of(type_), *args, **kwargs)
+    # Mypy does not understand these arguments
+    return attrib(validator=validators.instance_of(type_), *args, **kwargs)  # type: ignore
 
 
 # TODO cannot currently be used with additional validators:
 # https://github.com/isi-nlp/isi-flexnlp/issues/188
 def attrib_opt_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, default=None, **kwargs):
-    return attrib(validator=opt_instance_of(type_), default=default, *args, **kwargs)
+    # Mypy does not understand these arguments
+    return attrib(validator=opt_instance_of(type_), default=default,  # type: ignore
+                  *args, **kwargs)
 
 
 def attrib_factory(factory: Callable, *args, **kwargs):
-    return attrib(default=Factory(factory), *args, **kwargs)
+    # Mypy does not understand these arguments
+    return attrib(default=Factory(factory), *args, **kwargs)  # type: ignore
 
 
 def attrib_immutable(type_: Type[flexnlp.utils.immutablecollections.ImmutableCollection], *args,
                      **kwargs):
     _check_immutable_collection(type_)
-    return attrib(convert=type_.of, *args, **kwargs)
+    # Mypy does not understand these arguments
+    return attrib(converter=type_.of, *args, **kwargs)  # type: ignore
 
 
 def attrib_private_immutable_builder(
@@ -37,10 +42,11 @@ def attrib_private_immutable_builder(
     This is called "private" because it will not appear as a constructor argument.
     """
     _check_immutable_collection(type_)
-    return attrib(default=Factory(type_.builder), init=False, *args, **kwargs)
+    # Mypy does not understand these arguments
+    return attrib(default=Factory(type_.builder), init=False, *args, **kwargs)  # type: ignore
 
 
-# TODO: The use of Type[ImmutableCollection] causes mypy warnings
+# TODO: The use of Type[ImmutableCollection] causes Mypy warnings
 # Perhaps the solution is to make ImmutableCollection a Protocol?
 def attrib_opt_immutable(type_: Type[flexnlp.utils.immutablecollections.ImmutableCollection],
                          *args, **kwargs):
@@ -52,12 +58,14 @@ def attrib_opt_immutable(type_: Type[flexnlp.utils.immutablecollections.Immutabl
     handling of arguments with a default absent value.
     """
     _check_immutable_collection(type_)
-    return attrib(convert=partial(_empty_immutable_if_none, type_=type_),
+    # Mypy does not understand these arguments
+    return attrib(converter=partial(_empty_immutable_if_none, type_=type_),  # type: ignore
                   default=type_.empty(), *args, **kwargs)
 
 
 def opt_instance_of(type_: Union[Type, Tuple[Type, ...]]) -> Callable:
-    return validators.instance_of((type_, type(None)))
+    # Mypy does not understand these arguments
+    return validators.instance_of((type_, type(None)))  # type: ignore
 
 
 def _check_immutable_collection(type_):
