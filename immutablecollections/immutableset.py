@@ -331,11 +331,11 @@ class _FrozenSetBackedImmutableSet(ImmutableSet[T]):
     be directly instantiated by users or the ImmutableSet contract may fail to be satisfied!
     """
 
-    _set: FrozenSet[T] = attrib(convert=frozenset)
+    _set: FrozenSet[T] = attrib(converter=frozenset)
     # because only the set contents should matter for equality, we set cmp=False hash=False
     # on the remaining attributes
     _iteration_order: immutablelist.ImmutableList[T] = attrib(
-        convert=immutablelist.ImmutableList.of, cmp=False, hash=False)
+        converter=immutablelist.ImmutableList.of, cmp=False, hash=False)
     _top_level_type: Optional[Type] = attrib(cmp=False, hash=False)
 
     def as_list(self) -> immutablelist.ImmutableList[T]:

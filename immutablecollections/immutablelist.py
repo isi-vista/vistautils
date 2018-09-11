@@ -60,7 +60,7 @@ class ImmutableList(Generic[T], ImmutableCollection[T], Sequence[T], metaclass=A
 @attrs(frozen=True, slots=True, repr=False)
 class _TupleBackedImmutableList(ImmutableList[T]):
 
-    _list: Tuple[T, ...] = attrib(convert=tuple)
+    _list: Tuple[T, ...] = attrib(converter=tuple)
 
     def __getitem__(self, index: int) -> T:
         return self._list.__getitem__(index)

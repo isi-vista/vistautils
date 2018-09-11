@@ -232,7 +232,7 @@ def _freeze_set_multidict(x: Mapping[KT, Iterable[VT]]) -> Mapping[KT, Immutable
 
 @attrs(frozen=True, slots=True, repr=False)
 class FrozenDictBackedImmutableSetMultiDict(ImmutableSetMultiDict[KT, VT]):
-    _dict: Mapping[KT, ImmutableSet[VT]] = attrib(convert=_freeze_set_multidict)
+    _dict: Mapping[KT, ImmutableSet[VT]] = attrib(converter=_freeze_set_multidict)
     _len: Optional[int] = attrib(init=False, cmp=False, default=None)
 
     def as_dict(self) -> Mapping[KT, ImmutableSet[VT]]:
@@ -405,7 +405,7 @@ def _freeze_list_multidict(x: Mapping[KT, Iterable[VT]]) -> Mapping[KT, Immutabl
 
 @attrs(frozen=True, slots=True, repr=False)
 class FrozenDictBackedImmutableListMultiDict(ImmutableListMultiDict[KT, VT]):
-    _dict = attrib(convert=_freeze_list_multidict)
+    _dict = attrib(converter=_freeze_list_multidict)
     _len: Optional[int] = attrib(init=False, cmp=False, default=None)
 
     def as_dict(self) -> Mapping[KT, ImmutableList[VT]]:

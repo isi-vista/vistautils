@@ -137,7 +137,7 @@ class ImmutableDict(ImmutableCollection[KT], Mapping[KT, VT], metaclass=ABCMeta)
 @attrs(frozen=True, slots=True, repr=False)
 class FrozenDictBackedImmutableDict(ImmutableDict[KT, VT]):
 
-    _dict = attrib(convert=frozendict)
+    _dict = attrib(converter=frozendict)
 
     def __getitem__(self, k: KT) -> VT:
         return self._dict.__getitem__(k)
