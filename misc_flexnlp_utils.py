@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Any, Iterator, Tuple, Type
+from typing import Any, Iterator, Tuple
 
 from flexnlp.model.document import Document
 
