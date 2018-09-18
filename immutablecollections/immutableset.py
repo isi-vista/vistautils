@@ -15,7 +15,9 @@ SelfType = TypeVar('SelfType')  # pylint:disable=invalid-name
 
 
 # typing.AbstractSet matches collections.abc.Set
-class ImmutableSet(Generic[T], immutablecollection.ImmutableCollection[T], AbstractSet[T],
+class ImmutableSet(Generic[T],
+                   immutablecollection.ImmutableCollection[T], AbstractSet[T],
+                   Iterable[T],
                    metaclass=ABCMeta):
     __slots__ = ()
     """

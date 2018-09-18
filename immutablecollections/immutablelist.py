@@ -9,7 +9,8 @@ T = TypeVar('T')
 T2 = TypeVar('T2')
 
 
-class ImmutableList(Generic[T], ImmutableCollection[T], Sequence[T], metaclass=ABCMeta):
+class ImmutableList(Generic[T], ImmutableCollection[T], Sequence[T], Iterable[T],
+                    metaclass=ABCMeta):
     __slots__ = ()
 
     # Signature of the of method varies by collection
@@ -23,7 +24,7 @@ class ImmutableList(Generic[T], ImmutableCollection[T], Sequence[T], metaclass=A
 
     @staticmethod
     def empty() -> 'ImmutableList[T]':
-        return _EMPTY
+        return EMPTY_IMMUTABLE_LIST
 
     @staticmethod
     def builder() -> 'ImmutableList.Builder[T]':
@@ -48,7 +49,7 @@ class ImmutableList(Generic[T], ImmutableCollection[T], Sequence[T], metaclass=A
             if self._list:
                 return _TupleBackedImmutableList(self._list)
             else:
-                return _EMPTY
+                return EMPTY_IMMUTABLE_LIST
 
     def __repr__(self):
         return 'i' + str(self)
@@ -73,4 +74,4 @@ class _TupleBackedImmutableList(ImmutableList[T]):
 
 
 # Singleton instance for empty
-_EMPTY: ImmutableList = _TupleBackedImmutableList(())
+EMPTY_IMMUTABLE_LIST: ImmutableList = _TupleBackedImmutableList(())

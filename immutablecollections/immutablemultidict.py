@@ -9,6 +9,7 @@ from frozendict import frozendict
 
 from flexnlp.utils.immutablecollections import ImmutableList, ImmutableSet
 from flexnlp.utils.immutablecollections.immutablecollection import ImmutableCollection
+from flexnlp.utils.immutablecollections.immutablelist import EMPTY_IMMUTABLE_LIST
 from flexnlp.utils.preconditions import check_isinstance
 
 KT = TypeVar('KT')
@@ -217,7 +218,7 @@ class ImmutableSetMultiDict(ImmutableMultiDict[KT, VT], metaclass=ABCMeta):
         def build(self) -> 'ImmutableSetMultiDict[KT2, VT2]':
             if self._dirty or self._source is None:
                 result: ImmutableSetMultiDict[KT2, VT2] = FrozenDictBackedImmutableSetMultiDict(
-                    {k: v.build() for (k, v) in self._dict.items()})
+                    {k: v.build() for (k, v) in self._dict.items()})  # type: ignore
                 return result if result else _SET_EMPTY
             else:
                 # noinspection PyTypeChecker
@@ -281,7 +282,7 @@ class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], metaclass=ABCMeta):
 
     @staticmethod
     def empty() -> 'ImmutableListMultiDict[KT, VT]':
-        return _LIST_EMPTY
+        return _EMPTY_IMMUTABLE_MULTIDICT
 
     @staticmethod
     def builder() -> 'ImmutableListMultiDict.Builder[KT, VT]':
@@ -390,8 +391,8 @@ class ImmutableListMultiDict(ImmutableMultiDict[KT, VT], metaclass=ABCMeta):
         def build(self) -> 'ImmutableListMultiDict[KT2, VT2]':
             if self._dirty or self._source is None:
                 result: ImmutableListMultiDict[KT2, VT2] = FrozenDictBackedImmutableListMultiDict(
-                    {k: v.build() for (k, v) in self._dict.items()})
-                return result if result else _LIST_EMPTY
+                    {k: v.build() for (k, v) in self._dict.items()})  # type: ignore
+                return result if result else _EMPTY_IMMUTABLE_MULTIDICT
             else:
                 # noinspection PyTypeChecker
                 return self._source  # type: ignore
@@ -405,14 +406,14 @@ def _freeze_list_multidict(x: Mapping[KT, Iterable[VT]]) -> Mapping[KT, Immutabl
 
 @attrs(frozen=True, slots=True, repr=False)
 class FrozenDictBackedImmutableListMultiDict(ImmutableListMultiDict[KT, VT]):
-    _dict = attrib(converter=_freeze_list_multidict)
+    _dict: Mapping[KT, ImmutableList[VT]] = attrib(converter=_freeze_list_multidict)
     _len: Optional[int] = attrib(init=False, cmp=False, default=None)
 
     def as_dict(self) -> Mapping[KT, ImmutableList[VT]]:
         return self._dict
 
     def __getitem__(self, k: KT) -> ImmutableList[VT]:
-        return self._dict.get(k, _LIST_EMPTY)
+        return self._dict.get(k, EMPTY_IMMUTABLE_LIST)
 
     def __len__(self) -> int:  # pylint:disable=invalid-length-returned
         """
@@ -424,4 +425,4 @@ class FrozenDictBackedImmutableListMultiDict(ImmutableListMultiDict[KT, VT]):
 
 
 # Singleton instance for empty
-_LIST_EMPTY: ImmutableListMultiDict = FrozenDictBackedImmutableListMultiDict({})
+_EMPTY_IMMUTABLE_MULTIDICT: ImmutableListMultiDict = FrozenDictBackedImmutableListMultiDict({})
