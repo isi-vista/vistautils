@@ -333,6 +333,8 @@ class _FrozenSetBackedImmutableSet(ImmutableSet[T]):
 
     This class should *never*
     be directly instantiated by users or the ImmutableSet contract may fail to be satisfied!
+
+    Note this must explictly override eq and hash because cmp=False above.
     """
 
     _set: FrozenSet[T] = attrib(converter=frozenset)
