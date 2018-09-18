@@ -214,7 +214,7 @@ class _TypeCheckingBuilder(ImmutableSet.Builder[T]):
     _iteration_order: List[T] = attrib(default=attr.Factory(list))
     # this is messy because we can't use attrutils or we would end up with a circular import
     _top_level_type: Type = attrib(
-        validator=validators.instance_of((type, type(None))), default=None)
+        validator=validators.instance_of((type, type(None))), default=None)  # type: ignore
     _require_ordered_input = attrib(validator=validators.instance_of(bool), default=False)
     _order_key: Callable[[T], Any] = attrib(default=None)
 
