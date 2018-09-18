@@ -211,8 +211,8 @@ class _TypeCheckingBuilder(ImmutableSet.Builder[T]):
     _set: AbstractSet[T] = attrib(default=attr.Factory(set))
     _iteration_order: List[T] = attrib(default=attr.Factory(list))
     # this is messy because we can't use attrutils or we would end up with a circular import
-    _top_level_type: Type = attrib(validator=validators.instance_of((Type, type(None))),
-                                   default=None)
+    _top_level_type: Type = attrib(
+        validator=validators.instance_of((type, type(None))), default=None)
     _require_ordered_input = attrib(validator=validators.instance_of(bool), default=False)
     _order_key: Callable[[T], Any] = attrib(default=None)
 
@@ -322,7 +322,9 @@ class _NoTypeCheckingBuilder(ImmutableSet.Builder[T]):
             return _EMPTY
 
 
-@attrs(frozen=True, slots=True, repr=False)
+# cmp=False is necessary because the attrs-generated comparison methods
+# don't obey the set contract
+@attrs(frozen=True, slots=True, repr=False, cmp=False)
 class _FrozenSetBackedImmutableSet(ImmutableSet[T]):
     """
     Implementing class for the general case for ImmutableSet.
