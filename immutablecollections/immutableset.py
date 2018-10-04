@@ -16,6 +16,7 @@ SelfType = TypeVar('SelfType')  # pylint:disable=invalid-name
 
 # typing.AbstractSet matches collections.abc.Set
 class ImmutableSet(Generic[T], immutablecollection.ImmutableCollection[T], AbstractSet[T],
+                   Sequence[T],
                    metaclass=ABCMeta):
     __slots__ = ()
     """
@@ -151,6 +152,13 @@ class ImmutableSet(Generic[T], immutablecollection.ImmutableCollection[T], Abstr
         Gets a new set with all items in this set not in the other.
         """
         return self.difference(other)
+
+    # we can be more efficient than Sequence's default implementation
+    def count(self, value: Any) -> int:
+        if value in self:
+            return 1
+        else:
+            return 0
 
     def __repr__(self):
         return 'i' + str(self)
