@@ -182,24 +182,11 @@ class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCM
         return KeyValueLinearSource.interpret_values(
             KeyValueLinearSource.byte_linear_source_from_tar_gz(tgz_file,
                                                                 key_function, name_filter),
-            lambda x: x.decode('utf-8'))
+            lambda _, x: x.decode('utf-8'))
 
     @staticmethod
     def interpret_values(wrapped: 'KeyValueLinearSource[str, X]',
-                         interpretation_function: Callable[[X], V]) \
-            -> 'KeyValueLinearSource[str, V]':
-        """
-        Make a key-value linear source which interprets the values of another.
-
-        This returns the same values are the wrapped source, except the values in each key-value
-        pair of the wrapped source are replaced by the result of applying `interpretation_function`
-        to the value alone.
-        """
-        return InterpretedLinearKeyValueSource(wrapped, lambda k, v: interpretation_function(v))
-
-    @staticmethod
-    def interpret_values_with_keys(wrapped: 'KeyValueLinearSource[str, X]',
-                                   interpretation_function: Callable[[str, X], V]) \
+                         interpretation_function: Callable[[str, X], V]) \
             -> 'KeyValueLinearSource[str, V]':
         """
         Make a key-value linear source which interprets the values of another.
@@ -605,6 +592,9 @@ class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
         self.wrapped_source = wrapped_source
         self.interpretation_function = interpretation_function
 
+    def keys(self) -> Optional[AbstractSet[K]]:
+        return self.wrapped_source.keys()
+
     def get(self, key: K, _default: Optional[V]) -> Optional[V]:
         inner_get = self.wrapped_source.get(key)
         if inner_get is not None:
@@ -620,7 +610,7 @@ class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        return self.wrapped_source.__exit__(exc_type, exc_val, exc_tb)
+        return self.wrapped_source.__exit__(exc_type, exc_value, traceback)
 
 
 _CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES = {
