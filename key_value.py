@@ -1,19 +1,19 @@
 import tarfile
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
 from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import Generic, TypeVar, Callable, Optional, AbstractSet, Set, Mapping, \
-    MutableMapping, Tuple, Iterator, Union, Dict
+from typing import AbstractSet, Callable, Dict, Generic, Iterator, Mapping, MutableMapping, \
+    Optional, Set, Tuple, TypeVar, Union
 from zipfile import ZipFile
 
 from attr import attrs
 
 from flexnlp.parameters import Parameters
 from flexnlp.utils.attrutils import attrib_immutable
-from flexnlp.utils.immutablecollections import ImmutableSet, ImmutableDict
-from flexnlp.utils.io_utils import CharSource, CharSink, write_doc_id_to_file_map, \
-    read_doc_id_to_file_map
-from flexnlp.utils.preconditions import check_state, check_arg, check_not_none
+from flexnlp.utils.immutablecollections import ImmutableDict, ImmutableSet
+from flexnlp.utils.io_utils import CharSink, CharSource, read_doc_id_to_file_map, \
+    write_doc_id_to_file_map
+from flexnlp.utils.preconditions import check_arg, check_not_none, check_state
 
 K = TypeVar('K')
 V = TypeVar('V')
@@ -193,6 +193,20 @@ class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCM
 
         This returns the same values are the wrapped source, except the values in each key-value
         pair of the wrapped source are replaced by the result of applying `interpretation_function`
+        to the value alone.
+        """
+        return InterpretedLinearKeyValueSource(wrapped, lambda k, v: interpretation_function(v))
+
+    @staticmethod
+    def interpret_values_with_keys(wrapped: 'KeyValueLinearSource[str, X]',
+                                   interpretation_function: Callable[[str, X], V]) \
+            -> 'KeyValueLinearSource[str, V]':
+        """
+        Make a key-value linear source which interprets the values of another.
+
+        This returns the same values are the wrapped source, except the values in each key-value
+        pair of the wrapped source are replaced by the result of applying `interpretation_function`
+        to the key and the value.
         """
         return InterpretedLinearKeyValueSource(wrapped, interpretation_function)
 
@@ -300,6 +314,19 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         """
         return _ZipBytesFileKeyValuesSource(path, filename_function=filename_function,
                                             keys_function=keys_function)
+
+    @staticmethod
+    def interpret_values(wrapped: 'KeyValueSource[K, X]',
+                         interpretation_function: Callable[[K, X], V]) \
+            -> 'KeyValueSource[K, V]':
+        """
+        Make a key-value source which interprets the values of another.
+
+        This returns the same values are the wrapped source, except the values in each key-value
+        pair of the wrapped source are replaced by the result of applying `interpretation_function`
+        to the key and value.
+        """
+        return _InterpretedKeyValueSource(wrapped, interpretation_function)
 
 
 class _DirectoryCharKeyValueSink(KeyValueSink[str, str]):
@@ -548,14 +575,15 @@ class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
     """
 
     def __init__(self, wrapped_source: KeyValueLinearSource[str, X],
-                 interpretation_function: Callable[[X], V]) -> None:
+                 interpretation_function: Callable[[str, X], V]) -> None:
         self.wrapped_source = wrapped_source
         self.interpretation_function = interpretation_function
 
     def items(self, key_filter: Callable[[str], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
         def generator_function() -> Iterator[Tuple[str, V]]:
             for wrapped_pair in self.wrapped_source.items(key_filter=key_filter):
-                yield wrapped_pair[0], self.interpretation_function(wrapped_pair[1])
+                yield wrapped_pair[0], self.interpretation_function(wrapped_pair[0],
+                                                                    wrapped_pair[1])
 
         return generator_function()  # type: ignore
 
@@ -564,6 +592,34 @@ class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        return self.wrapped_source.__exit__(exc_type, exc_val, exc_tb)
+
+
+class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
+    """
+    Key-value source which interprets the valus of another
+    """
+
+    def __init__(self, wrapped_source: KeyValueSource[K, X],
+                 interpretation_function: Callable[[K, X], V]) -> None:
+        self.wrapped_source = wrapped_source
+        self.interpretation_function = interpretation_function
+
+    def get(self, key: K, _default: Optional[V]) -> Optional[V]:
+        inner_get = self.wrapped_source.get(key)
+        if inner_get is not None:
+            return self.interpretation_function(key, inner_get)
+        else:
+            return None
+
+    def __getitem__(self, item: K) -> V:
+        return self.interpretation_function(item, self.wrapped_source[item])
+
+    def __enter__(self) -> 'KeyValueLinearSource[str,V]':
+        self.wrapped_source.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
         return self.wrapped_source.__exit__(exc_type, exc_val, exc_tb)
 
 
