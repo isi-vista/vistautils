@@ -302,10 +302,12 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         return _ZipBytesFileKeyValuesSource(path, filename_function=filename_function,
                                             keys_function=keys_function)
 
+    # mypy is grumpy this doesn't agree with the signature of KeyValueLinearSource,
+    # but it doesn't matter since it is a static method
     @staticmethod
-    def interpret_values(wrapped: 'KeyValueSource[K, X]',
+    def interpret_values(wrapped: 'KeyValueSource[K, X]',  # type: ignore
                          interpretation_function: Callable[[K, X], V]) \
-            -> 'KeyValueSource[K, V]':
+            -> 'KeyValueSource[K, V]':  # type: ignore
         """
         Make a key-value source which interprets the values of another.
 
@@ -596,16 +598,19 @@ class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
         return self.wrapped_source.keys()
 
     def get(self, key: K, _default: Optional[V]) -> Optional[V]:
-        inner_get = self.wrapped_source.get(key)
-        if inner_get is not None:
+        # cannot use None as a "this is missing" marked in case underlying source really
+        # does return None as a value for some non-missing key.
+        sentinel = object()
+        inner_get = self.wrapped_source.get(key, sentinel)  # type: ignore
+        if inner_get is not sentinel:
             return self.interpretation_function(key, inner_get)
         else:
-            return None
+            return _default
 
     def __getitem__(self, item: K) -> V:
         return self.interpretation_function(item, self.wrapped_source[item])
 
-    def __enter__(self) -> 'KeyValueLinearSource[str,V]':
+    def __enter__(self) -> 'KeyValueSource[str,V]':
         self.wrapped_source.__enter__()
         return self
 
