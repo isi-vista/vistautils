@@ -17,7 +17,7 @@ SelfType = TypeVar('SelfType')  # pylint:disable=invalid-name
 # typing.AbstractSet matches collections.abc.Set
 class ImmutableSet(Generic[T],
                    immutablecollection.ImmutableCollection[T], AbstractSet[T],
-                   Iterable[T],
+                   Sequence[T],
                    metaclass=ABCMeta):
     __slots__ = ()
     """
@@ -95,6 +95,12 @@ class ImmutableSet(Generic[T],
         """
         raise NotImplementedError()
 
+    @abstractmethod
+    def __getitem__(self, item) -> T:
+        """
+        Get the item at the given index in the set's iteration order
+        """
+
     # we would really like this to be AbstractSet[ExtendsT] but Python doesn't support it
     def union(self, other: AbstractSet[T], check_top_type_matches=None) -> 'ImmutableSet[T]':
         """
@@ -147,6 +153,13 @@ class ImmutableSet(Generic[T],
         Gets a new set with all items in this set not in the other.
         """
         return self.difference(other)
+
+    # we can be more efficient than Sequence's default implementation
+    def count(self, value: Any) -> int:
+        if value in self:
+            return 1
+        else:
+            return 0
 
     def __repr__(self):
         return 'i' + str(self)
@@ -262,11 +275,15 @@ class _TypeCheckingBuilder(ImmutableSet.Builder[T]):
 
     def build(self) -> 'ImmutableSet[T]':
         if self._set:
-            if self._order_key:
-                # mypy is confused
-                self._iteration_order.sort(key=self._order_key)  # type: ignore
-            return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
-                                                top_level_type=self._top_level_type)
+            if len(self._set) > 1:
+                if self._order_key:
+                    # mypy is confused
+                    self._iteration_order.sort(key=self._order_key)  # type: ignore
+                return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
+                                                    top_level_type=self._top_level_type)
+            else:
+                return _SingletonImmutableSet(self._set.__iter__().__next__(),
+                                              top_level_type=self._top_level_type)
         else:
             return _EMPTY
 
@@ -315,11 +332,15 @@ class _NoTypeCheckingBuilder(ImmutableSet.Builder[T]):
 
     def build(self) -> 'ImmutableSet[T]':
         if self._set:
-            if self._order_key:
-                # mypy is confused
-                self._iteration_order.sort(key=self._order_key)  # type: ignore
-            return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
-                                                top_level_type=None)
+            if len(self._set) > 1:
+                if self._order_key:
+                    # mypy is confused
+                    self._iteration_order.sort(key=self._order_key)  # type: ignore
+                return _FrozenSetBackedImmutableSet(self._set, self._iteration_order,
+                                                    top_level_type=None)
+            else:
+                return _SingletonImmutableSet(self._set.__iter__().__next__(),
+                                              top_level_type=None)
         else:
             return _EMPTY
 
@@ -357,6 +378,9 @@ class _FrozenSetBackedImmutableSet(ImmutableSet[T]):
     def __contains__(self, item) -> bool:
         return self._set.__contains__(item)
 
+    def __getitem__(self, item) -> T:
+        return self._iteration_order[item]
+
     def __eq__(self, other):
         # pylint:disable=protected-access
         if isinstance(other, _FrozenSetBackedImmutableSet):
@@ -366,6 +390,40 @@ class _FrozenSetBackedImmutableSet(ImmutableSet[T]):
 
     def __hash__(self):
         return self._set.__hash__()
+
+
+@attrs(frozen=True, slots=True, repr=False)
+class _SingletonImmutableSet(ImmutableSet[T]):
+    _single_value: T = attrib()
+    _top_level_type: Optional[Type] = attrib(cmp=False, hash=False)
+
+    def as_list(self) -> immutablelist.ImmutableList[T]:
+        return immutablelist.ImmutableList.of([self._single_value])
+
+    def __iter__(self) -> Iterator[T]:
+        return iter((self._single_value,))
+
+    def __len__(self) -> int:
+        return 1
+
+    def __contains__(self, item) -> bool:
+        return self._single_value == item
+
+    def __getitem__(self, item) -> T:
+        if item == 0:
+            return self._single_value
+        else:
+            raise IndexError(f"Index {item} out-of-bounds for size 1 ImmutableSet")
+
+    def __eq__(self, other):
+        # pylint:disable=protected-access
+        if isinstance(other, _SingletonImmutableSet):
+            return self._single_value == other._single_value
+        else:
+            return False
+
+    def __hash__(self):
+        return 1 + self._single_value.__hash__()
 
 
 # Singleton instance for empty

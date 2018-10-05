@@ -56,6 +56,12 @@ class ImmutableMultiDict(ImmutableCollection[KT], Generic[KT, VT], metaclass=ABC
         """
         return self.as_dict().keys()
 
+    def items(self):
+        # inefficient default implementation
+        for key in self.keys():
+            for val in self[key]:
+                yield (key, val)
+
     @abstractmethod
     def __len__(self) -> int:
         """

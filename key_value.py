@@ -17,6 +17,7 @@ from flexnlp.utils.preconditions import check_state, check_arg, check_not_none
 
 K = TypeVar('K')
 V = TypeVar('V')
+X = TypeVar('X')
 
 
 def _identity(x: str) -> str:
@@ -184,8 +185,8 @@ class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCM
             lambda x: x.decode('utf-8'))
 
     @staticmethod
-    def interpret_values(wrapped: 'KeyValueLinearSource[str, bytes]',
-                         interpretation_function: Callable[[bytes], V]) \
+    def interpret_values(wrapped: 'KeyValueLinearSource[str, X]',
+                         interpretation_function: Callable[[X], V]) \
             -> 'KeyValueLinearSource[str, V]':
         """
         Make a key-value linear source which interprets the values of another.
@@ -546,8 +547,8 @@ class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
     See `KeyValueLinearSource.interpret_values` for details.
     """
 
-    def __init__(self, wrapped_source: KeyValueLinearSource[str, bytes],
-                 interpretation_function: Callable[[bytes], V]) -> None:
+    def __init__(self, wrapped_source: KeyValueLinearSource[str, X],
+                 interpretation_function: Callable[[X], V]) -> None:
         self.wrapped_source = wrapped_source
         self.interpretation_function = interpretation_function
 
