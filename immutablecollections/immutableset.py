@@ -392,7 +392,9 @@ class _FrozenSetBackedImmutableSet(ImmutableSet[T]):
         return self._set.__hash__()
 
 
-@attrs(frozen=True, slots=True, repr=False)
+# cmp=False is necessary because the attrs-generated comparison methods
+# don't obey the set contract
+@attrs(frozen=True, slots=True, repr=False, cmp=False)
 class _SingletonImmutableSet(ImmutableSet[T]):
     _single_value: T = attrib()
     _top_level_type: Optional[Type] = attrib(cmp=False, hash=False)
