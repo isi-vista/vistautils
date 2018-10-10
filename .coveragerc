@@ -1,0 +1,25 @@
+# .coveragerc to control coverage.py
+[run]
+# We've seen incorrect results with branch coverage enabled
+branch = False
+include =
+    immutablecollections/*
+
+[report]
+show_missing = True
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if False:
+# Files to omit
+omit =
+    # We don't care about init file coverage
+    */__init__.py
