@@ -1,0 +1,10 @@
+# core requirements
+attrs==18.2.0
+
+# extras for development
+nose
+nose-exclude
+coverage
+pylint==1.8.2
+flake8==3.5.0
+mypy==0.620
