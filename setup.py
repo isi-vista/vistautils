@@ -13,7 +13,7 @@ setup(name='vistautils',
       # 3.6 and up, but not Python 4
       python_requires='~=3.6',
       install_requires=[
-          'immutablecollections'>=0.1.2,
+          'immutablecollections>=0.1.2',
           'attrs>=18.2.0',
           'pyyaml>=3.2'
       ],
