@@ -4,8 +4,8 @@ from distutils.core import setup
 from setuptools import find_packages
 
 setup(name='vistautils',
-      version='0.1.1',
-      author='Ryan Gabbard <gabbard@isi.edi> and Constantine Lignos <lignos@isi.edu>',
+      version='0.1.2',
+      author='Ryan Gabbard <gabbard@isi.edu> and Constantine Lignos <lignos@isi.edu>',
       author_email='gabbard@isi.edu',
       description="Python utilities developed by USC ISI's VISTA center",
       url='https://github.com/isi-vista/vistautils',
