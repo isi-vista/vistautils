@@ -1,0 +1,4 @@
+[tool.towncrier]
+    package="vistautils"
+    filename="CHANGELOG.md"
+
