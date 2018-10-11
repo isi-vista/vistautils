@@ -1,6 +1,4 @@
-from abc import ABCMeta
-from operator import attrgetter
-from typing import Sequence, TypeVar, Tuple, Iterable, List, Sized, Optional
+from typing import Tuple, Iterable, Sized, Optional
 
 from attr import attrs
 from typing_extensions import Protocol
@@ -137,4 +135,3 @@ class HasSpan(Protocol):
 
     def contains_span(self, other) -> bool:
         return self.span.contains_span(other)
-

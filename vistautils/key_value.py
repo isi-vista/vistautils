@@ -610,7 +610,7 @@ class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
     def __getitem__(self, item: K) -> V:
         return self.interpretation_function(item, self.wrapped_source[item])
 
-    def __enter__(self) -> 'KeyValueSource[str,V]':
+    def __enter__(self) -> 'KeyValueSource[K,V]':
         self.wrapped_source.__enter__()
         return self
 
