@@ -13,9 +13,9 @@ from zipfile import ZipFile
 
 from attr import attrs
 
-from flexnlp.utils.attrutils import attrib_instance_of
-from flexnlp.utils.immutablecollections import ImmutableDict
-from flexnlp.utils.misc_utils import pathify
+from vistautils.attrutils import attrib_instance_of
+from immutablecollections import ImmutableDict
+from vistautils.misc_utils import pathify
 
 
 def is_empty_directory(path: Path) -> bool:

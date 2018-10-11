@@ -16,9 +16,9 @@ The list of zip files created will be stored in "_slices.txt" in the output dire
 import sys
 from contextlib import ExitStack
 
-from flexnlp.parameters import Parameters, YAMLParametersLoader
-from flexnlp.utils.io_utils import CharSink
-from flexnlp.utils.key_value import char_key_value_linear_source_from_params, KeyValueSink
+from vistautils.parameters import Parameters, YAMLParametersLoader
+from io_utils import CharSink
+from vistautils.key_value import char_key_value_linear_source_from_params, KeyValueSink
 
 
 def main(params: Parameters):

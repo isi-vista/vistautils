@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from flexnlp.parameters import Parameters, YAMLParametersWriter
-from flexnlp.utils.io_utils import CharSink
+from vistautils.parameters import Parameters, YAMLParametersWriter
+from vistautils.io_utils import CharSink
 
 
 class TestParameters(TestCase):

@@ -1,5 +1,6 @@
 # core requirements
 attrs==18.2.0
+pyyaml==3.12
 
 # extras for development
 nose

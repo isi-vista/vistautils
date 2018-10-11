@@ -3,8 +3,8 @@ from typing import Any, Callable, Sized, Tuple, Type, Union
 
 from attr import Factory, attrib, validators
 
-import flexnlp.utils.immutablecollections
-import flexnlp.utils.preconditions
+import immutablecollections
+import vistautils.preconditions
 
 
 # TODO cannot currently be used with additional validators:
@@ -27,7 +27,7 @@ def attrib_factory(factory: Callable, *args, **kwargs):
     return attrib(default=Factory(factory), *args, **kwargs)  # type: ignore
 
 
-def attrib_immutable(type_: Type[flexnlp.utils.immutablecollections.ImmutableCollection], *args,
+def attrib_immutable(type_: Type[immutablecollections.ImmutableCollection], *args,
                      **kwargs):
     _check_immutable_collection(type_)
     # Mypy does not understand these arguments
@@ -35,7 +35,7 @@ def attrib_immutable(type_: Type[flexnlp.utils.immutablecollections.ImmutableCol
 
 
 def attrib_private_immutable_builder(
-        type_: Type[flexnlp.utils.immutablecollections.ImmutableCollection], *args, **kwargs):
+        type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs):
     """
     Create an immutable collection builder private attribute.
 
@@ -48,7 +48,7 @@ def attrib_private_immutable_builder(
 
 # TODO: The use of Type[ImmutableCollection] causes Mypy warnings
 # Perhaps the solution is to make ImmutableCollection a Protocol?
-def attrib_opt_immutable(type_: Type[flexnlp.utils.immutablecollections.ImmutableCollection],
+def attrib_opt_immutable(type_: Type[immutablecollections.ImmutableCollection],
                          *args, **kwargs):
     """Return a attrib with a converter for optional collections.
 
@@ -69,14 +69,14 @@ def opt_instance_of(type_: Union[Type, Tuple[Type, ...]]) -> Callable:
 
 
 def _check_immutable_collection(type_):
-    flexnlp.utils.preconditions.check_arg(
-        issubclass(type_, flexnlp.utils.immutablecollections.ImmutableCollection),
+    vistautils.preconditions.check_arg(
+        issubclass(type_, immutablecollections.ImmutableCollection),
         "Type {} is not an immutable collection".format(type_))
 
 
 def _empty_immutable_if_none(val: Any,
-                             type_: Type[flexnlp.utils.immutablecollections.ImmutableCollection]) \
-        -> flexnlp.utils.immutablecollections.ImmutableCollection:
+                             type_: Type[immutablecollections.ImmutableCollection]) \
+        -> immutablecollections.ImmutableCollection:
     if val is None:
         return type_.empty()
     else:

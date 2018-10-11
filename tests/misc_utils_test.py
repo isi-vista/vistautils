@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from flexnlp.utils.misc_utils import str_list_limited, flatten_once_to_list
+from vistautils.misc_utils import str_list_limited, flatten_once_to_list
 
 
 class ExceptionUtilsTest(TestCase):

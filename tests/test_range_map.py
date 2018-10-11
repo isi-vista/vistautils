@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from flexnlp.utils.immutablecollections import ImmutableSet
-from flexnlp.utils.range import ImmutableRangeMap, Range
+from immutablecollections import ImmutableSet
+from vistautils.range import ImmutableRangeMap, Range
 
 
 class TestRangeMap(TestCase):

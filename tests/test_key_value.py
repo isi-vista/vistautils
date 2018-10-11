@@ -8,8 +8,8 @@ from io import BytesIO
 
 from typing import Optional
 
-from flexnlp.utils.immutablecollections import ImmutableSet
-from flexnlp.utils.key_value import KeyValueSink, KeyValueSource, KeyValueLinearSource
+from immutablecollections import ImmutableSet
+from vistautils.key_value import KeyValueSink, KeyValueSource, KeyValueLinearSource
 
 
 class TestKeyValue(TestCase):

@@ -13,10 +13,10 @@ from typing import Optional, List, Mapping, Collection, Iterable
 
 from attr import attrs, evolve
 
-from flexnlp import Span
-from flexnlp.utils.attrutils import attrib_instance_of, attrib_opt_immutable
-from flexnlp.utils.immutablecollections import ImmutableDict
-from flexnlp.utils.preconditions import check_arg
+from vistautils.span import Span
+from vistautils.attrutils import attrib_instance_of, attrib_opt_immutable
+from immutablecollections import ImmutableDict
+from vistautils.preconditions import check_arg
 
 DIV = 'div'
 SPAN = 'span'

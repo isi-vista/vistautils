@@ -3,10 +3,10 @@ from unittest import TestCase
 
 from sortedcontainers import SortedDict
 
-from flexnlp.annotators.util.iterutils import tile_with_pairs
-from flexnlp.utils.immutablecollections import ImmutableSet, ImmutableList
+from vistautils.iterutils import tile_with_pairs
+from immutablecollections import ImmutableSet, ImmutableList
 # noinspection PyProtectedMember
-from flexnlp.utils.range import Range, BoundType, RangeSet, _value_below, _value_at_or_below, \
+from vistautils.range import Range, BoundType, RangeSet, _value_below, _value_at_or_below, \
     _value_at_or_above
 
 

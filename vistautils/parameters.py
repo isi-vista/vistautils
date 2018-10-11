@@ -8,11 +8,11 @@ from typing import Any, Dict, List, Mapping, Match, Optional, Sequence, Type, Ty
 import yaml
 from attr import attrs
 
-from flexnlp.utils.attrutils import attrib_opt_immutable
-from flexnlp.utils.immutablecollections import ImmutableDict
-from flexnlp.utils.io_utils import CharSink, is_empty_directory
-from flexnlp.utils.misc_utils import eval_in_context_of_modules
-from flexnlp.utils.preconditions import check_arg, check_isinstance
+from vistautils.attrutils import attrib_opt_immutable
+from immutablecollections import ImmutableDict
+from vistautils.io_utils import CharSink, is_empty_directory
+from vistautils.misc_utils import eval_in_context_of_modules
+from vistautils.preconditions import check_arg, check_isinstance
 
 _logger = logging.getLogger(__name__)  # pylint:disable=invalid-name
 

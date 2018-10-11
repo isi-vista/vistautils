@@ -1,7 +1,7 @@
 from typing import Any
 from unittest import TestCase
 
-from flexnlp.utils.misc_utils import eval_in_context_of_modules
+from vistautils.misc_utils import eval_in_context_of_modules
 
 
 class TestMiscUtils(TestCase):

@@ -15,6 +15,7 @@ setup(name='vistautils',
       install_requires=[
           'immutablecollections'>=0.1.2,
           'attrs>=18.2.0',
+          'pyyaml>=3.2'
       ],
       classifiers=[
         "Programming Language :: Python :: 3",

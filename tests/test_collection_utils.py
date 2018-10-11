@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from flexnlp.utils.collection_utils import get_only
+from vistautils.collection_utils import get_only
 
 
 class TestCollectionUtils(TestCase):

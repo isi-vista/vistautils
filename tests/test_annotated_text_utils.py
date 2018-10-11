@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from flexnlp import Span
-from flexnlp.utils.annotated_text_utils import AnnotatedSpan, HTMLStyleAnnotationFormatter
+from vistautils.span import Span
+from vistautils.annotated_text_utils import AnnotatedSpan, HTMLStyleAnnotationFormatter
 
 
 class TestAnnotatedTextUtils(TestCase):

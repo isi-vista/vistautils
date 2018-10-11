@@ -8,12 +8,12 @@ from zipfile import ZipFile
 
 from attr import attrs
 
-from flexnlp.parameters import Parameters
-from flexnlp.utils.attrutils import attrib_immutable
-from flexnlp.utils.immutablecollections import ImmutableDict, ImmutableSet
-from flexnlp.utils.io_utils import CharSink, CharSource, read_doc_id_to_file_map, \
+from vistautils.parameters import Parameters
+from vistautils.attrutils import attrib_immutable
+from immutablecollections import ImmutableDict, ImmutableSet
+from vistautils.io_utils import CharSink, CharSource, read_doc_id_to_file_map, \
     write_doc_id_to_file_map
-from flexnlp.utils.preconditions import check_arg, check_not_none, check_state
+from vistautils.preconditions import check_arg, check_not_none, check_state
 
 K = TypeVar('K')
 V = TypeVar('V')

@@ -8,10 +8,10 @@ from zipfile import ZipFile
 import os
 from attr import attrs
 
-from flexnlp.parameters import Parameters
-from flexnlp.utils.attrutils import attrib_instance_of
-from flexnlp.utils.immutablecollections import ImmutableDict
-from flexnlp.utils.io_utils import ByteSink, CharSink, CharSource, read_doc_id_to_file_map, \
+from vistautils.parameters import Parameters
+from vistautils.attrutils import attrib_instance_of
+from immutablecollections import ImmutableDict
+from vistautils.io_utils import ByteSink, CharSink, CharSource, read_doc_id_to_file_map, \
     write_doc_id_to_file_map
 
 

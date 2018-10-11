@@ -5,7 +5,7 @@ from typing import Container, Any, Union
 
 from attr import attrs, attrib
 
-from flexnlp.utils.preconditions import check_isinstance
+from vistautils.preconditions import check_isinstance
 
 
 class Checkpoints(Container[str], metaclass=ABCMeta):

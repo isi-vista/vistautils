@@ -5,7 +5,7 @@ from typing import Any, Dict, Generic, Iterable, List, Type, TypeVar, Union
 
 from attr import attrib, attrs
 
-from flexnlp.utils import attrutils, preconditions
+from vistautils import attrutils, preconditions
 
 
 def str_list_limited(_list: Iterable[Any], limit: int) -> str:

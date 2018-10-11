@@ -14,8 +14,8 @@ char_key_value_sink_from_params for details.
 import sys
 from typing import Set
 
-from flexnlp.parameters import Parameters, YAMLParametersLoader
-from flexnlp.utils.key_value import KeyValueSource, char_key_value_sink_from_params
+from vistautils.parameters import Parameters, YAMLParametersLoader
+from vistautils.key_value import KeyValueSource, char_key_value_sink_from_params
 
 
 def main(params: Parameters):

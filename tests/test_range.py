@@ -1,7 +1,7 @@
 import sys
 from unittest import TestCase
 
-from flexnlp.utils.range import Range, BoundType, _BELOW_ALL
+from vistautils.range import Range, BoundType, _BELOW_ALL
 
 
 class TestRange(TestCase):

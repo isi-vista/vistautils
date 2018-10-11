@@ -1,7 +1,7 @@
 import logging
 import logging.config
 
-from flexnlp.parameters import Parameters, ParameterError
+from vistautils.parameters import Parameters, ParameterError
 
 log = logging.getLogger(__name__)   # pylint:disable=invalid-name
 

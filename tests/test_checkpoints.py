@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase
 
-from flexnlp.utils.checkpoints import Checkpoints
+from vistautils.checkpoints import Checkpoints
 
 
 class TestCheckpoints(TestCase):

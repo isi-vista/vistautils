@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from flexnlp.utils.preconditions import check_arg, check_not_none
+from vistautils.preconditions import check_arg, check_not_none
 
 
 class TestPreconditions(TestCase):

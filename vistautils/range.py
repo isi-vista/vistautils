@@ -7,9 +7,9 @@ from attr import attrib, attrs
 from sortedcontainers import SortedDict
 
 # Port of Guava's Range data type and associated classes
-from flexnlp.utils.attrutils import attrib_instance_of, attrib_immutable
-from flexnlp.utils.immutablecollections import ImmutableSet, ImmutableDict
-from flexnlp.utils.preconditions import check_arg, check_not_none
+from vistautils.attrutils import attrib_instance_of, attrib_immutable
+from immutablecollections import ImmutableSet, ImmutableDict
+from vistautils.preconditions import check_arg, check_not_none
 
 # will be initialized after bound type declarations
 _OPEN: 'BoundType' = None
