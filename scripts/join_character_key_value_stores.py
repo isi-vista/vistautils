@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Joins multiple character key-value stores into one.
 
@@ -25,7 +27,7 @@ def main(params: Parameters):
     with char_key_value_sink_from_params('output', params,
                                          eval_context=locals()) as out:
         for input_path in input_paths:
-            with KeyValueSource.zip_bytes_source(input_path) as inp:
+            with KeyValueSource.zip_character_source(input_path) as inp:
                 for key in inp.keys():
                     if key in keys_written:
                         raise RuntimeError("Duplicate key: {}".format(key))

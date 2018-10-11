@@ -17,6 +17,10 @@ setup(name='vistautils',
           'attrs>=18.2.0',
           'pyyaml>=3.2'
       ],
+      scripts=["scripts/join_key_value_stores.py",
+          "scripts/join_binary_key_value_stores.py",
+          "scripts/join_character_key_value_stores.py",
+          "scripts/split_key_value_store.py"],
       classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

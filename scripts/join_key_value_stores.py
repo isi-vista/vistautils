@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Joins multiple character key-value stores into one.
 

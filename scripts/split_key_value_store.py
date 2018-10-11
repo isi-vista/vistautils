@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Split any character key-value store in multiple character key-value stores.
 
@@ -17,7 +19,7 @@ import sys
 from contextlib import ExitStack
 
 from vistautils.parameters import Parameters, YAMLParametersLoader
-from io_utils import CharSink
+from vistautils.io_utils import CharSink
 from vistautils.key_value import char_key_value_linear_source_from_params, KeyValueSink
 
 
