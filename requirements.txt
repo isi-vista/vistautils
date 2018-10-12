@@ -12,3 +12,4 @@ flake8==3.5.0
 mypy==0.620
 towncrier
 sphinx
+sphinx-autodoc-typehints
