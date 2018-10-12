@@ -1,0 +1,19 @@
+[tool.towncrier]
+    package="vistautils"
+    filename="CHANGELOG.md"
+    issue_format = "`#{issue} <https://github.com/isi-vista/vistautils/issues/{issue}>`_"
+
+    [[tool.towncrier.type]]
+        directory = "breaking"
+        name = "Backward-incompatible Changes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "deprecation"
+        name = "Deprecations"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "feature"
+        name = "New Features"
+        showcontent = true
