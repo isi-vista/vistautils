@@ -1,0 +1,1 @@
+Fixed crash when a RangeSet was asked for the ranges which enclosed a range greater than any contained range (#10)
