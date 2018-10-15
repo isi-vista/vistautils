@@ -1,6 +1,7 @@
 # core requirements
 attrs==18.2.0
 pyyaml==3.12
+immutablecollections==0.1.2
 
 # extras for development
 nose
