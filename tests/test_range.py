@@ -1,6 +1,7 @@
 import sys
 from unittest import TestCase
 
+from immutablecollections import ImmutableSet
 from vistautils.range import Range, RangeSet, BoundType, _BELOW_ALL, ImmutableRangeSet, \
     ImmutableRangeMap
 
@@ -366,23 +367,23 @@ class TestRange(TestCase):
 
         self.assertFalse(rng.intersects(Range.closed(10, 12)))
 
-    def create_spanning(self) -> None:
+    def test_create_spanning(self) -> None:
         with self.assertRaisesRegex(ValueError,
                                     "Cannot create range from span of empty range collection"):
             Range.create_spanning([])
 
-    def check_usable_in_set(self) -> None:
+    def test_check_usable_in_set(self) -> None:
         range_set = ImmutableSet.of([Range.open_closed(0, 1), Range.open_closed(0, 1),
                                      Range.at_most(1), Range.at_most(1)])
         self.assertEqual(2, len(range_set))
 
-    def range_set_equality(self) -> None:
+    def test_range_set_equality(self) -> None:
         self.assertEqual(ImmutableRangeSet.builder()
                          .add(Range.at_most(2)).add(Range.at_least(5)).build(),
                          ImmutableRangeSet.builder()
                          .add(Range.at_least(5)).add(Range.at_most(2)).build())
 
-    def range_enclosing_range(self) -> None:
+    def test_range_enclosing_range(self) -> None:
         range_set = RangeSet.create_mutable()
         range_set.add_all([Range.at_most(2), Range.open_closed(5, 8), Range.at_least(10)])
         self.assertEqual(None, range_set.range_enclosing_range(Range.closed(2, 3)))
@@ -391,12 +392,18 @@ class TestRange(TestCase):
                          range_set.range_enclosing_range(Range.closed_open(6, 7)))
         self.assertEqual(None, range_set.range_enclosing_range(Range.closed(5, 8)))
 
-    def range_clear(self) -> None:
+    def test_range_clear(self) -> None:
         range_set = RangeSet.create_mutable()
         range_set.add_all([Range.at_most(2), Range.open_closed(5, 8), Range.at_least(10)])
         range_set.clear()
         self.assertEqual(0, len(range_set.as_ranges()))
 
-    def immutable_range_map_empty(self) -> None:
+    def test_immutable_range_map_empty(self) -> None:
         self.assertTrue(ImmutableRangeMap.empty().is_empty())
+
+    def test_ranges_enclosed_by_out_of_bounds(self) -> None:
+        self.assertEqual(ImmutableSet.empty(),
+                         RangeSet.create_mutable().add(Range.closed(0, 10))
+                         .ranges_enclosed_by(Range.at_least(20)))
+
 

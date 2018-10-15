@@ -782,15 +782,18 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
     def ranges_enclosed_by(self, query_rng) -> ImmutableSet[Range[T]]:
         highest_range_at_or_above = _value_at_or_above(self._ranges_by_lower_bound,
                                                        query_rng._lower_bound)
-        start_idx = self._ranges_by_lower_bound.values().index(highest_range_at_or_above)
-        ret: ImmutableSet.Builder[Range[T]] = ImmutableSet.builder()
-        for idx in range(start_idx, len(self._ranges_by_lower_bound)):
-            rng_at_idx = self._ranges_by_lower_bound.values()[idx]
-            if query_rng.encloses(rng_at_idx):
-                ret.add(rng_at_idx)
-            else:
-                break
-        return ret.build()
+        if highest_range_at_or_above:
+            start_idx = self._ranges_by_lower_bound.values().index(highest_range_at_or_above)
+            ret: ImmutableSet.Builder[Range[T]] = ImmutableSet.builder()
+            for idx in range(start_idx, len(self._ranges_by_lower_bound)):
+                rng_at_idx = self._ranges_by_lower_bound.values()[idx]
+                if query_rng.encloses(rng_at_idx):
+                    ret.add(rng_at_idx)
+                else:
+                    break
+            return ret.build()
+        else:
+            return ImmutableSet.empty()
 
     def __contains__(self, value: T) -> bool:  # type: ignore
         highest_range_beginning_at_or_below = _value_at_or_below(
