@@ -585,7 +585,7 @@ class RangeSet(Generic[T], Container[T], metaclass=ABCMeta):
     __slots__ = ()
 
     @staticmethod
-    def create_mutable() -> 'RangeSet[T]':
+    def create_mutable() -> 'MutableRangeSet[T]':
         return _MutableSortedDictRangeSet.create()
 
     @abstractmethod
@@ -835,14 +835,14 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
         return repr(list(self.as_ranges()))
 
 
-class _MutableSortedDictRangeSet(_SortedDictRangeSet[T]):
+class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
     # pylint:disable=protected-access
 
     @staticmethod
-    def create() -> 'RangeSet[T]':
+    def create() -> 'MutableRangeSet[T]':
         return _MutableSortedDictRangeSet(SortedDict())
 
-    def add(self, range_to_add: Range[T]) -> 'RangeSet[T]':
+    def add(self, range_to_add: Range[T]) -> 'MutableRangeSet[T]':
         if range_to_add.is_empty():
             return self
 
