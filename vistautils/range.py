@@ -4,11 +4,11 @@ from typing import Generic, TypeVar, Container, Hashable, Iterable, Union, Seque
     Any, Optional, Mapping
 
 from attr import attrib, attrs
+from immutablecollections import ImmutableSet, ImmutableDict
 from sortedcontainers import SortedDict
 
 # Port of Guava's Range data type and associated classes
 from vistautils.attrutils import attrib_instance_of, attrib_immutable
-from immutablecollections import ImmutableSet, ImmutableDict
 from vistautils.preconditions import check_arg, check_not_none
 
 # will be initialized after bound type declarations

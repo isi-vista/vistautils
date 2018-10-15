@@ -7,9 +7,9 @@ from typing import Any, Dict, List, Mapping, Match, Optional, Sequence, Type, Ty
 
 import yaml
 from attr import attrs
+from immutablecollections import ImmutableDict
 
 from vistautils.attrutils import attrib_opt_immutable
-from immutablecollections import ImmutableDict
 from vistautils.io_utils import CharSink, is_empty_directory
 from vistautils.misc_utils import eval_in_context_of_modules
 from vistautils.preconditions import check_arg, check_isinstance

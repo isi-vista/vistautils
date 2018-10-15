@@ -12,9 +12,9 @@ from typing import Any, AnyStr, BinaryIO, Callable, Iterable, Iterator, List, Ma
 from zipfile import ZipFile
 
 from attr import attrs
+from immutablecollections import ImmutableDict
 
 from vistautils.attrutils import attrib_instance_of
-from immutablecollections import ImmutableDict
 from vistautils.misc_utils import pathify
 
 

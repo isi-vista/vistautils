@@ -12,10 +12,10 @@ import itertools
 from typing import Optional, List, Mapping, Collection, Iterable
 
 from attr import attrs, evolve
+from immutablecollections import ImmutableDict
 
 from vistautils.span import Span
 from vistautils.attrutils import attrib_instance_of, attrib_opt_immutable
-from immutablecollections import ImmutableDict
 from vistautils.preconditions import check_arg
 
 DIV = 'div'

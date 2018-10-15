@@ -7,10 +7,10 @@ from typing import AbstractSet, Callable, Dict, Generic, Iterator, Mapping, Muta
 from zipfile import ZipFile
 
 from attr import attrs
+from immutablecollections import ImmutableDict, ImmutableSet
 
 from vistautils.parameters import Parameters
 from vistautils.attrutils import attrib_immutable
-from immutablecollections import ImmutableDict, ImmutableSet
 from vistautils.io_utils import CharSink, CharSource, read_doc_id_to_file_map, \
     write_doc_id_to_file_map
 from vistautils.preconditions import check_arg, check_not_none, check_state
