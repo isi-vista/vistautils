@@ -3,7 +3,7 @@ Code for applying HTML-like markup to text.
 
 This is useful for rendering NLP annotations to users.
 
-Adapted from edu.isi.nlp.strings.formatting from https://github.com/isi-vista/nlp-util, which
+Adapted from ``edu.isi.nlp.strings.formatting`` from https://github.com/isi-vista/nlp-util, which
 is itself derived from code from BBN Technologies.
 """
 import io
@@ -48,7 +48,7 @@ class AnnotatedSpan:
 
 def to_start_tag(annotated_range: AnnotatedSpan) -> str:
     """
-    Make the start tag of an HTML element from an `AnnotatedOffsetRange`
+    Make the start tag of an HTML element from an `AnnotatedSpan`
     """
     key_value_string = ' '.join(f'{k}="{v}"'
                                 for (k, v) in sorted(annotated_range.attributes.items()))
