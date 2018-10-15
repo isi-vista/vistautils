@@ -48,7 +48,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'immutablecollections'
-copyright = '2018, Ryan Gabbard and Constantine Lignos'
+copyright = '2018, University of Southern California Information Sciences Institute'
 author = 'Ryan Gabbard and Constantine Lignos'
 
 # The version info for the project you're documenting, acts as replacement for
