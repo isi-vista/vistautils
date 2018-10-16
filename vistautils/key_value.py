@@ -243,12 +243,17 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         return None
 
     def items(self, key_filter: Callable[[K], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
-        def generator_func() -> Iterator[Tuple[K, V]]:
-            for key in self.keys():
-                if key_filter(key):
-                    yield (key, self[key])
+        keys = self.keys()
+        if keys:
+            def generator_func() -> Iterator[Tuple[K, V]]:
+                for key in self.keys():
+                    if key_filter(key):
+                        yield (key, self[key])
 
-        return generator_func()
+            return generator_func()
+        else:
+            raise NotImplementedError("A KeyValueSource which supports item iteration but cannot "
+                                      "provide keys must override the default implementation")
 
     @staticmethod
     def from_path_mapping(id_to_path: Mapping[str, Path]) -> 'KeyValueSource[str, str]':
