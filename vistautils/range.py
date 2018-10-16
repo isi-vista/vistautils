@@ -155,7 +155,7 @@ class _BelowAll(_Cut[T]):
         raise AssertionError("Should never be called")
 
     def describe_as_lower_bound(self) -> str:
-        return "(-\u221e" # Returns ( and a negative infinity
+        return "(-\u221e"  # Returns ( and a negative infinity
 
     def describe_as_upper_bound(self) -> str:
         raise AssertionError("Can't happen")
@@ -191,7 +191,7 @@ class _AboveAll(_Cut[T]):
         raise AssertionError("Can't happen")
 
     def describe_as_upper_bound(self) -> str:
-        return "+\u221e)" # Returns positive infinity and )
+        return "+\u221e)"  # Returns positive infinity and )
 
     def compare_to(self, other: '_Cut[T]') -> int:
         # we assume only the constant _ABOVE_ALL is ever instantiated
