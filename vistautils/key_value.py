@@ -243,12 +243,18 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         return None
 
     def items(self, key_filter: Callable[[K], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
-        def generator_func() -> Iterator[Tuple[K, V]]:
-            for key in self.keys():
-                if key_filter(key):
-                    yield (key, self[key])
+        keys = self.keys()
+        if keys is not None:
+            def generator_func() -> Iterator[Tuple[K, V]]:
+                # mypy doesn't understand keys isn't None here
+                for key in keys:  # type: ignore
+                    if key_filter(key):
+                        yield (key, self[key])
 
-        return generator_func()
+            return generator_func()
+        else:
+            raise NotImplementedError("A KeyValueSource which supports item iteration but cannot "
+                                      "provide keys must override the default implementation")
 
     @staticmethod
     def from_path_mapping(id_to_path: Mapping[str, Path]) -> 'KeyValueSource[str, str]':
@@ -268,7 +274,7 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
 
     @staticmethod
     def zip_character_source(path: Path, filename_function: Callable[[str], str] = _identity,
-                             keys_function: Callable[[ZipFile], AbstractSet[str]] =
+                             keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] =
                              _read_keys_from_keys_file) -> 'KeyValueSource[str, str]':
         """
         A key-value source backed by a zip file which stores character data.
@@ -286,7 +292,7 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
 
     @staticmethod
     def zip_bytes_source(path: Path, filename_function: Callable[[str], str] = _identity,
-                         keys_function: Callable[[ZipFile], AbstractSet[str]] =
+                         keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] =
                          _read_keys_from_keys_file) -> 'KeyValueSource[str, bytes]':
         """
         A key-value source backed by a zip file which stores character data.
@@ -345,7 +351,7 @@ class _ZipKeyValueSink(Generic[V], KeyValueSink[str, V]):
                  keys_out_function: Callable[[ZipFile, AbstractSet[str]], None] = None,
                  overwrite: bool = True) -> None:
         self._path = path
-        self._zip_file: ZipFile = None
+        self._zip_file: Optional[ZipFile] = None
         self._filename_function = filename_function
         self._overwrite = overwrite
         self._keys_in_function = keys_in_function
@@ -381,9 +387,10 @@ class _ZipKeyValueSink(Generic[V], KeyValueSink[str, V]):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        # if we are in a context manager, self._zip_file is not None
         if self._keys_out_function:
-            self._keys_out_function(self._zip_file, self._keys)
-        self._zip_file.close()
+            self._keys_out_function(self._zip_file, self._keys)  # type: ignore
+        self._zip_file.close()  # type: ignore
 
 
 class _ZipCharFileKeyValueSink(_ZipKeyValueSink[str]):
@@ -430,7 +437,7 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
         self.path = path
         self._filename_function = filename_function
         self._keys_function = keys_function
-        self._zip_file: ZipFile = None
+        self._zip_file: Optional[ZipFile] = None
         self._keys: Optional[AbstractSet[str]] = None
 
     def keys(self) -> Optional[AbstractSet[str]]:
@@ -438,7 +445,8 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
         return self._keys
 
     def __getitem__(self, key: str) -> V:
-        return self._internal_get(key, has_default_val=False, default_val=None)
+        # we know _internal_get won't return the default value
+        return self._internal_get(key, has_default_val=False, default_val=None)  # type: ignore
 
     def get(self, key: str, _default: Optional[V]) -> Optional[V]:
         return self._internal_get(key, has_default_val=True, default_val=_default)
@@ -449,7 +457,8 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
         check_not_none(key)
         filename = self._filename_function(key)
         try:
-            zip_bytes = self._zip_file.read(filename)
+            # safe by check_state above
+            zip_bytes = self._zip_file.read(filename)  # type: ignore
         except KeyError:
             if has_default_val:
                 return default_val
@@ -467,14 +476,15 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        self._zip_file.close()
+        check_state(self._zip_file)
+        self._zip_file.close()  # type: ignore
         self._zip_file = None
 
 
 class _ZipBytesFileKeyValuesSource(_ZipFileKeyValueSource[bytes]):
     def __init__(self, path: Path, *,
                  filename_function: Callable[[str], str] = _identity,
-                 keys_function: Callable[[ZipFile], AbstractSet[str]] = None) -> None:
+                 keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] = None) -> None:
         super().__init__(path, filename_function, keys_function)
 
     def _process_bytes(self, _bytes: bytes) -> bytes:
@@ -484,7 +494,7 @@ class _ZipBytesFileKeyValuesSource(_ZipFileKeyValueSource[bytes]):
 class _ZipCharFileKeyValuesSource(_ZipFileKeyValueSource[str]):
     def __init__(self, path: Path, *,
                  filename_function: Callable[[str], str] = _identity,
-                 keys_function: Callable[[ZipFile], AbstractSet[str]] = None) -> None:
+                 keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] = None) -> None:
         super().__init__(path, filename_function, keys_function)
 
     def _process_bytes(self, _bytes: bytes) -> str:
@@ -528,7 +538,7 @@ class TarGzipBytesLinearKeyValueSource(KeyValueLinearSource[str, bytes]):
     def __init__(self, tgz_path: Path, key_function: Callable[[str], Optional[str]] = lambda x: x,
                  name_filter: Callable[[str], bool] = lambda x: True) -> None:
         self.tgz_path = tgz_path
-        self.inp: tarfile.TarFile = None
+        self.inp: Optional[tarfile.TarFile] = None
         self.key_function = key_function
         self.name_filter = name_filter
 
@@ -538,12 +548,17 @@ class TarGzipBytesLinearKeyValueSource(KeyValueLinearSource[str, bytes]):
                               "manager before using it.")
 
         def generator_function() -> Iterator[Tuple[str, bytes]]:
-            for member in self.inp:
+            # safe by check_state above
+            for member in self.inp:  # type: ignore
                 if member.isfile() and self.name_filter(member.name):
                     key = self.key_function(member.name)
                     if key and key_filter(key):
-                        with self.inp.extractfile(member) as data:
-                            yield (key, data.read())
+                        data = self.inp.extractfile(member)  # type: ignore
+                        if data:
+                            with data:
+                                yield (key, data.read())
+                        else:
+                            raise IOError(f"Cannot read member {member} of {self}")
 
         return generator_function()
 
@@ -552,7 +567,7 @@ class TarGzipBytesLinearKeyValueSource(KeyValueLinearSource[str, bytes]):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
-        self.inp.close()
+        self.inp.close()  # type: ignore
         return False
 
 
@@ -580,7 +595,7 @@ class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
         self.wrapped_source.__enter__()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> Optional[bool]:
         return self.wrapped_source.__exit__(exc_type, exc_val, exc_tb)
 
 
@@ -603,7 +618,9 @@ class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
         sentinel = object()
         inner_get = self.wrapped_source.get(key, sentinel)  # type: ignore
         if inner_get is not sentinel:
-            return self.interpretation_function(key, inner_get)
+            # if inner_get result is None, it is because X is Optional[something],
+            # so interpretation_function can handle it
+            return self.interpretation_function(key, inner_get)  # type: ignore
         else:
             return _default
 

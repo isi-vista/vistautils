@@ -172,11 +172,15 @@ class _FileWithinTgzCharSource(CharSource):
         tgz_file = tarfile.open(self._tgz_path, 'r:gz', encoding=self._encoding)
         # extractfile here returns  binary file object. We are lazy here and load it all into
         # memory to make dealing with the encoding issues simple
-        ret = CharSource.from_string(tgz_file.extractfile(self._path_within_tgz).read().decode(
-            self._encoding)).open()
-        # we need to fiddle with the close method on the returned TextIO so that when it is
-        # closed the containing zip file is closed as well
-        old_close: Callable = ret.close
+        tgz_data = tgz_file.extractfile(self._path_within_tgz)
+        if tgz_data is not None:
+            ret = CharSource.from_string(tgz_data.read().decode(
+                self._encoding)).open()
+            # we need to fiddle with the close method on the returned TextIO so that when it is
+            # closed the containing zip file is closed as well
+            old_close: Callable = ret.close
+        else:
+            raise IOError(f"Could not extract path {self._path_within_tgz} from {self._tgz_path}")
 
         def new_close(_):
             old_close()  # pylint:disable=not-callable
