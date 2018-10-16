@@ -880,7 +880,9 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
         self._replace_range_with_same_lower_bound(Range(lb_to_add, ub_to_add))
         return self
 
-    def add_all(self, ranges_to_add: Iterable[Range[T]]) -> 'RangeSet[T]':
+    def add_all(self, ranges_to_add: Union['RangeSet[T]', Iterable[Range[T]]]) -> 'RangeSet[T]':
+        if isinstance(ranges_to_add, RangeSet):
+            return self.add_all(ranges_to_add.as_ranges())
         for rng in ranges_to_add:
             self.add(rng)
         return self
