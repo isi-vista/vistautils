@@ -12,8 +12,10 @@ from vistautils.attrutils import attrib_instance_of, attrib_immutable
 from vistautils.preconditions import check_arg, check_not_none
 
 # will be initialized after bound type declarations
-_OPEN: 'BoundType' = None
-_CLOSED: 'BoundType' = None
+# noinspection PyTypeHints
+_OPEN: 'BoundType' = None  # type:ignore
+# noinspection PyTypeHints
+_CLOSED: 'BoundType' = None  # type:ignore
 
 
 class BoundType:
@@ -44,14 +46,16 @@ class _Closed(BoundType):
     __slots__ = ()
 
 
-# noinspection PyRedeclaration
+# noinspection PyRedeclaration,PyTypeHints
 _OPEN: BoundType = _Open()  # type: ignore
-# noinspection PyRedeclaration
+# noinspection PyRedeclaration,PyTypeHints
 _CLOSED: BoundType = _Closed()  # type: ignore
 
 # these need to be initialized after declaration of _Cut
-_BELOW_ALL: '_Cut' = None
-_ABOVE_ALL: '_Cut' = None
+# noinspection PyTypeHints
+_BELOW_ALL: '_Cut' = None  # type:ignore
+# noinspection PyTypeHints
+_ABOVE_ALL: '_Cut' = None  # type:ignore
 
 # T needs to be comparable, but Python typing seems to lack a way to specify this?
 # see https://github.com/python/mypy/issues/500
@@ -284,7 +288,8 @@ class _AboveValue(_Cut[T]):
 
 
 # must initialize after declaring Range
-RANGE_ALL: 'Range' = None
+# noinspection PyTypeHints
+RANGE_ALL: 'Range' = None  # type: ignore
 
 
 # this should have slots=True but cannot for the moment due to
@@ -438,7 +443,7 @@ class Range(Container[T], Generic[T], Hashable):
         return self._lower_bound == self._upper_bound
 
     # I don't know why mypy complains about narrowing the type, which seems a reasonable thing to do
-    def __contains__(self, val: T) -> bool:   # type: ignore
+    def __contains__(self, val: T) -> bool:  # type: ignore
         check_not_none(val)
         return self._lower_bound.is_less_than(val) and not self._upper_bound.is_less_than(val)
 
@@ -676,6 +681,7 @@ class ImmutableRangeSet(RangeSet[T], metaclass=ABCMeta):
 
     If you reach into its guts and modify it, its behavior is undefined.
     """
+
     @staticmethod
     def builder() -> 'ImmutableRangeSet.Builder[T]':
         return _ImmutableSortedDictRangeSet.Builder()
@@ -795,6 +801,7 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
         else:
             return ImmutableSet.empty()
 
+    # noinspection PyTypeHints
     def __contains__(self, value: T) -> bool:  # type: ignore
         highest_range_beginning_at_or_below = _value_at_or_below(
             self._ranges_by_lower_bound, _BelowValue(value))
@@ -809,12 +816,14 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
 
     def intersects(self, rng: Range[T]) -> bool:
         check_not_none(rng)
-        ceiling_range: Range[T] = _value_at_or_above(self._ranges_by_lower_bound, rng._lower_bound)
+        ceiling_range: Optional[Range[T]] = _value_at_or_above(self._ranges_by_lower_bound,
+                                                               rng._lower_bound)
         if (ceiling_range and ceiling_range.is_connected(rng) and
                 not ceiling_range.intersection(rng).is_empty()):
             return True
         # check strictness of lowerEntry
-        lower_range: Range[T] = _value_below(self._ranges_by_lower_bound, rng._lower_bound)
+        lower_range: Optional[Range[T]] = _value_below(self._ranges_by_lower_bound,
+                                                       rng._lower_bound)
         return bool(lower_range and lower_range.is_connected(rng) and
                     not lower_range.intersection(rng).is_empty())
 
@@ -870,7 +879,8 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
                 return self
 
         # now we need to check of coalescing and connectedness on the upper end
-        range_below_ub: Range[T] = _value_at_or_below(self._ranges_by_lower_bound, ub_to_add)
+        range_below_ub: Optional[Range[T]] = _value_at_or_below(self._ranges_by_lower_bound,
+                                                                ub_to_add)
         if range_below_ub and ub_to_add < range_below_ub._upper_bound:
             ub_to_add = range_below_ub._upper_bound
 
