@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# created as a temp file by make precommit
+.mypy_tmp

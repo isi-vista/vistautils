@@ -155,7 +155,7 @@ class _BelowAll(_Cut[T]):
         raise AssertionError("Should never be called")
 
     def describe_as_lower_bound(self) -> str:
-        return "(-\u221e" # Returns ( and a negative infinity
+        return "(-\u221e"  # Returns ( and a negative infinity
 
     def describe_as_upper_bound(self) -> str:
         raise AssertionError("Can't happen")
@@ -191,7 +191,7 @@ class _AboveAll(_Cut[T]):
         raise AssertionError("Can't happen")
 
     def describe_as_upper_bound(self) -> str:
-        return "+\u221e)" # Returns positive infinity and )
+        return "+\u221e)"  # Returns positive infinity and )
 
     def compare_to(self, other: '_Cut[T]') -> int:
         # we assume only the constant _ABOVE_ALL is ever instantiated
@@ -585,7 +585,7 @@ class RangeSet(Generic[T], Container[T], metaclass=ABCMeta):
     __slots__ = ()
 
     @staticmethod
-    def create_mutable() -> 'RangeSet[T]':
+    def create_mutable() -> 'MutableRangeSet[T]':
         return _MutableSortedDictRangeSet.create()
 
     @abstractmethod
@@ -782,15 +782,18 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
     def ranges_enclosed_by(self, query_rng) -> ImmutableSet[Range[T]]:
         highest_range_at_or_above = _value_at_or_above(self._ranges_by_lower_bound,
                                                        query_rng._lower_bound)
-        start_idx = self._ranges_by_lower_bound.values().index(highest_range_at_or_above)
-        ret: ImmutableSet.Builder[Range[T]] = ImmutableSet.builder()
-        for idx in range(start_idx, len(self._ranges_by_lower_bound)):
-            rng_at_idx = self._ranges_by_lower_bound.values()[idx]
-            if query_rng.encloses(rng_at_idx):
-                ret.add(rng_at_idx)
-            else:
-                break
-        return ret.build()
+        if highest_range_at_or_above:
+            start_idx = self._ranges_by_lower_bound.values().index(highest_range_at_or_above)
+            ret: ImmutableSet.Builder[Range[T]] = ImmutableSet.builder()
+            for idx in range(start_idx, len(self._ranges_by_lower_bound)):
+                rng_at_idx = self._ranges_by_lower_bound.values()[idx]
+                if query_rng.encloses(rng_at_idx):
+                    ret.add(rng_at_idx)
+                else:
+                    break
+            return ret.build()
+        else:
+            return ImmutableSet.empty()
 
     def __contains__(self, value: T) -> bool:  # type: ignore
         highest_range_beginning_at_or_below = _value_at_or_below(
@@ -835,14 +838,14 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
         return repr(list(self.as_ranges()))
 
 
-class _MutableSortedDictRangeSet(_SortedDictRangeSet[T]):
+class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
     # pylint:disable=protected-access
 
     @staticmethod
-    def create() -> 'RangeSet[T]':
+    def create() -> 'MutableRangeSet[T]':
         return _MutableSortedDictRangeSet(SortedDict())
 
-    def add(self, range_to_add: Range[T]) -> 'RangeSet[T]':
+    def add(self, range_to_add: Range[T]) -> 'MutableRangeSet[T]':
         if range_to_add.is_empty():
             return self
 
@@ -877,7 +880,9 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T]):
         self._replace_range_with_same_lower_bound(Range(lb_to_add, ub_to_add))
         return self
 
-    def add_all(self, ranges_to_add: Iterable[Range[T]]) -> 'RangeSet[T]':
+    def add_all(self, ranges_to_add: Union['RangeSet[T]', Iterable[Range[T]]]) -> 'RangeSet[T]':
+        if isinstance(ranges_to_add, RangeSet):
+            return self.add_all(ranges_to_add.as_ranges())
         for rng in ranges_to_add:
             self.add(rng)
         return self

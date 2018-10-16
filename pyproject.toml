@@ -9,6 +9,11 @@
         showcontent = true
 
     [[tool.towncrier.type]]
+        directory = "bugfix"
+        name = "Bugfixes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
         directory = "deprecation"
         name = "Deprecations"
         showcontent = true
