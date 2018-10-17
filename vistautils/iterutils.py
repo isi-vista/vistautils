@@ -1,11 +1,12 @@
-# why does itertools think these are useful enough to put in the documentation but not in
-# the library?
-from itertools import tee
+from typing import TypeVar, Iterable, Tuple
+
+import vistautils.iter_utils
+
+# deprecated, present for backwards compatibility
+_T = TypeVar('_T')
 
 
-# from itertools docs
-def tile_with_pairs(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-    a, b = tee(iterable)
-    next(b, None)
-    return zip(a, b)
+# noinspection PyTypeHints
+def tile_with_pairs(iterable: Iterable[_T]) -> Iterable[Tuple[_T, _T]]:
+    # noinspection PyTypeChecker
+    return vistautils.iter_utils.windowed(iterable, 2, partial_windows=False)  # type: ignore

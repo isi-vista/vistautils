@@ -16,7 +16,7 @@ Welcome to vistautils's documentation!
    vistautils.checkpoints
    vistautils.collection_utils
    vistautils.io_utils
-   vistautils.iterutils
+   vistautils.iter_utils
    vistautils.key_value
    vistautils.logging_utils
    vistautils.misc_utils
