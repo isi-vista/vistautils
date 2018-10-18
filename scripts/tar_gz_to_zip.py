@@ -40,12 +40,12 @@ def getargs():
 def main():
     args = getargs()
     tar_file = args.tar_file_name
-    output_zip_name = _output_name(tar_gz_file)
+    output_zip_name = _output_name(tar_file)
     dont_stream = args.dont_stream
     omit_large_files = args.omit_large_files
     large_file_cutoff = args.large_file_cutoff * 1e9
 
-    print(f"Copying tarball {tar_gz_file} to {output_zip_name}")
+    print(f"Copying tarball {tar_file} to {output_zip_name}")
     print("WARNING: This will throw away all metadata. It also might not work "
           "if you have files with /s in the name or other odd things. "
           "Please sanity check your output")
@@ -55,7 +55,7 @@ def main():
         os.remove(output_zip_name)
 
     with ZipFile(output_zip_name, 'x') as out:
-        with tarfile.open(tar_gz_file) as inp:
+        with tarfile.open(tar_file) as inp:
             if dont_stream:
                 inp.extractall()
                 for member in inp:
