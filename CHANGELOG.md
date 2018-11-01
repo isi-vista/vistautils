@@ -1,3 +1,13 @@
+Vistautils 0.4.0 (2018-11-01)
+=============================
+
+New Features
+------------
+
+- Adds `windowed` for iterating over sliding windows over a sequence (`#17 <https://github.com/isi-vista/vistautils/issues/17>`_)
+- Adds `optional_existing_file`, `optional_existing_directory` to `Parameters` (`#23 <https://github.com/isi-vista/vistautils/issues/23>`_)
+
+
 Vistautils 0.3.0 (2018-10-17)
 =============================
 

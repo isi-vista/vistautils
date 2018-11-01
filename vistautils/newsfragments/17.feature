@@ -1,1 +1,0 @@
-Adds `windowed` for iterating over sliding windows over a sequence
