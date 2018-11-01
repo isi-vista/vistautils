@@ -166,6 +166,19 @@ class Parameters:
                                  + ", expected an existing file but got non-existent "
                                  + str(ret))
 
+    def optional_existing_file(self, param: str) -> Optional[Path]:
+        """
+        Gets a path for an existing file, if specified.
+
+        Interprets the string-valued parameter `param` as a file path. Returns `None`
+        if no parmeter by that name is present.  Throws a `ParameterError`
+        if the path does not exist.
+        """
+        if param in self:
+            return self.existing_file(param)
+        else:
+            return None
+
     def existing_directory(self, param: str) -> Path:
         """
         Gets a path for an existing directory.
@@ -187,6 +200,19 @@ class Parameters:
             raise ParameterError("For parameter " + param
                                  + ", expected an existing directory but got non-existent "
                                  + str(ret))
+
+    def optional_existing_directory(self, param: str) -> Optional[Path]:
+        """
+        Gets a path for an existing directory, if specified.
+
+        Interprets the string-valued parameter `param` as a directory path.
+        If the parameter is not present, returns `None`.  Throws a
+        `ParameterError` if the path does not exist.
+        """
+        if param in self:
+            return self.existing_directory(param)
+        else:
+            return None
 
     def string(self, param_name: str) -> str:
         """
