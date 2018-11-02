@@ -33,7 +33,9 @@ class TestIterUtils(TestCase):
             self.assertEqual(iterable, list(drop(to_it(iterable), 0)))
 
             # test dropping positive number of elements
-            self.assertEqual([3,4], list(drop(to_it(iterable), 2)))
+            self.assertEqual([3, 4], list(drop(to_it(iterable), 2)))
+            # check original iterable is unchanged
+            self.assertEqual([1, 2, 3, 4], iterable)
 
             # test dropping more than the length of the iterable returns an empty list
             # (rather than throwing an exception)
