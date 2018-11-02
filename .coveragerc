@@ -3,7 +3,7 @@
 # We've seen incorrect results with branch coverage enabled
 branch = False
 include =
-    immutablecollections/*
+    vistautils/*
 
 [report]
 show_missing = True
