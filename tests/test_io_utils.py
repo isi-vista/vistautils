@@ -105,6 +105,10 @@ class TestIOUtils(TestCase):
         with ZipFile(zip_path, 'r') as zip_file:
             self.assertTrue('fred' in zip_file.namelist())
             self.assertEqual("foo".encode('utf-8'), zip_file.read('fred'))
+            self.assertEqual("foo", CharSource.from_file_in_zip(zip_file, "fred").read_all())
+
+        # also test version which takes zip file path rather than zip file object
+        self.assertEqual("foo", CharSource.from_file_in_zip(zip_path, "fred").read_all())
 
         shutil.rmtree(str(tmp_dir))
 
