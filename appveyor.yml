@@ -1,11 +1,6 @@
 image: ubuntu
 stack: python 3.6
 
-# block building of branches without pull requests
-branches:
-      only:
-              - masterkk
-
 # we build manually in the install step
 build: off
 
