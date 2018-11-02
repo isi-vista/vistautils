@@ -350,7 +350,7 @@ class _FileInZipFilePathByteSource(ByteSource):
     def open(self) -> BytesIO:
         # pylint:disable=not-callable
         # pylint:disable=unused-argument
-        zip_file = ZipFile(self._zip_path, 'a')
+        zip_file = ZipFile(self._zip_path, 'r')
         ret = zip_file.open(self._path_within_zip, 'r')
         # we need to fiddle with the close method on the returned BytesIO so that when it is
         # closed the containing zip file is closed as well
