@@ -71,7 +71,8 @@ class CharSource(metaclass=ABCMeta):
         """
         Gets whether this source has a non-empty string to provide.
         """
-        raise NotImplementedError()
+        with self.open() as inp:
+            return inp.read(1) == ""
 
     @staticmethod
     def from_nowhere() -> 'CharSource':
@@ -86,6 +87,15 @@ class CharSource(metaclass=ABCMeta):
         Get a source whose content is the given string.
         """
         return _StringCharSource(s)
+
+    @staticmethod
+    def from_byte_source(wrapped_source: 'ByteSource', *, encoding='utf-8') -> 'CharSource':
+        """
+        Gets a source for a ``ByteSource`` decoded according to the given encoding.
+
+        The default encoding is UTF-8.
+        """
+        return _CharSourceWrappingByteSource(wrapped_source, encoding)
 
     @staticmethod
     def from_file(p: Union[str, Path]) -> 'CharSource':
@@ -118,6 +128,19 @@ class CharSource(metaclass=ABCMeta):
         """
         return _FileWithinTgzCharSource(tgz_path, path_within_tgz, encoding)
 
+    @staticmethod
+    def from_file_in_zip(zip_file: Union[Path, ZipFile], path_within_zip: str) -> 'CharSource':
+        """
+        Gets a source whose content is that of the file at the given path within a .zip file.
+
+        The `zip_file` can be specified either as a ``Path`` or a ``ZipFile`` object.
+        If the latter, this ``CharSource`` is only valid as long as that ``ZipFile``
+        remains open.
+
+        The file will be interpreted as UTF-8 text.
+        """
+        return CharSource.from_byte_source(ByteSource.from_file_in_zip(zip_file, path_within_zip))
+
 
 @attrs(slots=True, frozen=True, repr=False)
 class _StringCharSource(CharSource):
@@ -146,6 +169,15 @@ class _FileCharSource(CharSource):
 
     def is_empty(self) -> bool:
         return os.path.getsize(self._path) == 0
+
+
+@attrs(slots=True, frozen=True, auto_attribs=True)
+class _CharSourceWrappingByteSource(CharSource):
+    _wrapped_source: 'ByteSource'
+    _encoding: str
+
+    def open(self) -> TextIO:
+        return io.TextIOWrapper(self._wrapped_source.open(), encoding=self._encoding)
 
 
 @attrs(slots=True, frozen=True)
@@ -284,6 +316,20 @@ class ByteSource(metaclass=ABCMeta):
         """
         return _FileByteSource(p)
 
+    @staticmethod
+    def from_file_in_zip(zip_file: Union[Path, ZipFile], path_within_zip: str) -> 'ByteSource':
+        """
+        Gets a source whose content is that of the file at the given path within a .zip file
+
+        The `zip_file` can be specified either as a ``Path`` or a ``ZipFile`` object.
+        If the latter, this ``ByteSource`` is only valid as long as that ``ZipFile``
+        remains open.
+        """
+        if isinstance(zip_file, ZipFile):
+            return _ByteSourceFromPathInOpenZipFile(zip_file, path_within_zip)
+        else:
+            return _ByteSourceFromPathInZipFile(zip_file, path_within_zip)
+
 
 @attrs(slots=True, frozen=True)
 class _FileByteSource(ByteSource):
@@ -294,6 +340,37 @@ class _FileByteSource(ByteSource):
 
     def is_empty(self) -> bool:
         return os.path.getsize(self._path) == 0
+
+
+@attrs(slots=True, frozen=True)
+class _ByteSourceFromPathInZipFile(ByteSource):
+    _zip_path = attrib_instance_of(Path)
+    _path_within_zip = attrib_instance_of(str)
+
+    def open(self) -> BytesIO:
+        # pylint:disable=not-callable
+        # pylint:disable=unused-argument
+        zip_file = ZipFile(self._zip_path, 'r')
+        ret = zip_file.open(self._path_within_zip, 'r')
+        # we need to fiddle with the close method on the returned BytesIO so that when it is
+        # closed the containing zip file is closed as well
+        old_close = ret.close
+
+        def new_close(self):
+            old_close()
+            zip_file.close()
+
+        ret.close = types.MethodType(new_close, ret)  # type: ignore
+        return ret  # type: ignore
+
+
+@attrs(slots=True, frozen=True)
+class _ByteSourceFromPathInOpenZipFile(ByteSource):
+    _zip_file = attrib_instance_of(ZipFile)
+    _path_within_zip = attrib_instance_of(str)
+
+    def open(self) -> BytesIO:
+        return self._zip_file.open(self._path_within_zip, 'r')
 
 
 class ByteSink(metaclass=ABCMeta):
