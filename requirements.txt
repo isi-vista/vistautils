@@ -4,6 +4,7 @@ pyyaml==3.12
 immutablecollections==0.1.2
 
 # extras for development
+black==18.9b0
 nose
 nose-exclude
 coverage
