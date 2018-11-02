@@ -95,7 +95,7 @@ class CharSource(metaclass=ABCMeta):
 
         The default encoding is UTF-8.
         """
-        return _FromByteSourceCharSource(wrapped_source, encoding)
+        return _CharSourceWrappingByteSource(wrapped_source, encoding)
 
     @staticmethod
     def from_file(p: Union[str, Path]) -> 'CharSource':
@@ -172,7 +172,7 @@ class _FileCharSource(CharSource):
 
 
 @attrs(slots=True, frozen=True, auto_attribs=True)
-class _FromByteSourceCharSource(CharSource):
+class _CharSourceWrappingByteSource(CharSource):
     _wrapped_source: 'ByteSource'
     _encoding: str
 
@@ -326,9 +326,9 @@ class ByteSource(metaclass=ABCMeta):
         remains open.
         """
         if isinstance(zip_file, ZipFile):
-            return _FileInOpenZipFileByteSource(zip_file, path_within_zip)
+            return _ByteSourceFromPathInOpenZipFile(zip_file, path_within_zip)
         else:
-            return _FileInZipFilePathByteSource(zip_file, path_within_zip)
+            return _ByteSourceFromPathInZipFile(zip_file, path_within_zip)
 
 
 @attrs(slots=True, frozen=True)
@@ -343,7 +343,7 @@ class _FileByteSource(ByteSource):
 
 
 @attrs(slots=True, frozen=True)
-class _FileInZipFilePathByteSource(ByteSource):
+class _ByteSourceFromPathInZipFile(ByteSource):
     _zip_path = attrib_instance_of(Path)
     _path_within_zip = attrib_instance_of(str)
 
@@ -365,7 +365,7 @@ class _FileInZipFilePathByteSource(ByteSource):
 
 
 @attrs(slots=True, frozen=True)
-class _FileInOpenZipFileByteSource(ByteSource):
+class _ByteSourceFromPathInOpenZipFile(ByteSource):
     _zip_file = attrib_instance_of(ZipFile)
     _path_within_zip = attrib_instance_of(str)
 

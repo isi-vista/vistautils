@@ -1,18 +1,16 @@
 import shutil
-import tarfile
 import tempfile
 from pathlib import Path
 from unittest import TestCase
 from zipfile import ZipFile
 
-import os
 from attr import attrs
-
-from vistautils.parameters import Parameters
-from vistautils.attrutils import attrib_instance_of
 from immutablecollections import ImmutableDict
+
+from vistautils.attrutils import attrib_instance_of
 from vistautils.io_utils import ByteSink, CharSink, CharSource, read_doc_id_to_file_map, \
     write_doc_id_to_file_map
+from vistautils.parameters import Parameters
 
 
 class TestIOUtils(TestCase):
@@ -101,14 +99,17 @@ class TestIOUtils(TestCase):
         zip_path = tmp_dir / 'test.zip'
 
         ByteSink.file_in_zip(zip_path, 'fred').write("foo".encode('utf-8'))
+        ByteSink.file_in_zip(zip_path, 'empty_file').write("".encode('utf-8'))
 
         with ZipFile(zip_path, 'r') as zip_file:
             self.assertTrue('fred' in zip_file.namelist())
             self.assertEqual("foo".encode('utf-8'), zip_file.read('fred'))
             self.assertEqual("foo", CharSource.from_file_in_zip(zip_file, "fred").read_all())
+            self.assertTrue(CharSource.from_file_in_zip(zip_file, "empty_file").is_empty())
 
         # also test version which takes zip file path rather than zip file object
         self.assertEqual("foo", CharSource.from_file_in_zip(zip_path, "fred").read_all())
+        self.assertTrue(CharSource.from_file_in_zip(zip_path, "empty_file").is_empty())
 
         shutil.rmtree(str(tmp_dir))
 
