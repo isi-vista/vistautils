@@ -20,7 +20,7 @@ _iterator_or_iterable = (_as_iterable, _as_iterator)
 
 class TestIterUtils(TestCase):
     def test_drop(self):
-        iterable = [1,2,3,4]
+        iterable = [1, 2, 3, 4]
 
         for to_it in _iterator_or_iterable:
             # test negative drop not allowed
