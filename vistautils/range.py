@@ -1,7 +1,17 @@
 # really needs to be totally-ordered
 from abc import abstractmethod, ABCMeta
-from typing import Generic, TypeVar, Container, Hashable, Iterable, Union, Sequence, \
-    Any, Optional, Mapping
+from typing import (
+    Generic,
+    TypeVar,
+    Container,
+    Hashable,
+    Iterable,
+    Union,
+    Sequence,
+    Any,
+    Optional,
+    Mapping,
+)
 
 from attr import attrib, attrs
 from immutablecollections import ImmutableSet, ImmutableDict
@@ -13,9 +23,9 @@ from vistautils.preconditions import check_arg, check_not_none
 
 # will be initialized after bound type declarations
 # noinspection PyTypeHints
-_OPEN: 'BoundType' = None  # type:ignore
+_OPEN: "BoundType" = None  # type:ignore
 # noinspection PyTypeHints
-_CLOSED: 'BoundType' = None  # type:ignore
+_CLOSED: "BoundType" = None  # type:ignore
 
 
 class BoundType:
@@ -24,14 +34,15 @@ class BoundType:
 
     A boundary is either closed, meaning it includes its endpoint, or open, meaning it does not.
     """
+
     __slots__ = ()
 
     @staticmethod
-    def open() -> 'BoundType':
+    def open() -> "BoundType":
         return _OPEN
 
     @staticmethod
-    def closed() -> 'BoundType':
+    def closed() -> "BoundType":
         return _CLOSED
 
     def flip(self):
@@ -53,14 +64,14 @@ _CLOSED: BoundType = _Closed()  # type: ignore
 
 # these need to be initialized after declaration of _Cut
 # noinspection PyTypeHints
-_BELOW_ALL: '_Cut' = None  # type:ignore
+_BELOW_ALL: "_Cut" = None  # type:ignore
 # noinspection PyTypeHints
-_ABOVE_ALL: '_Cut' = None  # type:ignore
+_ABOVE_ALL: "_Cut" = None  # type:ignore
 
 # T needs to be comparable, but Python typing seems to lack a way to specify this?
 # see https://github.com/python/mypy/issues/500
 # we track this with our own issue #201
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class _Cut(Generic[T], metaclass=ABCMeta):
@@ -74,6 +85,7 @@ class _Cut(Generic[T], metaclass=ABCMeta):
 
     This is a Python port of Guava code originally written by Kevin Bourrillion.
     """
+
     __slots__ = ()
 
     @property
@@ -101,7 +113,7 @@ class _Cut(Generic[T], metaclass=ABCMeta):
     def describe_as_upper_bound(self) -> str:
         raise NotImplementedError()
 
-    def compare_to(self, other: '_Cut[T]') -> int:
+    def compare_to(self, other: "_Cut[T]") -> int:
         # overridden by BelowAll, AboveAll
         if other is _BELOW_ALL:
             return 1
@@ -164,7 +176,7 @@ class _BelowAll(_Cut[T]):
     def describe_as_upper_bound(self) -> str:
         raise AssertionError("Can't happen")
 
-    def compare_to(self, other: '_Cut[T]') -> int:
+    def compare_to(self, other: "_Cut[T]") -> int:
         # we assume only the constant _BELOW_ALL is ever instantiated
         if other is self:
             return 0
@@ -197,7 +209,7 @@ class _AboveAll(_Cut[T]):
     def describe_as_upper_bound(self) -> str:
         return "+\u221e)"  # Returns positive infinity and )
 
-    def compare_to(self, other: '_Cut[T]') -> int:
+    def compare_to(self, other: "_Cut[T]") -> int:
         # we assume only the constant _ABOVE_ALL is ever instantiated
         if other is self:
             return 0
@@ -289,7 +301,7 @@ class _AboveValue(_Cut[T]):
 
 # must initialize after declaring Range
 # noinspection PyTypeHints
-RANGE_ALL: 'Range' = None  # type: ignore
+RANGE_ALL: "Range" = None  # type: ignore
 
 
 # this should have slots=True but cannot for the moment due to
@@ -354,58 +366,63 @@ class Range(Container[T], Generic[T], Hashable):
     This class (including the documentation) is an almost direct translation of Guava's Range,
     which was originally authored by Kevin Bourrillion and Gregory Kick.
     """
+
     # pylint:disable=protected-access
     _lower_bound: _Cut[T] = attrib_instance_of(_Cut)
     _upper_bound: _Cut[T] = attrib_instance_of(_Cut)
 
     def __attrs_post_init__(self):
-        check_arg(self._lower_bound <= self._upper_bound,
-                  "Upper bound of a range cannot be less than lower bound but got %s ",
-                  (self,))
+        check_arg(
+            self._lower_bound <= self._upper_bound,
+            "Upper bound of a range cannot be less than lower bound but got %s ",
+            (self,),
+        )
         check_arg(self._lower_bound is not _ABOVE_ALL)
         check_arg(self._upper_bound is not _BELOW_ALL)
 
     @staticmethod
-    def open(lower: T, upper: T) -> 'Range[T]':
+    def open(lower: T, upper: T) -> "Range[T]":
         return Range(_AboveValue(lower), _BelowValue(upper))
 
     @staticmethod
-    def closed(lower: T, upper: T) -> 'Range[T]':
+    def closed(lower: T, upper: T) -> "Range[T]":
         return Range(_BelowValue(lower), _AboveValue(upper))
 
     @staticmethod
-    def closed_open(lower: T, upper: T) -> 'Range[T]':
+    def closed_open(lower: T, upper: T) -> "Range[T]":
         return Range(_BelowValue(lower), _BelowValue(upper))
 
     @staticmethod
-    def open_closed(lower: T, upper: T) -> 'Range[T]':
+    def open_closed(lower: T, upper: T) -> "Range[T]":
         return Range(_AboveValue(lower), _AboveValue(upper))
 
     @staticmethod
-    def less_than(upper: T) -> 'Range[T]':
+    def less_than(upper: T) -> "Range[T]":
         return Range(_BELOW_ALL, _BelowValue(upper))
 
     @staticmethod
-    def at_most(upper: T) -> 'Range[T]':
+    def at_most(upper: T) -> "Range[T]":
         return Range(_BELOW_ALL, _AboveValue(upper))
 
     @staticmethod
-    def greater_than(lower: T) -> 'Range[T]':
+    def greater_than(lower: T) -> "Range[T]":
         return Range(_AboveValue(lower), _ABOVE_ALL)
 
     @staticmethod
-    def at_least(lower: T) -> 'Range[T]':
+    def at_least(lower: T) -> "Range[T]":
         return Range(_BelowValue(lower), _ABOVE_ALL)
 
     @staticmethod
-    def all() -> 'Range[T]':
+    def all() -> "Range[T]":
         return RANGE_ALL
 
     @staticmethod
-    def create_spanning(ranges: Sequence['Range[T]']):
+    def create_spanning(ranges: Sequence["Range[T]"]):
         if not ranges:
             raise ValueError("Cannot create range from span of empty range collection")
-        return Range(min(x._lower_bound for x in ranges), max(x._upper_bound for x in ranges))
+        return Range(
+            min(x._lower_bound for x in ranges), max(x._upper_bound for x in ranges)
+        )
 
     def has_lower_bound(self) -> bool:
         return self._lower_bound is not _BELOW_ALL
@@ -445,14 +462,18 @@ class Range(Container[T], Generic[T], Hashable):
     # I don't know why mypy complains about narrowing the type, which seems a reasonable thing to do
     def __contains__(self, val: T) -> bool:  # type: ignore
         check_not_none(val)
-        return self._lower_bound.is_less_than(val) and not self._upper_bound.is_less_than(val)
+        return self._lower_bound.is_less_than(val) and not self._upper_bound.is_less_than(
+            val
+        )
 
-    def encloses(self, other: 'Range[T]') -> bool:
+    def encloses(self, other: "Range[T]") -> bool:
         # noinspection PyChainedComparisons
-        return (self._lower_bound.compare_to(other._lower_bound) <= 0 and
-                self._upper_bound.compare_to(other._upper_bound) >= 0)
+        return (
+            self._lower_bound.compare_to(other._lower_bound) <= 0
+            and self._upper_bound.compare_to(other._upper_bound) >= 0
+        )
 
-    def is_connected(self, other: 'Range[T]') -> bool:
+    def is_connected(self, other: "Range[T]") -> bool:
         """
         Determine if two ranges are connected.
 
@@ -473,10 +494,12 @@ class Range(Container[T], Generic[T], Hashable):
         no elements "between them." For example, `[3, 5]` is not considered connected to
         `[6, 10]`.
         """
-        return (self._lower_bound <= other._upper_bound and
-                other._lower_bound <= self._upper_bound)
+        return (
+            self._lower_bound <= other._upper_bound
+            and other._lower_bound <= self._upper_bound
+        )
 
-    def span(self, other: 'Range[T]') -> 'Range[T]':
+    def span(self, other: "Range[T]") -> "Range[T]":
         """
         Get the minimal range enclosing both this range and `other`.
 
@@ -498,9 +521,10 @@ class Range(Container[T], Generic[T], Hashable):
         else:
             return Range(
                 self._lower_bound if lower_cmp <= 0 else other._lower_bound,
-                self._upper_bound if upper_cmp >= 0 else other._upper_bound)
+                self._upper_bound if upper_cmp >= 0 else other._upper_bound,
+            )
 
-    def intersection(self, connected_range: 'Range[T]') -> 'Range[T]':
+    def intersection(self, connected_range: "Range[T]") -> "Range[T]":
         """
         Get the intersection of this range and `other`.
 
@@ -526,9 +550,10 @@ class Range(Container[T], Generic[T], Hashable):
         else:
             return Range(
                 self._lower_bound if lower_cmp >= 0 else connected_range._lower_bound,
-                self._upper_bound if upper_cmp <= 0 else connected_range._upper_bound)
+                self._upper_bound if upper_cmp <= 0 else connected_range._upper_bound,
+            )
 
-    def intersects(self, other_range: 'Range[T]') -> bool:
+    def intersects(self, other_range: "Range[T]") -> bool:
         """
         Determine if this range i
         Args:
@@ -544,22 +569,31 @@ class Range(Container[T], Generic[T], Hashable):
         elif lower_cmp <= 0 <= upper_cmp:
             return True
         else:
-            intersection_lb = self._lower_bound if lower_cmp >= 0 else other_range._lower_bound
-            intersection_ub = self._upper_bound if upper_cmp <= 0 else other_range._upper_bound
+            intersection_lb = (
+                self._lower_bound if lower_cmp >= 0 else other_range._lower_bound
+            )
+            intersection_ub = (
+                self._upper_bound if upper_cmp <= 0 else other_range._upper_bound
+            )
             return intersection_lb <= intersection_ub
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Range):
-            return (self._lower_bound == other._lower_bound and
-                    self._upper_bound == other._upper_bound)
+            return (
+                self._lower_bound == other._lower_bound
+                and self._upper_bound == other._upper_bound
+            )
         return False
 
     def __hash__(self) -> int:
         return hash(self._lower_bound) + 31 * hash(self._upper_bound)
 
     def __repr__(self) -> str:
-        return (self._lower_bound.describe_as_lower_bound() + '..' +
-                self._upper_bound.describe_as_upper_bound())
+        return (
+            self._lower_bound.describe_as_lower_bound()
+            + ".."
+            + self._upper_bound.describe_as_upper_bound()
+        )
 
 
 # noinspection PyRedeclaration
@@ -587,10 +621,11 @@ class RangeSet(Generic[T], Container[T], metaclass=ABCMeta):
     This (including the documentation) is a partial translation of Guava's RangeSet to Python.
     Guava's implementation was written by Kevin Bourrillion and Louis Wasserman.
     """
+
     __slots__ = ()
 
     @staticmethod
-    def create_mutable() -> 'MutableRangeSet[T]':
+    def create_mutable() -> "MutableRangeSet[T]":
         return _MutableSortedDictRangeSet.create()
 
     @abstractmethod
@@ -607,7 +642,7 @@ class RangeSet(Generic[T], Container[T], metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    def encloses_all(self, rngs: Union['RangeSet[T]', Iterable[Range[T]]]) -> bool:
+    def encloses_all(self, rngs: Union["RangeSet[T]", Iterable[Range[T]]]) -> bool:
         """
         For each input range, check if any member range encloses it.
         """
@@ -672,7 +707,7 @@ class RangeSet(Generic[T], Container[T], metaclass=ABCMeta):
         return self.__class__.__name__ + "(" + str(self.as_ranges()) + ")"
 
 
-T2 = TypeVar('T2')
+T2 = TypeVar("T2")
 
 
 class ImmutableRangeSet(RangeSet[T], metaclass=ABCMeta):
@@ -683,28 +718,28 @@ class ImmutableRangeSet(RangeSet[T], metaclass=ABCMeta):
     """
 
     @staticmethod
-    def builder() -> 'ImmutableRangeSet.Builder[T]':
+    def builder() -> "ImmutableRangeSet.Builder[T]":
         return _ImmutableSortedDictRangeSet.Builder()
 
     class Builder(Generic[T2], metaclass=ABCMeta):
         @abstractmethod
-        def add(self, rng: Range[T2]) -> 'ImmutableRangeSet.Builder[T2]':
+        def add(self, rng: Range[T2]) -> "ImmutableRangeSet.Builder[T2]":
             raise NotImplementedError()
 
-        def add_all(self, ranges: Iterable[Range[T2]]) -> 'ImmutableRangeSet.Builder[T2]':
+        def add_all(self, ranges: Iterable[Range[T2]]) -> "ImmutableRangeSet.Builder[T2]":
             for rng in ranges:
                 self.add(rng)
             return self
 
         @abstractmethod
-        def build(self) -> 'ImmutableRangeSet[T2]':
+        def build(self) -> "ImmutableRangeSet[T2]":
             raise NotImplementedError()
 
 
 class MutableRangeSet(RangeSet[T], metaclass=ABCMeta):
     __slots__ = ()
 
-    def add(self, rng: Range[T]) -> 'RangeSet[T]':
+    def add(self, rng: Range[T]) -> "RangeSet[T]":
         """
         Add the specified range to this RangeSet (optional operation).
 
@@ -716,7 +751,7 @@ class MutableRangeSet(RangeSet[T], metaclass=ABCMeta):
          """
         raise NotImplementedError()
 
-    def add_all(self, rngs: Union['RangeSet[T]', Iterable[Range[T]]]) -> 'RangeSet[T]':
+    def add_all(self, rngs: Union["RangeSet[T]", Iterable[Range[T]]]) -> "RangeSet[T]":
         """
         Add all the specified ranges to this RangeSet (optional operation).
 
@@ -738,7 +773,7 @@ class MutableRangeSet(RangeSet[T], metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    def remove(self, rng: Range[T]) -> 'RangeSet[T]':
+    def remove(self, rng: Range[T]) -> "RangeSet[T]":
         """
         Remove the specified range from this RangeSet (optional operation).
 
@@ -747,7 +782,7 @@ class MutableRangeSet(RangeSet[T], metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    def remove_all(self, rngs: Union['RangeSet[T]', Iterable[Range[T]]]) -> 'RangeSet[T]':
+    def remove_all(self, rngs: Union["RangeSet[T]", Iterable[Range[T]]]) -> "RangeSet[T]":
         """
         Remove each specified range.
         """
@@ -770,7 +805,8 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
 
     def range_containing(self, value: T) -> Optional[Range[T]]:
         highest_range_beginning_at_or_below = _value_at_or_below(
-            self._ranges_by_lower_bound, _BelowValue(value))
+            self._ranges_by_lower_bound, _BelowValue(value)
+        )
         if highest_range_beginning_at_or_below:
             if value in highest_range_beginning_at_or_below:
                 return highest_range_beginning_at_or_below
@@ -779,17 +815,23 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
     def range_enclosing_range(self, rng: Range[T]) -> Optional[Range[T]]:
         # this implementation can be sped up
         highest_range_beginning_at_or_below = _value_at_or_below(
-            self._ranges_by_lower_bound, rng._lower_bound)
-        if (highest_range_beginning_at_or_below and
-                highest_range_beginning_at_or_below.encloses(rng)):
+            self._ranges_by_lower_bound, rng._lower_bound
+        )
+        if (
+            highest_range_beginning_at_or_below
+            and highest_range_beginning_at_or_below.encloses(rng)
+        ):
             return highest_range_beginning_at_or_below
         return None
 
     def ranges_enclosed_by(self, query_rng) -> ImmutableSet[Range[T]]:
-        highest_range_at_or_above = _value_at_or_above(self._ranges_by_lower_bound,
-                                                       query_rng._lower_bound)
+        highest_range_at_or_above = _value_at_or_above(
+            self._ranges_by_lower_bound, query_rng._lower_bound
+        )
         if highest_range_at_or_above:
-            start_idx = self._ranges_by_lower_bound.values().index(highest_range_at_or_above)
+            start_idx = self._ranges_by_lower_bound.values().index(
+                highest_range_at_or_above
+            )
             ret: ImmutableSet.Builder[Range[T]] = ImmutableSet.builder()
             for idx in range(start_idx, len(self._ranges_by_lower_bound)):
                 rng_at_idx = self._ranges_by_lower_bound.values()[idx]
@@ -804,28 +846,42 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
     # noinspection PyTypeHints
     def __contains__(self, value: T) -> bool:  # type: ignore
         highest_range_beginning_at_or_below = _value_at_or_below(
-            self._ranges_by_lower_bound, _BelowValue(value))
-        return bool(highest_range_beginning_at_or_below and
-                    value in highest_range_beginning_at_or_below)
+            self._ranges_by_lower_bound, _BelowValue(value)
+        )
+        return bool(
+            highest_range_beginning_at_or_below
+            and value in highest_range_beginning_at_or_below
+        )
 
     def encloses(self, rng: Range[T]) -> bool:
         highest_range_beginning_at_or_below = _value_at_or_below(
-            self._ranges_by_lower_bound, rng._lower_bound)
-        return bool(highest_range_beginning_at_or_below and
-                    highest_range_beginning_at_or_below.encloses(rng))
+            self._ranges_by_lower_bound, rng._lower_bound
+        )
+        return bool(
+            highest_range_beginning_at_or_below
+            and highest_range_beginning_at_or_below.encloses(rng)
+        )
 
     def intersects(self, rng: Range[T]) -> bool:
         check_not_none(rng)
-        ceiling_range: Optional[Range[T]] = _value_at_or_above(self._ranges_by_lower_bound,
-                                                               rng._lower_bound)
-        if (ceiling_range and ceiling_range.is_connected(rng) and
-                not ceiling_range.intersection(rng).is_empty()):
+        ceiling_range: Optional[Range[T]] = _value_at_or_above(
+            self._ranges_by_lower_bound, rng._lower_bound
+        )
+        if (
+            ceiling_range
+            and ceiling_range.is_connected(rng)
+            and not ceiling_range.intersection(rng).is_empty()
+        ):
             return True
         # check strictness of lowerEntry
-        lower_range: Optional[Range[T]] = _value_below(self._ranges_by_lower_bound,
-                                                       rng._lower_bound)
-        return bool(lower_range and lower_range.is_connected(rng) and
-                    not lower_range.intersection(rng).is_empty())
+        lower_range: Optional[Range[T]] = _value_below(
+            self._ranges_by_lower_bound, rng._lower_bound
+        )
+        return bool(
+            lower_range
+            and lower_range.is_connected(rng)
+            and not lower_range.intersection(rng).is_empty()
+        )
 
     def as_ranges(self) -> Sequence[Range[T]]:
         return self._ranges_by_lower_bound.values()
@@ -837,8 +893,10 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
     def span(self) -> Range[T]:
         if self.is_empty():
             raise ValueError("Can't take span of an empty RangeSet")
-        return Range(self._ranges_by_lower_bound.values()[0]._lower_bound,
-                     self._ranges_by_lower_bound.values()[-1]._upper_bound)
+        return Range(
+            self._ranges_by_lower_bound.values()[0]._lower_bound,
+            self._ranges_by_lower_bound.values()[-1]._upper_bound,
+        )
 
     def immutable_copy(self) -> ImmutableRangeSet[T]:
         return _ImmutableSortedDictRangeSet(self._ranges_by_lower_bound.copy())
@@ -851,10 +909,10 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
     # pylint:disable=protected-access
 
     @staticmethod
-    def create() -> 'MutableRangeSet[T]':
+    def create() -> "MutableRangeSet[T]":
         return _MutableSortedDictRangeSet(SortedDict())
 
-    def add(self, range_to_add: Range[T]) -> 'MutableRangeSet[T]':
+    def add(self, range_to_add: Range[T]) -> "MutableRangeSet[T]":
         if range_to_add.is_empty():
             return self
 
@@ -864,7 +922,9 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
         lb_to_add = range_to_add._lower_bound
         ub_to_add = range_to_add._upper_bound
 
-        range_below_lb: Optional[Range[T]] = _value_below(self._ranges_by_lower_bound, lb_to_add)
+        range_below_lb: Optional[Range[T]] = _value_below(
+            self._ranges_by_lower_bound, lb_to_add
+        )
 
         # is there any range which begins strictly before range_to_add's lower bound?
         # if so, range_to_add's beginning might lie within that range...
@@ -879,8 +939,9 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
                 return self
 
         # now we need to check of coalescing and connectedness on the upper end
-        range_below_ub: Optional[Range[T]] = _value_at_or_below(self._ranges_by_lower_bound,
-                                                                ub_to_add)
+        range_below_ub: Optional[Range[T]] = _value_at_or_below(
+            self._ranges_by_lower_bound, ub_to_add
+        )
         if range_below_ub and ub_to_add < range_below_ub._upper_bound:
             ub_to_add = range_below_ub._upper_bound
 
@@ -890,7 +951,9 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
         self._replace_range_with_same_lower_bound(Range(lb_to_add, ub_to_add))
         return self
 
-    def add_all(self, ranges_to_add: Union['RangeSet[T]', Iterable[Range[T]]]) -> 'RangeSet[T]':
+    def add_all(
+        self, ranges_to_add: Union["RangeSet[T]", Iterable[Range[T]]]
+    ) -> "RangeSet[T]":
         if isinstance(ranges_to_add, RangeSet):
             return self.add_all(ranges_to_add.as_ranges())
         for rng in ranges_to_add:
@@ -900,8 +963,10 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
     def clear(self) -> None:
         _clear(self._ranges_by_lower_bound, _BELOW_ALL, _ABOVE_ALL)
 
-    def remove(self, rng: Range[T]) -> 'RangeSet[T]':
-        raise NotImplementedError("I didn't need this, so I didn't bother to implement it yet.")
+    def remove(self, rng: Range[T]) -> "RangeSet[T]":
+        raise NotImplementedError(
+            "I didn't need this, so I didn't bother to implement it yet."
+        )
 
     def _replace_range_with_same_lower_bound(self, rng: Range[T]) -> None:
         if rng.is_empty():
@@ -922,16 +987,16 @@ class _ImmutableSortedDictRangeSet(ImmutableRangeSet[T], _SortedDictRangeSet[T])
         def __init__(self):
             self._mutable_builder = _MutableSortedDictRangeSet.create()
 
-        def add(self, rng: Range[T2]) -> 'ImmutableRangeSet.Builder[T2]':
+        def add(self, rng: Range[T2]) -> "ImmutableRangeSet.Builder[T2]":
             self._mutable_builder.add(rng)
             return self
 
-        def build(self) -> 'ImmutableRangeSet[T2]':
+        def build(self) -> "ImmutableRangeSet[T2]":
             return self._mutable_builder.immutable_copy()
 
 
-K = TypeVar('K')
-V = TypeVar('V')
+K = TypeVar("K")
+V = TypeVar("V")
 
 
 class RangeMap(Generic[K, V], metaclass=ABCMeta):
@@ -948,6 +1013,7 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
     This (including the documentation) is a partial translation of Guava's RangeMap to Python.
     Guava's implementation was written by Louis Wasserman.
     """
+
     __slots__ = ()
 
     @abstractmethod
@@ -989,8 +1055,8 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
 
 
 # necessary for builder because an inner class cannot share type variables with its outer class
-K2 = TypeVar('K2')
-V2 = TypeVar('V2')
+K2 = TypeVar("K2")
+V2 = TypeVar("V2")
 
 
 # this should have slots=True but cannot for the moment due to
@@ -1001,11 +1067,11 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
     range_set: ImmutableRangeSet[K] = attrib(init=False)
 
     @staticmethod
-    def empty() -> 'ImmutableRangeMap[K,V]':
+    def empty() -> "ImmutableRangeMap[K,V]":
         return ImmutableRangeMap(ImmutableDict.empty())
 
     @staticmethod
-    def builder() -> 'ImmutableRangeMap.Builder[K,V]':
+    def builder() -> "ImmutableRangeMap.Builder[K,V]":
         return ImmutableRangeMap.Builder()
 
     def __contains__(self, key: K) -> bool:
@@ -1029,21 +1095,26 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
 
     @range_set.default  # type: ignore
     def _init_range_set(self) -> ImmutableRangeSet[K]:
-        return ImmutableRangeSet.builder().add_all(self.rng_to_val.keys()).build()  # type: ignore
+        return (  # type: ignore
+            ImmutableRangeSet.builder().add_all(self.rng_to_val.keys()).build()
+        )
 
     def __attrs_post_init__(self):
-        check_arg(ImmutableSet.of(self.rng_to_val.keys()) ==
-                  ImmutableSet.of(self.range_set.as_ranges()), "Ranges of map are not disjoint")
+        check_arg(
+            ImmutableSet.of(self.rng_to_val.keys())
+            == ImmutableSet.of(self.range_set.as_ranges()),
+            "Ranges of map are not disjoint",
+        )
 
     class Builder(Generic[K2, V2]):
         def __init__(self):
             self.rng_to_val = ImmutableDict.builder()
 
-        def put(self, key: Range[K2], val: V2) -> 'ImmutableRangeMap.Builder[K2, V2]':
+        def put(self, key: Range[K2], val: V2) -> "ImmutableRangeMap.Builder[K2, V2]":
             self.rng_to_val.put(key, val)
             return self
 
-        def build(self) -> 'ImmutableRangeMap[K2, V2]':
+        def build(self) -> "ImmutableRangeMap[K2, V2]":
             return ImmutableRangeMap(self.rng_to_val.build())
 
 
@@ -1093,8 +1164,13 @@ def _value_at_or_above(sorted_dict: SortedDict, key: T) -> Optional[Any]:
     return sorted_dict[sorted_dict.iloc[idx]]
 
 
-def _clear(sorted_dict: SortedDict, start_key_inclusive: T, stop_key_exclusive: T) -> None:
+def _clear(
+    sorted_dict: SortedDict, start_key_inclusive: T, stop_key_exclusive: T
+) -> None:
     # we copy to a list first in case sorted_dict is not happy with modification during iteration
-    for key_to_delete in list(sorted_dict.irange(start_key_inclusive, stop_key_exclusive,
-                                                 inclusive=(True, False))):
+    for key_to_delete in list(
+        sorted_dict.irange(
+            start_key_inclusive, stop_key_exclusive, inclusive=(True, False)
+        )
+    ):
         del sorted_dict[key_to_delete]

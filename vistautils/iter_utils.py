@@ -20,13 +20,15 @@ _T = TypeVar("_T")
 @overload
 def drop(it: Iterator[_T], num_to_skip: int) -> Iterator[_T]:
     raise NotImplementedError(
-        "This should be impossible to call; this function definition is for the type checker only")
+        "This should be impossible to call; this function definition is for the type checker only"
+    )
 
 
-@overload    # noqa: F811
+@overload  # noqa: F811
 def drop(it: Iterable[_T], num_to_skip: int) -> Iterable[_T]:
     raise NotImplementedError(
-        "This should be impossible to call; this function definition is for the type checker only")
+        "This should be impossible to call; this function definition is for the type checker only"
+    )
 
 
 def drop(it, num_to_skip: int):  # noqa: F811
@@ -41,9 +43,12 @@ def drop(it, num_to_skip: int):  # noqa: F811
 
     `num_to_skip` must be non-negative or a `ValueError` will be raised.
     """
-    check_arg(num_to_skip >= 0,
-              "Number of items to skip must be positive but got %s", (num_to_skip,))
-    if hasattr(it, '__next__'):
+    check_arg(
+        num_to_skip >= 0,
+        "Number of items to skip must be positive but got %s",
+        (num_to_skip,),
+    )
+    if hasattr(it, "__next__"):
         return itertools.islice(it, num_to_skip, None)
     else:
         return _DropIterable(it, num_to_skip)
@@ -60,7 +65,7 @@ def only(it: Union[Iterator[_T], Iterable[_T]]) -> _T:
     If `iterable` has exactly one element, return that element.
     If it has zero or more than one, a ``LookupError`` will be raised.
     """
-    if hasattr(it, '__next__'):
+    if hasattr(it, "__next__"):
         # noinspection PyTypeHints
         iterator: Iterator[_T] = it  # type: ignore
     else:
@@ -78,25 +83,30 @@ def only(it: Union[Iterator[_T], Iterable[_T]]) -> _T:
 
 
 @overload
-def windowed(it: Iterator[_T], window_size: int, *,
-             partial_windows: bool = False) -> Iterator[Tuple[_T, ...]]:
+def windowed(
+    it: Iterator[_T], window_size: int, *, partial_windows: bool = False
+) -> Iterator[Tuple[_T, ...]]:
     raise NotImplementedError(
-        "This should be impossible to call; this function definition is for the type checker only")
+        "This should be impossible to call; this function definition is for the type checker only"
+    )
 
 
 @overload  # noqa: F811
-def windowed(it: Iterable[_T], window_size: int, *,
-             partial_windows: bool = False) -> Iterable[Tuple[_T, ...]]:
+def windowed(
+    it: Iterable[_T], window_size: int, *, partial_windows: bool = False
+) -> Iterable[Tuple[_T, ...]]:
     raise NotImplementedError(
-        "This should be impossible to call; this function definition is for the type checker only")
+        "This should be impossible to call; this function definition is for the type checker only"
+    )
 
 
 def windowed(it, window_size: int, *, partial_windows: bool = False):  # noqa: F811
     check_arg(window_size >= 1)
 
-    if not hasattr(it, '__next__'):
-        return _WindowedIterable(wrapped_iterable=it, window_size=window_size,
-                                 partial_windows=partial_windows)
+    if not hasattr(it, "__next__"):
+        return _WindowedIterable(
+            wrapped_iterable=it, window_size=window_size, partial_windows=partial_windows
+        )
 
     # we know at this point that it is an Iterable, but mypy might not, hence the ignores below
     if partial_windows:
@@ -106,6 +116,7 @@ def windowed(it, window_size: int, *, partial_windows: bool = False):  # noqa: F
 
 
 # implementation helpers for drop()
+
 
 @attrs(auto_attribs=True)
 class _DropIterable(Generic[_T], Iterable[_T]):
@@ -119,6 +130,7 @@ class _DropIterable(Generic[_T], Iterable[_T]):
 
 # implementation helpers for windowed()
 
+
 @attrs(auto_attribs=True)
 class _WindowedIterable(Generic[_T], Iterable[Tuple[_T, ...]]):
     # we dispense with checks on these fields because `windowed` already handles it
@@ -127,8 +139,11 @@ class _WindowedIterable(Generic[_T], Iterable[Tuple[_T, ...]]):
     _partial_windows: bool
 
     def __iter__(self) -> Iterator[Tuple[_T, ...]]:
-        return windowed(iter(self._wrapped_iterable), self._window_size,
-                        partial_windows=self._partial_windows)
+        return windowed(
+            iter(self._wrapped_iterable),
+            self._window_size,
+            partial_windows=self._partial_windows,
+        )
 
 
 def _complete_windows(it: Iterator[_T], window_size: int) -> Iterator[Tuple[_T, ...]]:
@@ -154,8 +169,9 @@ def _complete_windows(it: Iterator[_T], window_size: int) -> Iterator[Tuple[_T, 
         yield tuple(win)
 
 
-def _possibly_incomplete_windows(it: Iterator[_T], window_size: int) \
-        -> Iterator[Tuple[_T, ...]]:
+def _possibly_incomplete_windows(
+    it: Iterator[_T], window_size: int
+) -> Iterator[Tuple[_T, ...]]:
     """
     All sliding windows of the given size over an iterable.
 

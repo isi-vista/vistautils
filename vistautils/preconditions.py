@@ -8,7 +8,7 @@ from typing import Any, Iterable, Tuple, TypeVar, Union
 _ClassInfo = Union[type, Tuple[Union[type, Tuple], ...]]
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def check_not_none(x: T, msg: str = None) -> T:
@@ -57,8 +57,11 @@ def check_args_not_none(*args, msg: str = None):
 
 def check_isinstance(item: T, classinfo: _ClassInfo) -> T:
     if not isinstance(item, classinfo):
-        raise TypeError('Expected instance of type {!r} but got type {!r} for {!r}'
-                        .format(classinfo, type(item), item))
+        raise TypeError(
+            "Expected instance of type {!r} but got type {!r} for {!r}".format(
+                classinfo, type(item), item
+            )
+        )
     return item
 
 
@@ -69,8 +72,11 @@ def check_opt_isinstance(item: T, classinfo: _ClassInfo) -> T:
     Raises a TypeError otherwise
     """
     if item and not isinstance(item, classinfo):
-        raise TypeError('Expected instance of type {!r} but got type {!r} for {!r}'
-                        .format(classinfo, type(item), item))
+        raise TypeError(
+            "Expected instance of type {!r} but got type {!r} for {!r}".format(
+                classinfo, type(item), item
+            )
+        )
     return item
 
 
@@ -81,7 +87,9 @@ def check_all_isinstance(items: Iterable[Any], classinfo: _ClassInfo):
 
 def check_issubclass(item, classinfo: _ClassInfo):
     if not issubclass(item, classinfo):
-        raise TypeError('Expected subclass of type {!r} but got {!r}'.format(classinfo, type(item)))
+        raise TypeError(
+            "Expected subclass of type {!r} but got {!r}".format(classinfo, type(item))
+        )
     return item
 
 
@@ -91,6 +99,10 @@ def check_in(item: Any, legal_values: Iterable[Any], item_name: str = None) -> N
         # performance impact is minimal since import only happens on precondition failure,
         # which will presumably crash the program
         import vistautils.misc_utils
+
         item_msg = " {!s} to be".format(item_name) if item_name else ""
-        raise ValueError("Expected{!s} one of {!s} but got {!s}".format(
-            item_msg, vistautils.misc_utils.str_list_limited(legal_values, 10), item))
+        raise ValueError(
+            "Expected{!s} one of {!s} but got {!s}".format(
+                item_msg, vistautils.misc_utils.str_list_limited(legal_values, 10), item
+            )
+        )

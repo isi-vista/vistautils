@@ -18,8 +18,8 @@ from vistautils.span import Span
 from vistautils.attrutils import attrib_instance_of, attrib_opt_immutable
 from vistautils.preconditions import check_arg
 
-DIV = 'div'
-SPAN = 'span'
+DIV = "div"
+SPAN = "span"
 
 
 @attrs(frozen=True, slots=True)
@@ -33,26 +33,28 @@ class AnnotatedSpan:
     When rendered as HTML, the primary label will become the tag and the metadata will
     becomes attributes.
     """
+
     label: str = attrib_instance_of(str)
     span: Span = attrib_instance_of(Span)
     attributes: Mapping[str, str] = attrib_opt_immutable(ImmutableDict)
 
     @staticmethod
-    def create_div_of_class(span: Span, clazz: str) -> 'AnnotatedSpan':
-        return AnnotatedSpan(DIV, span, {'class': clazz})
+    def create_div_of_class(span: Span, clazz: str) -> "AnnotatedSpan":
+        return AnnotatedSpan(DIV, span, {"class": clazz})
 
     @staticmethod
-    def create_span_of_class(span: Span, clazz: str) -> 'AnnotatedSpan':
-        return AnnotatedSpan(SPAN, span, {'class': clazz})
+    def create_span_of_class(span: Span, clazz: str) -> "AnnotatedSpan":
+        return AnnotatedSpan(SPAN, span, {"class": clazz})
 
 
 def to_start_tag(annotated_range: AnnotatedSpan) -> str:
     """
     Make the start tag of an HTML element from an `AnnotatedSpan`
     """
-    key_value_string = ' '.join(f'{k}="{v}"'
-                                for (k, v) in sorted(annotated_range.attributes.items()))
-    attributes_string = (' ' + key_value_string) if annotated_range.attributes else ''
+    key_value_string = " ".join(
+        f'{k}="{v}"' for (k, v) in sorted(annotated_range.attributes.items())
+    )
+    attributes_string = (" " + key_value_string) if annotated_range.attributes else ""
     return f"<{annotated_range.label}{attributes_string}>"
 
 
@@ -65,8 +67,13 @@ def to_end_tag(annotated_range: AnnotatedSpan) -> str:
 
 @attrs(frozen=True, slots=True)
 class HTMLStyleAnnotationFormatter:
-    def annotated_text(self, text: str, annotations: Collection[AnnotatedSpan],
-                       *, text_offsets: Optional[Span] = None) -> str:
+    def annotated_text(
+        self,
+        text: str,
+        annotations: Collection[AnnotatedSpan],
+        *,
+        text_offsets: Optional[Span] = None,
+    ) -> str:
         """
         Mark annotations on text in an HTML-like style.
 
@@ -83,8 +90,11 @@ class HTMLStyleAnnotationFormatter:
         """
         if not text_offsets:
             text_offsets = Span.from_inclusive_to_exclusive(0, len(text))
-        check_arg(len(text_offsets) == len(text), f"Text offsets length {len(text_offsets)} "
-                                                  f"does not match text length {len(text)}")
+        check_arg(
+            len(text_offsets) == len(text),
+            f"Text offsets length {len(text_offsets)} "
+            f"does not match text length {len(text)}",
+        )
 
         # we process the annotations to (a) ensure they all fit within the requested snippet
         # and (b) shift their offsets so that all offsets are relative to the text being
@@ -95,19 +105,20 @@ class HTMLStyleAnnotationFormatter:
         last_uncopied_offset = 0
         for tag in self._tag_sequence(processed_annotations):
             if last_uncopied_offset < tag.offset:
-                ret.write(text[last_uncopied_offset:tag.offset])
+                ret.write(text[last_uncopied_offset : tag.offset])
                 last_uncopied_offset = tag.offset
 
             ret.write(tag.string)
 
         # get any trailing text after last tag
         if last_uncopied_offset < text_offsets.end:
-            ret.write(text[last_uncopied_offset:text_offsets.end])
+            ret.write(text[last_uncopied_offset : text_offsets.end])
         return ret.getvalue()
 
     @staticmethod
-    def _clip_to_offsets_and_shift(unclipped_annotations: Collection[AnnotatedSpan],
-                                   text_offsets: Span) -> List[AnnotatedSpan]:
+    def _clip_to_offsets_and_shift(
+        unclipped_annotations: Collection[AnnotatedSpan], text_offsets: Span
+    ) -> List[AnnotatedSpan]:
         """
         Clip or filter out annotations to ensure all are within the text being formatted.
         """
@@ -126,7 +137,9 @@ class HTMLStyleAnnotationFormatter:
                 # unchanged
                 # we now need to shift the annotation offsets so that they are relative to the
                 # snippet being formatted
-                shifted_annotation_span = clipped_annotation_span.shift(-text_offsets.start)
+                shifted_annotation_span = clipped_annotation_span.shift(
+                    -text_offsets.start
+                )
                 ret.append(evolve(unclipped_annotation, span=shifted_annotation_span))
             # otherwise, we are in case (c) and we drop the annotation
         return ret
@@ -138,8 +151,9 @@ class HTMLStyleAnnotationFormatter:
         offset: int = attrib_instance_of(int)
 
     @staticmethod
-    def _tag_sequence(annotations: Collection[AnnotatedSpan]) \
-            -> Iterable['HTMLStyleAnnotationFormatter.Tag']:
+    def _tag_sequence(
+        annotations: Collection[AnnotatedSpan]
+    ) -> Iterable["HTMLStyleAnnotationFormatter.Tag"]:
         """
         Provide the tags in order of their occurrence in the formatted text.
 
@@ -157,16 +171,22 @@ class HTMLStyleAnnotationFormatter:
         def end_tag_key(annotation):
             return annotation.span.end, len(annotation.span)
 
-        start_tags = (HTMLStyleAnnotationFormatter.Tag(to_start_tag(ann), True, ann.span.start)
-                      for ann in sorted(annotations, key=start_tag_key))
-        end_tags = (HTMLStyleAnnotationFormatter.Tag(to_end_tag(ann), False, ann.span.end)
-                    for ann in sorted(annotations, key=end_tag_key))
+        start_tags = (
+            HTMLStyleAnnotationFormatter.Tag(to_start_tag(ann), True, ann.span.start)
+            for ann in sorted(annotations, key=start_tag_key)
+        )
+        end_tags = (
+            HTMLStyleAnnotationFormatter.Tag(to_end_tag(ann), False, ann.span.end)
+            for ann in sorted(annotations, key=end_tag_key)
+        )
 
         # interleave the start and end tag lists
         # when start and end tags are attached to the same offset, put the ends tags first
         # to avoid crossing elements
         # "sorted" is stable so the relative order of start and end tags is maintained
-        return sorted(itertools.chain(end_tags, start_tags),
-                      # True is less than False, which is fine because we want end tags
-                      # before start tags,
-                      key=lambda tag: (tag.offset, tag.is_start))
+        return sorted(
+            itertools.chain(end_tags, start_tags),
+            # True is less than False, which is fine because we want end tags
+            # before start tags,
+            key=lambda tag: (tag.offset, tag.is_start),
+        )
