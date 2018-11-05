@@ -54,10 +54,10 @@ flake8:
 	$(FLAKE8_CMD)
 
 black-fix:
-	black vistautils
+	black vistautils tests
 
 black-check:
-	black --check vistautils
+	black --check vistautils tests
 
 check: black-check lint mypy flake8
 
