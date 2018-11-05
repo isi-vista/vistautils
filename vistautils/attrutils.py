@@ -85,5 +85,5 @@ def _empty_immutable_if_none(val: Any,
 
 # Unused arguments are to match the attrs validator signature
 # noinspection PyUnusedLocal
-def non_empty(self: Any, attr: Any, val: Sized) -> bool:  # pylint: disable=unused-argument
+def non_empty(_self: Any, _attr: Any, val: Sized) -> bool:
     return len(val) > 0
