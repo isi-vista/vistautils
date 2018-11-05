@@ -17,7 +17,7 @@ from vistautils.preconditions import check_arg, check_not_none, check_state
 
 K = TypeVar('K')
 V = TypeVar('V')
-X = TypeVar('X')
+T = TypeVar('T')
 
 
 def _identity(x: str) -> str:
@@ -185,8 +185,8 @@ class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCM
             lambda _, x: x.decode('utf-8'))
 
     @staticmethod
-    def interpret_values(wrapped: 'KeyValueLinearSource[str, X]',
-                         interpretation_function: Callable[[str, X], V]) \
+    def interpret_values(wrapped: 'KeyValueLinearSource[str, T]',
+                         interpretation_function: Callable[[str, T], V]) \
             -> 'KeyValueLinearSource[str, V]':
         """
         Make a key-value linear source which interprets the values of another.
@@ -311,8 +311,8 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
     # mypy is grumpy this doesn't agree with the signature of KeyValueLinearSource,
     # but it doesn't matter since it is a static method
     @staticmethod
-    def interpret_values(wrapped: 'KeyValueSource[K, X]',  # type: ignore
-                         interpretation_function: Callable[[K, X], V]) \
+    def interpret_values(wrapped: 'KeyValueSource[K, T]',  # type: ignore
+                         interpretation_function: Callable[[K, T], V]) \
             -> 'KeyValueSource[K, V]':  # type: ignore
         """
         Make a key-value source which interprets the values of another.
@@ -578,8 +578,8 @@ class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
     See `KeyValueLinearSource.interpret_values` for details.
     """
 
-    def __init__(self, wrapped_source: KeyValueLinearSource[str, X],
-                 interpretation_function: Callable[[str, X], V]) -> None:
+    def __init__(self, wrapped_source: KeyValueLinearSource[str, T],
+                 interpretation_function: Callable[[str, T], V]) -> None:
         self.wrapped_source = wrapped_source
         self.interpretation_function = interpretation_function
 
@@ -604,8 +604,8 @@ class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
     Key-value source which interprets the valus of another
     """
 
-    def __init__(self, wrapped_source: KeyValueSource[K, X],
-                 interpretation_function: Callable[[K, X], V]) -> None:
+    def __init__(self, wrapped_source: KeyValueSource[K, T],
+                 interpretation_function: Callable[[K, T], V]) -> None:
         self.wrapped_source = wrapped_source
         self.interpretation_function = interpretation_function
 
@@ -714,8 +714,6 @@ def char_key_value_source_from_params(param_name: str, params: Parameters,
         default_creator=_doc_id_source_from_params,
         context=effective_context)
 
-
-T = TypeVar('T')
 
 _CHAR_KEY_VALUE_SINK_SPECIAL_VALUES = {
     'zip': '_ZipCharFileKeyValueSink',
