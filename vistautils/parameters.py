@@ -684,18 +684,20 @@ class YAMLParametersLoader:
 @attrs(frozen=True)
 class YAMLParametersWriter:
     def write(self, params: Parameters, sink: Union[Path, str, CharSink]) -> None:
+        # pylint:disable=protected-access
+
         def dictify(data):
             if isinstance(data, ImmutableDict):
                 return {k: dictify(v) for (k, v) in data.items()}
             elif isinstance(data, Parameters):
-                return dictify(data._data)  # pylint:disable=protected-access
+                return dictify(data._data)
             else:
                 return data
 
         if isinstance(sink, Path) or isinstance(sink, str):
             sink = CharSink.to_file(sink)
         with sink.open() as out:
-            yaml.dump(dictify(params._data), out,  # pylint:disable=protected-access
+            yaml.dump(dictify(params._data), out,
                       # prevents leaf dictionaries from being written in the
                       # human unfriendly compact style
                       default_flow_style=False,
