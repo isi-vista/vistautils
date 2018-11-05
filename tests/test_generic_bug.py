@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from attr import attrs
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 # this test is to track https://github.com/python-attrs/attrs/issues/313
@@ -25,6 +25,7 @@ class TestGenericBug(TestCase):
 
     def test_slots_with_no_parent(self):
         with self.assertRaisesRegex(TypeError, "Cannot inherit from plain Generic"):
+
             @attrs(slots=True)
             class Foo4(Generic[T]):
                 pass

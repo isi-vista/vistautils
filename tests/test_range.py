@@ -2,8 +2,14 @@ import sys
 from unittest import TestCase
 
 from immutablecollections import ImmutableSet
-from vistautils.range import Range, RangeSet, BoundType, _BELOW_ALL, ImmutableRangeSet, \
-    ImmutableRangeMap
+from vistautils.range import (
+    Range,
+    RangeSet,
+    BoundType,
+    _BELOW_ALL,
+    ImmutableRangeSet,
+    ImmutableRangeMap,
+)
 
 
 class TestRange(TestCase):
@@ -263,8 +269,10 @@ class TestRange(TestCase):
         with self.assertRaises(ValueError):
             rng.intersection(Range.greater_than(4))
 
-        rng2 = Range.closed(3, 4);
-        self.assertEquals(Range.open_closed(4, 4), rng2.intersection(Range.greater_than(4)))
+        rng2 = Range.closed(3, 4)
+        self.assertEquals(
+            Range.open_closed(4, 4), rng2.intersection(Range.greater_than(4))
+        )
 
     def test_intersection_singleton(self):
         rng = Range.closed(3, 3)
@@ -276,7 +284,9 @@ class TestRange(TestCase):
         self.assertEquals(rng, rng.intersection(Range.at_least(2)))
 
         self.assertEquals(Range.closed_open(3, 3), rng.intersection(Range.less_than(3)))
-        self.assertEquals(Range.open_closed(3, 3), rng.intersection(Range.greater_than(3)))
+        self.assertEquals(
+            Range.open_closed(3, 3), rng.intersection(Range.greater_than(3))
+        )
 
         with self.assertRaises(ValueError):
             rng.intersection(Range.at_least(4))
@@ -291,7 +301,9 @@ class TestRange(TestCase):
             rng.intersection(Range.closed(0, 2))
 
         # adjacent below
-        self.assertEqual(Range.closed_open(4, 4), rng.intersection(Range.closed_open(2, 4)))
+        self.assertEqual(
+            Range.closed_open(4, 4), rng.intersection(Range.closed_open(2, 4))
+        )
 
         # overlap below
         self.assertEqual(Range.closed(4, 6), rng.intersection(Range.closed(2, 6)))
@@ -321,7 +333,9 @@ class TestRange(TestCase):
         self.assertEqual(Range.closed(6, 8), rng.intersection(Range.closed(6, 10)))
 
         # adjacent above
-        self.assertEqual(Range.open_closed(8, 8), rng.intersection(Range.open_closed(8, 10)))
+        self.assertEqual(
+            Range.open_closed(8, 8), rng.intersection(Range.open_closed(8, 10))
+        )
 
         with self.assertRaises(ValueError):
             rng.intersection(Range.closed(10, 12))
@@ -368,28 +382,45 @@ class TestRange(TestCase):
         self.assertFalse(rng.intersects(Range.closed(10, 12)))
 
     def test_create_spanning(self) -> None:
-        with self.assertRaisesRegex(ValueError,
-                                    "Cannot create range from span of empty range collection"):
+        with self.assertRaisesRegex(
+            ValueError, "Cannot create range from span of empty range collection"
+        ):
             Range.create_spanning([])
 
     def test_check_usable_in_set(self) -> None:
-        range_set = ImmutableSet.of([Range.open_closed(0, 1), Range.open_closed(0, 1),
-                                     Range.at_most(1), Range.at_most(1)])
+        range_set = ImmutableSet.of(
+            [
+                Range.open_closed(0, 1),
+                Range.open_closed(0, 1),
+                Range.at_most(1),
+                Range.at_most(1),
+            ]
+        )
         self.assertEqual(2, len(range_set))
 
     def test_range_set_equality(self) -> None:
-        self.assertEqual(ImmutableRangeSet.builder()
-                         .add(Range.at_most(2)).add(Range.at_least(5)).build(),
-                         ImmutableRangeSet.builder()
-                         .add(Range.at_least(5)).add(Range.at_most(2)).build())
+        self.assertEqual(
+            ImmutableRangeSet.builder()
+            .add(Range.at_most(2))
+            .add(Range.at_least(5))
+            .build(),
+            ImmutableRangeSet.builder()
+            .add(Range.at_least(5))
+            .add(Range.at_most(2))
+            .build(),
+        )
 
     def test_range_enclosing_range(self) -> None:
         range_set = RangeSet.create_mutable()
         range_set.add_all([Range.at_most(2), Range.open_closed(5, 8), Range.at_least(10)])
         self.assertEqual(None, range_set.range_enclosing_range(Range.closed(2, 3)))
-        self.assertEqual(Range.at_most(2), range_set.range_enclosing_range(Range.open(-1, 0)))
-        self.assertEqual(Range.open_closed(5, 8),
-                         range_set.range_enclosing_range(Range.closed_open(6, 7)))
+        self.assertEqual(
+            Range.at_most(2), range_set.range_enclosing_range(Range.open(-1, 0))
+        )
+        self.assertEqual(
+            Range.open_closed(5, 8),
+            range_set.range_enclosing_range(Range.closed_open(6, 7)),
+        )
         self.assertEqual(None, range_set.range_enclosing_range(Range.closed(5, 8)))
 
     def test_range_clear(self) -> None:
@@ -402,8 +433,9 @@ class TestRange(TestCase):
         self.assertTrue(ImmutableRangeMap.empty().is_empty())
 
     def test_ranges_enclosed_by_out_of_bounds(self) -> None:
-        self.assertEqual(ImmutableSet.empty(),
-                         RangeSet.create_mutable().add(Range.closed(0, 10))
-                         .ranges_enclosed_by(Range.at_least(20)))
-
-
+        self.assertEqual(
+            ImmutableSet.empty(),
+            RangeSet.create_mutable()
+            .add(Range.closed(0, 10))
+            .ranges_enclosed_by(Range.at_least(20)),
+        )
