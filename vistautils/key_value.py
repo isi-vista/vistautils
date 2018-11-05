@@ -243,7 +243,7 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         return None
 
     def items(self, key_filter: Callable[[K], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
-        keys = self.keys()
+        keys = self.keys()  # pylint: disable=assignment-from-none
         if keys is not None:
             def generator_func() -> Iterator[Tuple[K, V]]:
                 # mypy doesn't understand keys isn't None here
