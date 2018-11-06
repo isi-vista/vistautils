@@ -5,6 +5,8 @@ Python utilities developed by USC ISI's VISTA center.
 
 [![codecov](https://codecov.io/gh/isi-vista/vistautils/branch/master/graph/badge.svg)](https://codecov.io/gh/isi-vista/vistautils)
 
+# Documentation
+
 To generate documentation:
 ```
 cd docs
@@ -12,3 +14,7 @@ make html
 ```
 
 The docs will be under `docs/_build/html`
+
+# Contributing
+
+Run `make precommit` before commiting.  Eventually this will be automated.

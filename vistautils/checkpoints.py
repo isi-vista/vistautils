@@ -26,7 +26,7 @@ class Checkpoints(Container[str], metaclass=ABCMeta):
         raise NotImplementedError()
 
     @staticmethod
-    def from_directory(directory: Union[Path, str]) -> '_CheckPointDirectory':
+    def from_directory(directory: Union[Path, str]) -> "_CheckPointDirectory":
         """
         Get a checkpoint store backed by a filesystem directory.
 
@@ -47,6 +47,7 @@ class _CheckPointDirectory(Checkpoints):
     This is not thread-safe and will not work if external factors meddle with the
     directory.
     """
+
     directory: Path = attrib()
 
     def set(self, name: str) -> None:

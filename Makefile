@@ -53,4 +53,12 @@ mypy:
 flake8:
 	$(FLAKE8_CMD)
 
-precommit: flake8 mypy lint
+black-fix:
+	black vistautils tests
+
+black-check:
+	black --check vistautils tests
+
+check: black-check lint mypy flake8
+
+precommit: black-fix check

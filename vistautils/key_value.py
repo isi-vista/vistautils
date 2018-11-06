@@ -2,8 +2,20 @@ import tarfile
 from abc import ABCMeta, abstractmethod
 from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import AbstractSet, Callable, Dict, Generic, Iterator, Mapping, MutableMapping, \
-    Optional, Set, Tuple, TypeVar, Union
+from typing import (
+    AbstractSet,
+    Callable,
+    Dict,
+    Generic,
+    Iterator,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 from zipfile import ZipFile
 
 from attr import attrs
@@ -11,13 +23,17 @@ from immutablecollections import ImmutableDict, ImmutableSet
 
 from vistautils.parameters import Parameters
 from vistautils.attrutils import attrib_immutable
-from vistautils.io_utils import CharSink, CharSource, read_doc_id_to_file_map, \
-    write_doc_id_to_file_map
+from vistautils.io_utils import (
+    CharSink,
+    CharSource,
+    read_doc_id_to_file_map,
+    write_doc_id_to_file_map,
+)
 from vistautils.preconditions import check_arg, check_not_none, check_state
 
-K = TypeVar('K')
-V = TypeVar('V')
-X = TypeVar('X')
+K = TypeVar("K")
+V = TypeVar("V")
+T = TypeVar("T")
 
 
 def _identity(x: str) -> str:
@@ -27,14 +43,14 @@ def _identity(x: str) -> str:
 # the following two methods supply the default way of tracking keys in zip-backed stores
 def _read_keys_from_keys_file(zip_file: ZipFile) -> Optional[AbstractSet[str]]:
     try:
-        keys_data = zip_file.read('__keys')
-        return ImmutableSet.of(keys_data.decode('utf-8').split('\n'))
+        keys_data = zip_file.read("__keys")
+        return ImmutableSet.of(keys_data.decode("utf-8").split("\n"))
     except KeyError:
         return None
 
 
 def _write_keys_to_keys_file(zip_file: ZipFile, keys: AbstractSet[str]) -> None:
-    zip_file.writestr('__keys', '\n'.join(keys).encode('utf-8'))
+    zip_file.writestr("__keys", "\n".join(keys).encode("utf-8"))
 
 
 class KeyValueSink(Generic[K, V], metaclass=ABCMeta):
@@ -65,7 +81,7 @@ class KeyValueSink(Generic[K, V], metaclass=ABCMeta):
         self.put(key, value)
 
     @abstractmethod
-    def __enter__(self) -> 'KeyValueSink[K,V]':
+    def __enter__(self) -> "KeyValueSink[K,V]":
         raise NotImplementedError()
 
     @abstractmethod
@@ -73,13 +89,18 @@ class KeyValueSink(Generic[K, V], metaclass=ABCMeta):
         raise NotImplementedError()
 
     @staticmethod
-    def zip_character_sink(path: Path, *,
-                           filename_function: Callable[[str], str] = _identity,
-                           overwrite: bool = True,
-                           keys_in_function: Callable[[ZipFile], Optional[AbstractSet[str]]] =
-                           _read_keys_from_keys_file,
-                           keys_out_function: Callable[[ZipFile, AbstractSet[str]], None] =
-                           _write_keys_to_keys_file) -> 'KeyValueSink[str, str]':
+    def zip_character_sink(
+        path: Path,
+        *,
+        filename_function: Callable[[str], str] = _identity,
+        overwrite: bool = True,
+        keys_in_function: Callable[
+            [ZipFile], Optional[AbstractSet[str]]
+        ] = _read_keys_from_keys_file,
+        keys_out_function: Callable[
+            [ZipFile, AbstractSet[str]], None
+        ] = _write_keys_to_keys_file,
+    ) -> "KeyValueSink[str, str]":
         """
         A key-value sink backed by a zip file which stores character data.
 
@@ -96,20 +117,27 @@ class KeyValueSink(Generic[K, V], metaclass=ABCMeta):
         Since these need to match, it is recommended to use a wrapper method around this one
         when overriding.
         """
-        return _ZipCharFileKeyValueSink(path, filename_function=filename_function,
-                                        overwrite=overwrite,
-                                        keys_in_function=keys_in_function,
-                                        keys_out_function=keys_out_function)
+        return _ZipCharFileKeyValueSink(
+            path,
+            filename_function=filename_function,
+            overwrite=overwrite,
+            keys_in_function=keys_in_function,
+            keys_out_function=keys_out_function,
+        )
 
     @staticmethod
-    def zip_bytes_sink(path: Path,
-                       *,
-                       filename_function: Callable[[str], str] = _identity,
-                       overwrite: bool = True,
-                       keys_in_function: Callable[[ZipFile], Optional[AbstractSet[str]]] =
-                       _read_keys_from_keys_file,
-                       keys_out_function: Callable[[ZipFile, AbstractSet[str]], None] =
-                       _write_keys_to_keys_file) -> 'KeyValueSink[str, bytes]':
+    def zip_bytes_sink(
+        path: Path,
+        *,
+        filename_function: Callable[[str], str] = _identity,
+        overwrite: bool = True,
+        keys_in_function: Callable[
+            [ZipFile], Optional[AbstractSet[str]]
+        ] = _read_keys_from_keys_file,
+        keys_out_function: Callable[
+            [ZipFile, AbstractSet[str]], None
+        ] = _write_keys_to_keys_file,
+    ) -> "KeyValueSink[str, bytes]":
         """
         A key-value sink backed by a zip file which stores character data.
 
@@ -126,10 +154,13 @@ class KeyValueSink(Generic[K, V], metaclass=ABCMeta):
         Since these need to match, it is recommended to use a wrapper method around this one
         when overriding.
         """
-        return _ZipBytesFileKeyValueSink(path, filename_function=filename_function,
-                                         overwrite=overwrite,
-                                         keys_in_function=keys_in_function,
-                                         keys_out_function=keys_out_function)
+        return _ZipBytesFileKeyValueSink(
+            path,
+            filename_function=filename_function,
+            overwrite=overwrite,
+            keys_in_function=keys_in_function,
+            keys_out_function=keys_out_function,
+        )
 
 
 class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCMeta):
@@ -140,14 +171,17 @@ class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCM
     .tar.gz files, lack efficient random access but can still be iterated over.
     """
 
-    def items(self, key_filter: Callable[[K], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
+    def items(
+        self, key_filter: Callable[[K], bool] = lambda x: True
+    ) -> Iterator[Tuple[K, V]]:
         raise NotImplementedError()
 
     @staticmethod
     def byte_linear_source_from_tar_gz(
-            tgz_file: Path, key_function: Callable[[str], Optional[str]] = lambda x: x,
-            name_filter: Callable[[str], bool] = lambda x: True) \
-            -> 'KeyValueLinearSource[str,bytes]':
+        tgz_file: Path,
+        key_function: Callable[[str], Optional[str]] = lambda x: x,
+        name_filter: Callable[[str], bool] = lambda x: True,
+    ) -> "KeyValueLinearSource[str,bytes]":
         """
         Expose a .tar.gz file as a str-bytes `KeyValueLinearSource`.
 
@@ -170,9 +204,10 @@ class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCM
 
     @staticmethod
     def str_linear_source_from_tar_gz(
-            tgz_file: Path, key_function: Callable[[str], Optional[str]] = lambda x: x,
-            name_filter: Callable[[str], bool] = lambda x: True) \
-            -> 'KeyValueLinearSource[str,str]':
+        tgz_file: Path,
+        key_function: Callable[[str], Optional[str]] = lambda x: x,
+        name_filter: Callable[[str], bool] = lambda x: True,
+    ) -> "KeyValueLinearSource[str,str]":
         """
         Exposes a .tar.gz file as a str-str `KeyValueLinearSource`.
 
@@ -180,14 +215,17 @@ class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCM
         strings.
         """
         return KeyValueLinearSource.interpret_values(
-            KeyValueLinearSource.byte_linear_source_from_tar_gz(tgz_file,
-                                                                key_function, name_filter),
-            lambda _, x: x.decode('utf-8'))
+            KeyValueLinearSource.byte_linear_source_from_tar_gz(
+                tgz_file, key_function, name_filter
+            ),
+            lambda _, x: x.decode("utf-8"),
+        )
 
     @staticmethod
-    def interpret_values(wrapped: 'KeyValueLinearSource[str, X]',
-                         interpretation_function: Callable[[str, X], V]) \
-            -> 'KeyValueLinearSource[str, V]':
+    def interpret_values(
+        wrapped: "KeyValueLinearSource[str, T]",
+        interpretation_function: Callable[[str, T], V],
+    ) -> "KeyValueLinearSource[str, V]":
         """
         Make a key-value linear source which interprets the values of another.
 
@@ -242,9 +280,12 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         """
         return None
 
-    def items(self, key_filter: Callable[[K], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
-        keys = self.keys()
+    def items(
+        self, key_filter: Callable[[K], bool] = lambda x: True
+    ) -> Iterator[Tuple[K, V]]:
+        keys = self.keys()  # pylint: disable=assignment-from-none
         if keys is not None:
+
             def generator_func() -> Iterator[Tuple[K, V]]:
                 # mypy doesn't understand keys isn't None here
                 for key in keys:  # type: ignore
@@ -253,11 +294,13 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
 
             return generator_func()
         else:
-            raise NotImplementedError("A KeyValueSource which supports item iteration but cannot "
-                                      "provide keys must override the default implementation")
+            raise NotImplementedError(
+                "A KeyValueSource which supports item iteration but cannot "
+                "provide keys must override the default implementation"
+            )
 
     @staticmethod
-    def from_path_mapping(id_to_path: Mapping[str, Path]) -> 'KeyValueSource[str, str]':
+    def from_path_mapping(id_to_path: Mapping[str, Path]) -> "KeyValueSource[str, str]":
         """
         Create a key-value source from a map of IDs to paths.
 
@@ -266,16 +309,21 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         return _PathMappingCharKeyValueSource(id_to_path)
 
     @staticmethod
-    def from_doc_id_to_file_map(map_file: Union[str, Path, CharSource]) -> \
-            'KeyValueSource[str,str]':
+    def from_doc_id_to_file_map(
+        map_file: Union[str, Path, CharSource]
+    ) -> "KeyValueSource[str,str]":
         if not isinstance(map_file, CharSource):
             map_file = CharSource.from_file(map_file)
         return _PathMappingCharKeyValueSource(read_doc_id_to_file_map(map_file))
 
     @staticmethod
-    def zip_character_source(path: Path, filename_function: Callable[[str], str] = _identity,
-                             keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] =
-                             _read_keys_from_keys_file) -> 'KeyValueSource[str, str]':
+    def zip_character_source(
+        path: Path,
+        filename_function: Callable[[str], str] = _identity,
+        keys_function: Callable[
+            [ZipFile], Optional[AbstractSet[str]]
+        ] = _read_keys_from_keys_file,
+    ) -> "KeyValueSource[str, str]":
         """
         A key-value source backed by a zip file which stores character data.
 
@@ -287,13 +335,18 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         `keys()` returns `None`.  You may specify an alternative to this behavior by setting
         `keys_function`.
         """
-        return _ZipCharFileKeyValuesSource(path, filename_function=filename_function,
-                                           keys_function=keys_function)
+        return _ZipCharFileKeyValuesSource(
+            path, filename_function=filename_function, keys_function=keys_function
+        )
 
     @staticmethod
-    def zip_bytes_source(path: Path, filename_function: Callable[[str], str] = _identity,
-                         keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] =
-                         _read_keys_from_keys_file) -> 'KeyValueSource[str, bytes]':
+    def zip_bytes_source(
+        path: Path,
+        filename_function: Callable[[str], str] = _identity,
+        keys_function: Callable[
+            [ZipFile], Optional[AbstractSet[str]]
+        ] = _read_keys_from_keys_file,
+    ) -> "KeyValueSource[str, bytes]":
         """
         A key-value source backed by a zip file which stores character data.
 
@@ -305,15 +358,16 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         `keys()` returns `None`.  You may specify an alternative to this behavior by setting
         `keys_function`.
         """
-        return _ZipBytesFileKeyValuesSource(path, filename_function=filename_function,
-                                            keys_function=keys_function)
+        return _ZipBytesFileKeyValuesSource(
+            path, filename_function=filename_function, keys_function=keys_function
+        )
 
     # mypy is grumpy this doesn't agree with the signature of KeyValueLinearSource,
     # but it doesn't matter since it is a static method
     @staticmethod
-    def interpret_values(wrapped: 'KeyValueSource[K, X]',  # type: ignore
-                         interpretation_function: Callable[[K, X], V]) \
-            -> 'KeyValueSource[K, V]':  # type: ignore
+    def interpret_values(  # type: ignore
+        wrapped: "KeyValueSource[K, T]", interpretation_function: Callable[[K, T], V]
+    ) -> "KeyValueSource[K, V]":  # type: ignore
         """
         Make a key-value source which interprets the values of another.
 
@@ -334,22 +388,26 @@ class _DirectoryCharKeyValueSink(KeyValueSink[str, str]):
         CharSink.to_file(out_file).write(value)
         self.id_to_file[key] = out_file
 
-    def __enter__(self) -> 'KeyValueSink[str,str]':
+    def __enter__(self) -> "KeyValueSink[str,str]":
         self._path.rmdir()
         self._path.mkdir(parents=True, exist_ok=True)
         self.id_to_file: MutableMapping[str, Path] = dict()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        write_doc_id_to_file_map(self.id_to_file, CharSink.to_file(self._path / '_index'))
+        write_doc_id_to_file_map(self.id_to_file, CharSink.to_file(self._path / "_index"))
 
 
 class _ZipKeyValueSink(Generic[V], KeyValueSink[str, V]):
-    def __init__(self, path: Path, *,
-                 filename_function: Callable[[str], str] = _identity,
-                 keys_in_function: Callable[[ZipFile], Optional[AbstractSet[str]]] = None,
-                 keys_out_function: Callable[[ZipFile, AbstractSet[str]], None] = None,
-                 overwrite: bool = True) -> None:
+    def __init__(
+        self,
+        path: Path,
+        *,
+        filename_function: Callable[[str], str] = _identity,
+        keys_in_function: Callable[[ZipFile], Optional[AbstractSet[str]]] = None,
+        keys_out_function: Callable[[ZipFile, AbstractSet[str]], None] = None,
+        overwrite: bool = True,
+    ) -> None:
         self._path = path
         self._zip_file: Optional[ZipFile] = None
         self._filename_function = filename_function
@@ -357,17 +415,21 @@ class _ZipKeyValueSink(Generic[V], KeyValueSink[str, V]):
         self._keys_in_function = keys_in_function
         self._keys_out_function = keys_out_function
         self._keys: Set[str] = set()
-        check_arg(self._keys_out_function or not self._keys_in_function,
-                  "If you specify a key output function, you should also specify a key input"
-                  " function")
+        check_arg(
+            self._keys_out_function or not self._keys_in_function,
+            "If you specify a key output function, you should also specify a key input"
+            " function",
+        )
 
     def put(self, key: str, value: V) -> None:
-        check_state(self._zip_file, 'Must use zip key-value sink as a context manager')
+        check_state(self._zip_file, "Must use zip key-value sink as a context manager")
         check_not_none(key)
         check_not_none(value)
         if key in self._keys:
-            raise ValueError("Zip-backed key-value sinks do not support duplicate puts on the "
-                             "same key")
+            raise ValueError(
+                "Zip-backed key-value sinks do not support duplicate puts on the "
+                "same key"
+            )
         self._keys.add(key)
         filename = self._filename_function(key)
         check_arg(isinstance(value, str) or isinstance(value, bytes))
@@ -377,8 +439,8 @@ class _ZipKeyValueSink(Generic[V], KeyValueSink[str, V]):
     def _to_bytes(self, val: V) -> bytes:
         raise NotImplementedError()
 
-    def __enter__(self) -> 'KeyValueSink[str, V]':
-        self._zip_file = ZipFile(str(self._path), 'w' if self._overwrite else 'a')
+    def __enter__(self) -> "KeyValueSink[str, V]":
+        self._zip_file = ZipFile(str(self._path), "w" if self._overwrite else "a")
         if self._keys_in_function:
             # update rather than assignment because return might not be mutable
             existing_keys = self._keys_in_function(self._zip_file)
@@ -395,7 +457,7 @@ class _ZipKeyValueSink(Generic[V], KeyValueSink[str, V]):
 
 class _ZipCharFileKeyValueSink(_ZipKeyValueSink[str]):
     def _to_bytes(self, val: str) -> bytes:
-        return val.encode('utf-8')
+        return val.encode("utf-8")
 
     @staticmethod
     def from_parameters(params: Parameters) -> KeyValueSink[str, str]:
@@ -405,7 +467,7 @@ class _ZipCharFileKeyValueSink(_ZipKeyValueSink[str]):
         Right now, these uses all the defaults for `KeyValueSink.zip_character_sink`. In the
         future, we might examine other parameters to allow greater customization.
         """
-        return KeyValueSink.zip_character_sink(params.creatable_file('path'))
+        return KeyValueSink.zip_character_sink(params.creatable_file("path"))
 
 
 class _ZipBytesFileKeyValueSink(_ZipKeyValueSink[bytes]):
@@ -431,9 +493,12 @@ class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
 
 
 class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMeta):
-    def __init__(self, path: Path,
-                 filename_function: Callable[[str], str] = _identity,
-                 keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] = None) -> None:
+    def __init__(
+        self,
+        path: Path,
+        filename_function: Callable[[str], str] = _identity,
+        keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] = None,
+    ) -> None:
         self.path = path
         self._filename_function = filename_function
         self._keys_function = keys_function
@@ -441,19 +506,22 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
         self._keys: Optional[AbstractSet[str]] = None
 
     def keys(self) -> Optional[AbstractSet[str]]:
-        check_state(self._zip_file, 'Must use zip key-value source as a context manager')
+        check_state(self._zip_file, "Must use zip key-value source as a context manager")
         return self._keys
 
     def __getitem__(self, key: str) -> V:
         # we know _internal_get won't return the default value
-        return self._internal_get(key, has_default_val=False, default_val=None)  # type: ignore
+        return self._internal_get(  # type: ignore
+            key, has_default_val=False, default_val=None
+        )
 
     def get(self, key: str, _default: Optional[V]) -> Optional[V]:
         return self._internal_get(key, has_default_val=True, default_val=_default)
 
-    def _internal_get(self, key: str, *, has_default_val: bool, default_val: Optional[V]) -> \
-            Optional[V]:
-        check_state(self._zip_file, 'Must use zip key-value source as a context manager')
+    def _internal_get(
+        self, key: str, *, has_default_val: bool, default_val: Optional[V]
+    ) -> Optional[V]:
+        check_state(self._zip_file, "Must use zip key-value source as a context manager")
         check_not_none(key)
         filename = self._filename_function(key)
         try:
@@ -469,8 +537,8 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
     def _process_bytes(self, _bytes: bytes) -> V:
         raise NotImplementedError()
 
-    def __enter__(self) -> 'KeyValueSource[str, V]':
-        self._zip_file = ZipFile(str(self.path), 'r')
+    def __enter__(self) -> "KeyValueSource[str, V]":
+        self._zip_file = ZipFile(str(self.path), "r")
         if self._keys_function:
             self._keys = self._keys_function(self._zip_file)
         return self
@@ -482,9 +550,13 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
 
 
 class _ZipBytesFileKeyValuesSource(_ZipFileKeyValueSource[bytes]):
-    def __init__(self, path: Path, *,
-                 filename_function: Callable[[str], str] = _identity,
-                 keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] = None) -> None:
+    def __init__(
+        self,
+        path: Path,
+        *,
+        filename_function: Callable[[str], str] = _identity,
+        keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] = None,
+    ) -> None:
         super().__init__(path, filename_function, keys_function)
 
     def _process_bytes(self, _bytes: bytes) -> bytes:
@@ -492,13 +564,17 @@ class _ZipBytesFileKeyValuesSource(_ZipFileKeyValueSource[bytes]):
 
 
 class _ZipCharFileKeyValuesSource(_ZipFileKeyValueSource[str]):
-    def __init__(self, path: Path, *,
-                 filename_function: Callable[[str], str] = _identity,
-                 keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] = None) -> None:
+    def __init__(
+        self,
+        path: Path,
+        *,
+        filename_function: Callable[[str], str] = _identity,
+        keys_function: Callable[[ZipFile], Optional[AbstractSet[str]]] = None,
+    ) -> None:
         super().__init__(path, filename_function, keys_function)
 
     def _process_bytes(self, _bytes: bytes) -> str:
-        return _bytes.decode('utf-8')
+        return _bytes.decode("utf-8")
 
     @staticmethod
     def from_parameters(params: Parameters) -> KeyValueSource[str, str]:
@@ -511,7 +587,7 @@ class _ZipCharFileKeyValuesSource(_ZipFileKeyValueSource[str]):
         were created by the default CharSink.zip_character_sink(). Support for custom key
         functions will be added in the future.
         """
-        return KeyValueSource.zip_character_source(params.existing_file('path'))
+        return KeyValueSource.zip_character_source(params.existing_file("path"))
 
 
 class TarGzipBytesLinearKeyValueSource(KeyValueLinearSource[str, bytes]):
@@ -535,17 +611,25 @@ class TarGzipBytesLinearKeyValueSource(KeyValueLinearSource[str, bytes]):
     skipped.
     """
 
-    def __init__(self, tgz_path: Path, key_function: Callable[[str], Optional[str]] = lambda x: x,
-                 name_filter: Callable[[str], bool] = lambda x: True) -> None:
+    def __init__(
+        self,
+        tgz_path: Path,
+        key_function: Callable[[str], Optional[str]] = lambda x: x,
+        name_filter: Callable[[str], bool] = lambda x: True,
+    ) -> None:
         self.tgz_path = tgz_path
         self.inp: Optional[tarfile.TarFile] = None
         self.key_function = key_function
         self.name_filter = name_filter
 
-    def items(self, key_filter: Callable[[str], bool] = lambda x: True) \
-            -> Iterator[Tuple[str, bytes]]:
-        check_state(self.inp, "Need to enter TarGZipBytesLinearKeyValueSource as context "
-                              "manager before using it.")
+    def items(
+        self, key_filter: Callable[[str], bool] = lambda x: True
+    ) -> Iterator[Tuple[str, bytes]]:
+        check_state(
+            self.inp,
+            "Need to enter TarGZipBytesLinearKeyValueSource as context "
+            "manager before using it.",
+        )
 
         def generator_function() -> Iterator[Tuple[str, bytes]]:
             # safe by check_state above
@@ -562,8 +646,8 @@ class TarGzipBytesLinearKeyValueSource(KeyValueLinearSource[str, bytes]):
 
         return generator_function()
 
-    def __enter__(self) -> 'KeyValueLinearSource[str,bytes]':
-        self.inp = tarfile.open(self.tgz_path, 'r')
+    def __enter__(self) -> "KeyValueLinearSource[str,bytes]":
+        self.inp = tarfile.open(self.tgz_path, "r")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
@@ -578,20 +662,26 @@ class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
     See `KeyValueLinearSource.interpret_values` for details.
     """
 
-    def __init__(self, wrapped_source: KeyValueLinearSource[str, X],
-                 interpretation_function: Callable[[str, X], V]) -> None:
+    def __init__(
+        self,
+        wrapped_source: KeyValueLinearSource[str, T],
+        interpretation_function: Callable[[str, T], V],
+    ) -> None:
         self.wrapped_source = wrapped_source
         self.interpretation_function = interpretation_function
 
-    def items(self, key_filter: Callable[[str], bool] = lambda x: True) -> Iterator[Tuple[K, V]]:
+    def items(
+        self, key_filter: Callable[[str], bool] = lambda x: True
+    ) -> Iterator[Tuple[K, V]]:
         def generator_function() -> Iterator[Tuple[str, V]]:
             for wrapped_pair in self.wrapped_source.items(key_filter=key_filter):
-                yield wrapped_pair[0], self.interpretation_function(wrapped_pair[0],
-                                                                    wrapped_pair[1])
+                yield wrapped_pair[0], self.interpretation_function(
+                    wrapped_pair[0], wrapped_pair[1]
+                )
 
         return generator_function()  # type: ignore
 
-    def __enter__(self) -> 'KeyValueLinearSource[str,V]':
+    def __enter__(self) -> "KeyValueLinearSource[str,V]":
         self.wrapped_source.__enter__()
         return self
 
@@ -604,8 +694,11 @@ class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
     Key-value source which interprets the valus of another
     """
 
-    def __init__(self, wrapped_source: KeyValueSource[K, X],
-                 interpretation_function: Callable[[K, X], V]) -> None:
+    def __init__(
+        self,
+        wrapped_source: KeyValueSource[K, T],
+        interpretation_function: Callable[[K, T], V],
+    ) -> None:
         self.wrapped_source = wrapped_source
         self.interpretation_function = interpretation_function
 
@@ -627,7 +720,7 @@ class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
     def __getitem__(self, item: K) -> V:
         return self.interpretation_function(item, self.wrapped_source[item])
 
-    def __enter__(self) -> 'KeyValueSource[K,V]':
+    def __enter__(self) -> "KeyValueSource[K,V]":
         self.wrapped_source.__enter__()
         return self
 
@@ -636,8 +729,8 @@ class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
 
 
 _CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES = {
-    'zip': '_ZipCharFileKeyValuesSource',
-    'file-map': 'DocIdToFileMapCharKeyValueSource'
+    "zip": "_ZipCharFileKeyValuesSource",
+    "file-map": "DocIdToFileMapCharKeyValueSource",
 }
 
 
@@ -646,8 +739,8 @@ def _doc_id_source_from_params(params: Parameters) -> KeyValueSource[str, str]:
 
 
 def char_key_value_linear_source_from_params(
-        param_name: str, params: Parameters, *, eval_context: Optional[Dict] = None) \
-        -> KeyValueLinearSource[str, str]:
+    param_name: str, params: Parameters, *, eval_context: Optional[Dict] = None
+) -> KeyValueLinearSource[str, str]:
     """
     Get a key-value source based on parameters.
 
@@ -676,15 +769,17 @@ def char_key_value_linear_source_from_params(
     effective_context = dict(globals())
     effective_context.update(eval_context or {})
     return params.object_from_parameters(
-        param_name, KeyValueLinearSource,
+        param_name,
+        KeyValueLinearSource,
         special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
         default_creator=_doc_id_source_from_params,
-        context=effective_context)
+        context=effective_context,
+    )
 
 
-def char_key_value_source_from_params(param_name: str, params: Parameters,
-                                      *, eval_context: Optional[Dict] = None) \
-        -> KeyValueSource[str, str]:
+def char_key_value_source_from_params(
+    param_name: str, params: Parameters, *, eval_context: Optional[Dict] = None
+) -> KeyValueSource[str, str]:
     """
     Get a random-access key-value source based on parameters.
 
@@ -709,23 +804,23 @@ def char_key_value_source_from_params(param_name: str, params: Parameters,
     effective_context = dict(globals())
     effective_context.update(eval_context or {})
     return params.object_from_parameters(
-        param_name, KeyValueSource,
+        param_name,
+        KeyValueSource,
         special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
         default_creator=_doc_id_source_from_params,
-        context=effective_context)
+        context=effective_context,
+    )
 
-
-T = TypeVar('T')
 
 _CHAR_KEY_VALUE_SINK_SPECIAL_VALUES = {
-    'zip': '_ZipCharFileKeyValueSink',
-    'file-map': '_DirectoryCharKeyValueSink'
+    "zip": "_ZipCharFileKeyValueSink",
+    "file-map": "_DirectoryCharKeyValueSink",
 }
 
 
-def char_key_value_sink_from_params(param_name: str, params: Parameters,
-                                    *, eval_context: Optional[Dict] = None) \
-        -> KeyValueSink[str, str]:
+def char_key_value_sink_from_params(
+    param_name: str, params: Parameters, *, eval_context: Optional[Dict] = None
+) -> KeyValueSink[str, str]:
     """
     Get a key-value sink based on parameters.
 
@@ -748,7 +843,9 @@ def char_key_value_sink_from_params(param_name: str, params: Parameters,
     effective_context = dict(globals())
     effective_context.update(eval_context or {})
     return params.object_from_parameters(
-        param_name, KeyValueSink,
+        param_name,
+        KeyValueSink,
         special_creator_values=_CHAR_KEY_VALUE_SINK_SPECIAL_VALUES,
         default_creator=_DirectoryCharKeyValueSink,
-        context=effective_context)
+        context=effective_context,
+    )

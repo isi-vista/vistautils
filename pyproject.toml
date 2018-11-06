@@ -22,3 +22,6 @@
         directory = "feature"
         name = "New Features"
         showcontent = true
+
+[tool.black]
+line-length = 90

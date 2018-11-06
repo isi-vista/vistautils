@@ -1,6 +1,6 @@
 from typing import Iterable, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def get_only(seq: Iterable[T]) -> T:
@@ -18,6 +18,8 @@ def get_only(seq: Iterable[T]) -> T:
         if second_element is sentinel:
             return val
         else:
-            raise ValueError("Expected one item in sequence but got multiple: %r" % (seq,))
+            raise ValueError(
+                "Expected one item in sequence but got multiple: %r" % (seq,)
+            )
     except StopIteration:
         raise ValueError("Expected one item in sequence but got none")

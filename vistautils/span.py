@@ -18,17 +18,21 @@ class Span(Sized):
     You can test sub-span containment with the `in` operator: `Span(1,5) in Span(0, 6)`.
     For checking whether an offset lies in a span, use `contains_offset`
     """
+
     start: int = attrib_instance_of(int)
     end: int = attrib_instance_of(int)
 
     # noinspection PyUnusedLocal
     @start.validator
     def _validate_start(self, attr, val):  # pylint:disable=unused-argument
-        check_arg(self.start < self.end, "Start offset must be strictly less then end offset but "
-                                         "got [%s,%s)", (self.start, self.end))
+        check_arg(
+            self.start < self.end,
+            "Start offset must be strictly less then end offset but " "got [%s,%s)",
+            (self.start, self.end),
+        )
 
     @staticmethod
-    def from_inclusive_to_exclusive(start_inclusive: int, end_exclusive: int) -> 'Span':
+    def from_inclusive_to_exclusive(start_inclusive: int, end_exclusive: int) -> "Span":
         """
         Same as the constructor.
 
@@ -39,10 +43,10 @@ class Span(Sized):
     def contains_offset(self, i: int) -> bool:
         return self.start <= i < self.end
 
-    def contains_span(self, other: 'Span') -> bool:
+    def contains_span(self, other: "Span") -> bool:
         return self.start <= other.start and other.end <= self.end
 
-    def precedes(self, other: 'Span') -> bool:
+    def precedes(self, other: "Span") -> bool:
         """
         Get whether this span precedes another.
 
@@ -50,7 +54,7 @@ class Span(Sized):
         """
         return self.end <= other.start
 
-    def follows(self, other: 'Span') -> bool:
+    def follows(self, other: "Span") -> bool:
         """
         Get whether this span follows another.
 
@@ -58,7 +62,7 @@ class Span(Sized):
         """
         return self.start >= other.end
 
-    def overlaps(self, other: 'Span') -> bool:
+    def overlaps(self, other: "Span") -> bool:
         """
         Get whether this span overlaps another.
 
@@ -71,13 +75,13 @@ class Span(Sized):
     def as_range(self) -> Range[int]:
         return Range.closed(self.start, self.end - 1)
 
-    def __contains__(self, item: 'Span') -> bool:
+    def __contains__(self, item: "Span") -> bool:
         return self.contains_span(item)
 
     def __len__(self) -> int:
         return self.end - self.start
 
-    def clip_to(self, enclosing: 'Span') -> Optional['Span']:
+    def clip_to(self, enclosing: "Span") -> Optional["Span"]:
         """
         Get a copy of this span clipped to be entirely enclosed by another span.
 
@@ -88,10 +92,9 @@ class Span(Sized):
             return None
         if enclosing.contains_span(self):
             return self
-        return Span(max(self.start, enclosing.start),
-                    min(self.end, enclosing.end))
+        return Span(max(self.start, enclosing.start), min(self.end, enclosing.end))
 
-    def shift(self, shift_amount: int) -> 'Span':
+    def shift(self, shift_amount: int) -> "Span":
         """
         Get a copy of this span with both endpoints shifted.
 
@@ -100,17 +103,16 @@ class Span(Sized):
         return Span(self.start + shift_amount, self.end + shift_amount)
 
     @staticmethod
-    def minimal_enclosing_span(spans: Iterable['Span']) -> 'Span':
+    def minimal_enclosing_span(spans: Iterable["Span"]) -> "Span":
         """
         Get the minimal span enclosing all given spans.
 
         This will raise a `ValueError` if `spans` is empty.
         """
-        return Span(min(span.start for span in spans),
-                    max(span.end for span in spans))
+        return Span(min(span.start for span in spans), max(span.end for span in spans))
 
     @staticmethod
-    def earliest_then_longest_first_key(x: 'Span') -> Tuple[int, int]:
+    def earliest_then_longest_first_key(x: "Span") -> Tuple[int, int]:
         length = x.end - x.start
         return x.start, -length
 

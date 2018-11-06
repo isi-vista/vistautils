@@ -11,15 +11,20 @@ import vistautils.preconditions
 # https://github.com/isi-nlp/isi-flexnlp/issues/188
 def attrib_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, **kwargs):
     # Mypy does not understand these arguments
-    return attrib(validator=validators.instance_of(type_), *args, **kwargs)  # type: ignore
+    return attrib(  # type: ignore
+        validator=validators.instance_of(type_), *args, **kwargs
+    )
 
 
 # TODO cannot currently be used with additional validators:
 # https://github.com/isi-nlp/isi-flexnlp/issues/188
-def attrib_opt_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, default=None, **kwargs):
+def attrib_opt_instance_of(
+    type_: Union[Type, Tuple[Type, ...]], *args, default=None, **kwargs
+):
     # Mypy does not understand these arguments
-    return attrib(validator=opt_instance_of(type_), default=default,  # type: ignore
-                  *args, **kwargs)
+    return attrib(  # type: ignore
+        validator=opt_instance_of(type_), default=default, *args, **kwargs
+    )
 
 
 def attrib_factory(factory: Callable, *args, **kwargs):
@@ -27,15 +32,17 @@ def attrib_factory(factory: Callable, *args, **kwargs):
     return attrib(default=Factory(factory), *args, **kwargs)  # type: ignore
 
 
-def attrib_immutable(type_: Type[immutablecollections.ImmutableCollection], *args,
-                     **kwargs):
+def attrib_immutable(
+    type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs
+):
     _check_immutable_collection(type_)
     # Mypy does not understand these arguments
     return attrib(converter=type_.of, *args, **kwargs)  # type: ignore
 
 
 def attrib_private_immutable_builder(
-        type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs):
+    type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs
+):
     """
     Create an immutable collection builder private attribute.
 
@@ -43,13 +50,16 @@ def attrib_private_immutable_builder(
     """
     _check_immutable_collection(type_)
     # Mypy does not understand these arguments
-    return attrib(default=Factory(type_.builder), init=False, *args, **kwargs)  # type: ignore
+    return attrib(  # type: ignore
+        default=Factory(type_.builder), init=False, *args, **kwargs
+    )
 
 
 # TODO: The use of Type[ImmutableCollection] causes Mypy warnings
 # Perhaps the solution is to make ImmutableCollection a Protocol?
-def attrib_opt_immutable(type_: Type[immutablecollections.ImmutableCollection],
-                         *args, **kwargs):
+def attrib_opt_immutable(
+    type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs
+):
     """Return a attrib with a converter for optional collections.
 
     The returned attrib will create an empty collection of the
@@ -59,8 +69,12 @@ def attrib_opt_immutable(type_: Type[immutablecollections.ImmutableCollection],
     """
     _check_immutable_collection(type_)
     # Mypy does not understand these arguments
-    return attrib(converter=partial(_empty_immutable_if_none, type_=type_),  # type: ignore
-                  default=type_.empty(), *args, **kwargs)
+    return attrib(  # type: ignore
+        converter=partial(_empty_immutable_if_none, type_=type_),
+        default=type_.empty(),
+        *args,
+        **kwargs
+    )
 
 
 def opt_instance_of(type_: Union[Type, Tuple[Type, ...]]) -> Callable:
@@ -71,12 +85,13 @@ def opt_instance_of(type_: Union[Type, Tuple[Type, ...]]) -> Callable:
 def _check_immutable_collection(type_):
     vistautils.preconditions.check_arg(
         issubclass(type_, immutablecollections.ImmutableCollection),
-        "Type {} is not an immutable collection".format(type_))
+        "Type {} is not an immutable collection".format(type_),
+    )
 
 
-def _empty_immutable_if_none(val: Any,
-                             type_: Type[immutablecollections.ImmutableCollection]) \
-        -> immutablecollections.ImmutableCollection:
+def _empty_immutable_if_none(
+    val: Any, type_: Type[immutablecollections.ImmutableCollection]
+) -> immutablecollections.ImmutableCollection:
     if val is None:
         return type_.empty()
     else:
@@ -85,5 +100,5 @@ def _empty_immutable_if_none(val: Any,
 
 # Unused arguments are to match the attrs validator signature
 # noinspection PyUnusedLocal
-def non_empty(self: Any, attr: Any, val: Sized) -> bool:  # pylint: disable=unused-argument
+def non_empty(_self: Any, _attr: Any, val: Sized) -> bool:
     return len(val) > 0

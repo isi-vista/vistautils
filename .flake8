@@ -13,4 +13,6 @@ ignore =
     # suppression comment.
     E128
     E131
+    # E203 is often wrong and black is right
+    E203
 max-line-length = 100

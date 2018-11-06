@@ -3,7 +3,18 @@ import logging
 import re
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Match, Optional, Sequence, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Match,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import yaml
 from attr import attrs
@@ -21,7 +32,7 @@ class ParameterError(Exception):
     pass
 
 
-ParamType = TypeVar('ParamType')  # pylint:disable=invalid-name
+ParamType = TypeVar("ParamType")  # pylint:disable=invalid-name
 
 
 @attrs(frozen=True, slots=True)
@@ -44,21 +55,24 @@ class Parameters:
 
     You can check if a lookup of a parameter would be successful using the `in` operator.
     """
+
     _data: ImmutableDict[str, Any] = attrib_opt_immutable(ImmutableDict)
 
     def __attrs_post_init__(self) -> None:
         for key in self._data:
-            check_arg('.' not in key, "Parameter keys cannot contain namespace separator '.'")
+            check_arg(
+                "." not in key, "Parameter keys cannot contain namespace separator '.'"
+            )
 
     @staticmethod
-    def empty() -> 'Parameters':
+    def empty() -> "Parameters":
         """
         A `Parameters` with no parameter mappings.
         """
         return Parameters.from_mapping(ImmutableDict.empty())
 
     @staticmethod
-    def from_mapping(mapping: Mapping) -> 'Parameters':
+    def from_mapping(mapping: Mapping) -> "Parameters":
         """
         Convert a dictionary of dictionaries into a `Parameter`s
 
@@ -110,12 +124,16 @@ class Parameters:
                     shutil.rmtree(str(ret))
                     ret.mkdir(parents=True, exist_ok=True)
                 else:
-                    raise ParameterError("Expected an empty directory for parameters {!s},"
-                                         "but got non-empty path {!s}".format(param, ret))
+                    raise ParameterError(
+                        "Expected an empty directory for parameters {!s},"
+                        "but got non-empty path {!s}".format(param, ret)
+                    )
             return ret
         elif ret.exists():
-            raise ParameterError("Expected an empty directory for parameters {!s},"
-                                 "but got non-directory {!s}".format(param, ret))
+            raise ParameterError(
+                "Expected an empty directory for parameters {!s},"
+                "but got non-directory {!s}".format(param, ret)
+            )
         else:
             return self.creatable_directory(param)
 
@@ -158,13 +176,19 @@ class Parameters:
             if ret.is_file():
                 return ret
             else:
-                raise ParameterError("For parameter " + param
-                                     + ", expected an existing file but got existing non-file "
-                                     + str(ret))
+                raise ParameterError(
+                    "For parameter "
+                    + param
+                    + ", expected an existing file but got existing non-file "
+                    + str(ret)
+                )
         else:
-            raise ParameterError("For parameter " + param
-                                 + ", expected an existing file but got non-existent "
-                                 + str(ret))
+            raise ParameterError(
+                "For parameter "
+                + param
+                + ", expected an existing file but got non-existent "
+                + str(ret)
+            )
 
     def optional_existing_file(self, param: str) -> Optional[Path]:
         """
@@ -193,13 +217,19 @@ class Parameters:
             if ret.is_dir():
                 return ret
             else:
-                raise ParameterError("For parameter " + param
-                                     + ", expected an existing directory but got existing "
-                                       "non-directory " + str(ret))
+                raise ParameterError(
+                    "For parameter "
+                    + param
+                    + ", expected an existing directory but got existing "
+                    "non-directory " + str(ret)
+                )
         else:
-            raise ParameterError("For parameter " + param
-                                 + ", expected an existing directory but got non-existent "
-                                 + str(ret))
+            raise ParameterError(
+                "For parameter "
+                + param
+                + ", expected an existing directory but got non-existent "
+                + str(ret)
+            )
 
     def optional_existing_directory(self, param: str) -> Optional[Path]:
         """
@@ -225,7 +255,7 @@ class Parameters:
     def __contains__(self, param_name: str) -> bool:
         return self._private_get(param_name, optional=True) is not None
 
-    def namespace(self, name: str) -> 'Parameters':
+    def namespace(self, name: str) -> "Parameters":
         """
         Get the namespace with the given name.
         """
@@ -246,7 +276,10 @@ class Parameters:
             return ret
         else:
             raise ParameterError(
-                "For parameter {!s}, expected a positive integer but got {!s}".format(name, ret))
+                "For parameter {!s}, expected a positive integer but got {!s}".format(
+                    name, ret
+                )
+            )
 
     def optional_boolean(self, name: str) -> Optional[bool]:
         """
@@ -267,7 +300,7 @@ class Parameters:
         else:
             return default_value
 
-    def optional_namespace(self, name: str) -> Optional['Parameters']:
+    def optional_namespace(self, name: str) -> Optional["Parameters"]:
         """
         Get the namespace with the given name, if possible.
 
@@ -301,26 +334,39 @@ class Parameters:
         """
         return self.get_optional(name, List)
 
-    def optional_evaluate(self, name: str, expected_type: Type[ParamType], *,  # type: ignore
-                          namespace_param_name: str = 'value',
-                          special_values: Dict[str, str] = ImmutableDict.empty()) \
-            -> Optional[ParamType]:  # type: ignore
+    def optional_evaluate(
+        self,
+        name: str,
+        expected_type: Type[ParamType],
+        *,  # type: ignore
+        namespace_param_name: str = "value",
+        special_values: Dict[str, str] = ImmutableDict.empty()
+    ) -> Optional[ParamType]:  # type: ignore
         """
         Get a parameter, if present, interpreting its value as Python code.
 
         Same as `evaluate` except returning `None` if the requested parameter is not present.
         """
         if name in self:
-            return self.evaluate(name, expected_type, namespace_param_name=namespace_param_name,
-                                 special_values=special_values)
+            return self.evaluate(
+                name,
+                expected_type,
+                namespace_param_name=namespace_param_name,
+                special_values=special_values,
+            )
         else:
             return None
 
     # type ignored because ImmutableDict.empty() has type Dict[Any, Any]
-    def evaluate(self, name: str, expected_type: Type[ParamType], *,  # type: ignore
-                 context: Optional[Dict] = None,
-                 namespace_param_name: str = 'value',
-                 special_values: Dict[str, str] = ImmutableDict.empty()) -> ParamType:
+    def evaluate(
+        self,
+        name: str,
+        expected_type: Type[ParamType],
+        *,  # type: ignore
+        context: Optional[Dict] = None,
+        namespace_param_name: str = "value",
+        special_values: Dict[str, str] = ImmutableDict.empty()
+    ) -> ParamType:
         """
         Get a parameter, interpreting its value as Python code.
 
@@ -350,24 +396,32 @@ class Parameters:
                 return eval_in_context_of_modules(
                     handle_special_values(namespace.string(namespace_param_name)),
                     context or locals(),
-                    context_modules=namespace.optional_arbitrary_list('import') or [],
-                    expected_type=expected_type)
+                    context_modules=namespace.optional_arbitrary_list("import") or [],
+                    expected_type=expected_type,
+                )
             else:
                 return eval_in_context_of_modules(
                     handle_special_values(self.string(name)),
                     context or locals(),
                     context_modules=[],
-                    expected_type=expected_type)
+                    expected_type=expected_type,
+                )
         except Exception as e:
-            raise ParameterError("Error while evaluating parameter {!s}".format(name)) from e
+            raise ParameterError(
+                "Error while evaluating parameter {!s}".format(name)
+            ) from e
 
     # type ignored because ImmutableDict.empty() has type Dict[Any, Any]
     def object_from_parameters(  # type: ignore
-            self, name: str, expected_type: Type[ParamType], *,
-            context: Optional[Dict] = None,
-            creator_namepace_param_name: str = 'value',
-            special_creator_values: Dict[str, str] = ImmutableDict.empty(),
-            default_creator: Optional[Any] = None) -> ParamType:
+        self,
+        name: str,
+        expected_type: Type[ParamType],
+        *,
+        context: Optional[Dict] = None,
+        creator_namepace_param_name: str = "value",
+        special_creator_values: Dict[str, str] = ImmutableDict.empty(),
+        default_creator: Optional[Any] = None
+    ) -> ParamType:
         """
         Get an object of `expected_type`, initialized by the parameters in `name`.
 
@@ -399,33 +453,44 @@ class Parameters:
         of modules to be imported before evaluation.
         """
         if name in self:
-            creator = self.evaluate(name, object,
-                                    context=context,
-                                    namespace_param_name=creator_namepace_param_name,
-                                    special_values=special_creator_values)
+            creator = self.evaluate(
+                name,
+                object,
+                context=context,
+                namespace_param_name=creator_namepace_param_name,
+                special_values=special_creator_values,
+            )
         elif default_creator:
             creator = default_creator
         else:
-            raise ParameterError("No creator class specified when creating an object from {!s}"
-                                 .format(name))
+            raise ParameterError(
+                "No creator class specified when creating an object from {!s}".format(
+                    name
+                )
+            )
 
         params_to_pass = self.optional_namespace(name) or Parameters.empty()
         if inspect.isclass(creator):
-            if hasattr(creator, 'from_parameters'):
-                ret = getattr(creator, 'from_parameters')(params_to_pass)
+            if hasattr(creator, "from_parameters"):
+                ret = getattr(creator, "from_parameters")(params_to_pass)
             else:
                 ret = creator()  # type: ignore
         elif callable(creator):
             ret = creator(params_to_pass)
         else:
-            raise ParameterError("Expected a class with from_parameters or a callable but got {!s}"
-                                 .format(creator))
+            raise ParameterError(
+                "Expected a class with from_parameters or a callable but got {!s}".format(
+                    creator
+                )
+            )
 
         if isinstance(ret, expected_type):
             return ret
         else:
-            raise ParameterError("When instantiating using from_parameters, expected {!s} but"
-                                 " got {!s}".format(expected_type, ret))
+            raise ParameterError(
+                "When instantiating using from_parameters, expected {!s} but"
+                " got {!s}".format(expected_type, ret)
+            )
 
     def get(self, param_name: str, param_type: Type[ParamType]) -> ParamType:
         """
@@ -442,9 +507,12 @@ class Parameters:
         else:
             raise ParameterError(
                 "When looking up parameter '{!s}', expected a value of type {!s}, but got {!s} "
-                "of type {!s}".format(param_name, param_type, ret, type(ret)))
+                "of type {!s}".format(param_name, param_type, ret, type(ret))
+            )
 
-    def get_optional(self, param_name: str, param_type: Type[ParamType]) -> Optional[ParamType]:
+    def get_optional(
+        self, param_name: str, param_type: Type[ParamType]
+    ) -> Optional[ParamType]:
         """
         Get a parameter with type-safety.
 
@@ -459,7 +527,8 @@ class Parameters:
         else:
             raise ParameterError(
                 "When looking up parameter '{!s}', expected a value of type {!s}, but got {!s} "
-                "of type {!s}".format(param_name, param_type, ret, type(ret)))
+                "of type {!s}".format(param_name, param_type, ret, type(ret))
+            )
 
     def path_list_from_file(self, param: str, *, log_name=None) -> Sequence[Path]:
         """
@@ -472,9 +541,12 @@ class Parameters:
         <number> <log_name> from <file>"
         """
         file_list_file = self.existing_file(param)
-        with open(file_list_file, 'r') as inp:
-            ret = [Path(line.strip()) for line in inp if line.strip()
-                   and not line.strip().startswith('#')]
+        with open(file_list_file, "r") as inp:
+            ret = [
+                Path(line.strip())
+                for line in inp
+                if line.strip() and not line.strip().startswith("#")
+            ]
             if log_name:
                 _logger.info("Loaded %s %s from %s", len(ret), log_name, file_list_file)
             return ret
@@ -490,18 +562,24 @@ class Parameters:
         <number> <log_name> from <file>"
         """
         file_map_file = self.existing_file(param)
-        with open(file_map_file, 'r') as inp:
+        with open(file_map_file, "r") as inp:
             ret_b: ImmutableDict.Builder[str, Path] = ImmutableDict.builder()
             for (line_num, line) in enumerate(inp):
                 try:
-                    parts = line.split('\t')
+                    parts = line.split("\t")
                     if len(parts) != 2:
                         raise IOError(
-                            "Expected two tab-separated fields but got {!s}".format(len(parts)))
+                            "Expected two tab-separated fields but got {!s}".format(
+                                len(parts)
+                            )
+                        )
                     ret_b.put(parts[0].strip(), Path(parts[1].strip()))
                 except Exception as e:
-                    raise IOError("Error parsing line {!s} of {!s}:\n{!s}".format(
-                        line_num, file_map_file, line)) from e
+                    raise IOError(
+                        "Error parsing line {!s} of {!s}:\n{!s}".format(
+                            line_num, file_map_file, line
+                        )
+                    ) from e
 
             ret = ret_b.build()
             if log_name:
@@ -510,7 +588,7 @@ class Parameters:
 
     def _private_get(self, param_name: str, optional=False) -> Any:
         # pylint:disable=protected-access
-        param_components = param_name.split('.')
+        param_components = param_name.split(".")
         check_arg(param_components, "Parameter name cannot be empty")
 
         current = self
@@ -520,27 +598,48 @@ class Parameters:
                 if optional:
                     return None
                 else:
-                    raise ParameterError("When getting parameter " + param_name
-                                         + " expected " + '.'.join(namespaces_processed)
-                                         + " to be a map, but it is a leaf: " + str(current)
-                                         + ". Maybe you mistakenly prefixed the map keys with '-'?")
+                    raise ParameterError(
+                        "When getting parameter "
+                        + param_name
+                        + " expected "
+                        + ".".join(namespaces_processed)
+                        + " to be a map, but it is a leaf: "
+                        + str(current)
+                        + ". Maybe you mistakenly prefixed the map keys with '-'?"
+                    )
 
             if param_component in current._data:
                 current = current._data[param_component]
                 namespaces_processed.append(param_component)
             elif not optional:
                 if namespaces_processed:
-                    context_string = "in context " + '.'.join(namespaces_processed)
+                    context_string = "in context " + ".".join(namespaces_processed)
                 else:
                     context_string = "in root context"
-                available_parameters = str([key for (key, val) in current._data.items()
-                                            if not isinstance(val, Parameters)])
-                available_namespaces = str([key for (key, val) in current._data.items()
-                                            if isinstance(val, Parameters)])
-                raise ParameterError("Parameter " + param_name
-                                     + " not found. In " + context_string
-                                     + " available parameters are " + available_parameters
-                                     + ", available namespaces are " + available_namespaces)
+                available_parameters = str(
+                    [
+                        key
+                        for (key, val) in current._data.items()
+                        if not isinstance(val, Parameters)
+                    ]
+                )
+                available_namespaces = str(
+                    [
+                        key
+                        for (key, val) in current._data.items()
+                        if isinstance(val, Parameters)
+                    ]
+                )
+                raise ParameterError(
+                    "Parameter "
+                    + param_name
+                    + " not found. In "
+                    + context_string
+                    + " available parameters are "
+                    + available_parameters
+                    + ", available namespaces are "
+                    + available_namespaces
+                )
             else:
                 # absent optional parameter
                 return None
@@ -572,7 +671,9 @@ class YAMLParametersLoader:
     See unit tests in `test_parameters` for examples.
     """
 
-    def load(self, f: Union[str, Path], context=Parameters.empty(), root_path: Path = None):
+    def load(
+        self, f: Union[str, Path], context=Parameters.empty(), root_path: Path = None
+    ):
         """
         Loads parameters from a YAML file.
 
@@ -590,31 +691,38 @@ class YAMLParametersLoader:
             if not root_path:
                 root_path = f.parent
 
-            with open(f, 'r') as ymlfile:
+            with open(f, "r") as ymlfile:
                 raw_yaml = yaml.load(ymlfile)
                 self._validate(raw_yaml)
             cur_context = context
 
             # process and remove special include directives
-            if '_includes' in raw_yaml:
-                for included_file in raw_yaml['_includes']:
+            if "_includes" in raw_yaml:
+                for included_file in raw_yaml["_includes"]:
                     _logger.info("Processing included parameter file %s", included_file)
                     included_file_path = Path(root_path, included_file).resolve()
-                    cur_context = self._unify(cur_context, self.load(included_file_path,
-                                                                     root_path=root_path,
-                                                                     context=cur_context))
-                del raw_yaml['_includes']
+                    cur_context = self._unify(
+                        cur_context,
+                        self.load(
+                            included_file_path, root_path=root_path, context=cur_context
+                        ),
+                    )
+                del raw_yaml["_includes"]
 
-            return self._unify(cur_context,
-                               self._interpolate(Parameters.from_mapping(raw_yaml), cur_context))
+            return self._unify(
+                cur_context,
+                self._interpolate(Parameters.from_mapping(raw_yaml), cur_context),
+            )
         except Exception as e:
             raise IOError("Failure while loading parameter file " + str(f)) from e
 
     @staticmethod
     def _validate(raw_yaml: Mapping):
         # we don't use check_isinstance so we can have a custom error message
-        check_arg(isinstance(raw_yaml, Mapping),
-                  "Parameters YAML files must be mappings at the top level")
+        check_arg(
+            isinstance(raw_yaml, Mapping),
+            "Parameters YAML files must be mappings at the top level",
+        )
         YAMLParametersLoader._check_all_keys_strings(raw_yaml)
 
     @staticmethod
@@ -624,7 +732,9 @@ class YAMLParametersLoader:
 
         non_string_keys = [x for x in mapping.keys() if not isinstance(x, str)]
         if non_string_keys:
-            context_string = (" in context" + ".".join(path)) if path else " in root context"
+            context_string = (
+                (" in context" + ".".join(path)) if path else " in root context"
+            )
             raise IOError("Non-string key(s) " + str(non_string_keys) + context_string)
 
         for val in mapping.values():
@@ -643,20 +753,26 @@ class YAMLParametersLoader:
                     # be the wrapping '%'s
                     return context.string(interpolation_key.group()[1:-1])
                 except ParameterError:
-                    raise ParameterError("Exception while interpolating parameter " + key
-                                         + " with raw value " + raw_value)
+                    raise ParameterError(
+                        "Exception while interpolating parameter "
+                        + key
+                        + " with raw value "
+                        + raw_value
+                    )
 
             if isinstance(raw_value, str):
                 return YAMLParametersLoader._INTERPOLATION_REGEX.sub(
-                    lookup_interpolation, raw_value)
+                    lookup_interpolation, raw_value
+                )
             elif isinstance(raw_value, Parameters):
                 # TODO: need topological sort. Issue #258
                 return YAMLParametersLoader._interpolate(raw_value, context)
             else:
                 return raw_value
 
-        return Parameters.from_mapping({key: interpolate(key, val)
-                                        for (key, val) in to_interpolate._data.items()})
+        return Parameters.from_mapping(
+            {key: interpolate(key, val) for (key, val) in to_interpolate._data.items()}
+        )
 
     def _unify(self, old: Parameters, new: Parameters, namespace="") -> Parameters:
         #  pylint:disable=protected-access
@@ -665,8 +781,12 @@ class YAMLParametersLoader:
             if key in new:
                 new_val = new._data[key]
                 if isinstance(old_val, Parameters) != isinstance(new_val, Parameters):
-                    raise IOError("When unifying parameters, " + namespace + key
-                                  + "is a parameter on one side and a namespace on the other")
+                    raise IOError(
+                        "When unifying parameters, "
+                        + namespace
+                        + key
+                        + "is a parameter on one side and a namespace on the other"
+                    )
                 elif isinstance(old_val, Parameters):
                     ret[key] = self._unify(old_val, new_val, namespace + key + ".")
                 else:
@@ -684,19 +804,25 @@ class YAMLParametersLoader:
 @attrs(frozen=True)
 class YAMLParametersWriter:
     def write(self, params: Parameters, sink: Union[Path, str, CharSink]) -> None:
+        # pylint:disable=protected-access
+
         def dictify(data):
             if isinstance(data, ImmutableDict):
                 return {k: dictify(v) for (k, v) in data.items()}
             elif isinstance(data, Parameters):
-                return dictify(data._data)  # pylint:disable=protected-access
+                return dictify(data._data)
             else:
                 return data
 
         if isinstance(sink, Path) or isinstance(sink, str):
             sink = CharSink.to_file(sink)
         with sink.open() as out:
-            yaml.dump(dictify(params._data), out,  # pylint:disable=protected-access
-                      # prevents leaf dictionaries from being written in the
-                      # human unfriendly compact style
-                      default_flow_style=False,
-                      indent=4, width=78)
+            yaml.dump(
+                dictify(params._data),
+                out,
+                # prevents leaf dictionaries from being written in the
+                # human unfriendly compact style
+                default_flow_style=False,
+                indent=4,
+                width=78,
+            )

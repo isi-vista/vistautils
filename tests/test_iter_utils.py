@@ -4,7 +4,7 @@ from unittest import TestCase
 from vistautils.iter_utils import windowed, drop, only
 
 # convenience methods for testing tools on both iterators and iterables
-_T = TypeVar('_T')
+_T = TypeVar("_T")
 
 
 def _as_iterable(it: Iterable[_T]) -> Iterable[_T]:
@@ -74,24 +74,29 @@ class TestIterUtils(TestCase):
         for to_it in _iterator_or_iterable:
             self.assertEqual([], list(windowed(to_it([]), 1)))
             self.assertEqual([(0,), (1,), (2,)], list(windowed(to_it(data), 1)))
-            self.assertEqual([(0,), (1,), (2,)], list(windowed(to_it(data), 1,
-                                                               partial_windows=True)))
+            self.assertEqual(
+                [(0,), (1,), (2,)], list(windowed(to_it(data), 1, partial_windows=True))
+            )
 
     def test_two_element_window(self):
         data = list(range(3))
 
         for to_it in _iterator_or_iterable:
             self.assertEqual([(0, 1), (1, 2)], list(windowed(to_it(data), 2)))
-            self.assertEqual([(0, 1), (1, 2), (2,)],
-                             list(windowed(to_it(data), 2, partial_windows=True)))
+            self.assertEqual(
+                [(0, 1), (1, 2), (2,)],
+                list(windowed(to_it(data), 2, partial_windows=True)),
+            )
 
     def test_window_size_equals_sequence_size(self):
         data = list(range(3))
 
         for to_it in _iterator_or_iterable:
             self.assertEqual([(0, 1, 2)], list(windowed(to_it(data), 3)))
-            self.assertEqual([(0, 1, 2), (1, 2), (2, )],
-                             list(windowed(to_it(data), 3, partial_windows=True)))
+            self.assertEqual(
+                [(0, 1, 2), (1, 2), (2,)],
+                list(windowed(to_it(data), 3, partial_windows=True)),
+            )
 
     def test_window_size_exceeds_sequence_size(self):
         data = list(range(3))
@@ -99,5 +104,7 @@ class TestIterUtils(TestCase):
         for to_it in _iterator_or_iterable:
             # window size exceeds sequence length
             self.assertEqual([], list(windowed(to_it(data), 4)))
-            self.assertEqual([(0, 1, 2), (1, 2), (2, )],
-                             list(windowed(to_it(data), 4, partial_windows=True)))
+            self.assertEqual(
+                [(0, 1, 2), (1, 2), (2,)],
+                list(windowed(to_it(data), 4, partial_windows=True)),
+            )

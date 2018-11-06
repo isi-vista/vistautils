@@ -29,16 +29,20 @@ def str_list_limited(_list: Iterable[Any], limit: int) -> str:
     if len(_list) <= limit:  # type: ignore
         return str(_list)
     else:
-        return ("[" + ", ".join(repr(x) for x in _list[:limit]) +
-                " and %s more" % (len(_list) - limit) + "]")
+        return (
+            "["
+            + ", ".join(repr(x) for x in _list[:limit])
+            + " and %s more" % (len(_list) - limit)
+            + "]"
+        )
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
-def eval_in_context_of_modules(to_eval: str, context: Dict, *,
-                               context_modules: List[str],
-                               expected_type: Type[T]) -> T:
+def eval_in_context_of_modules(
+    to_eval: str, context: Dict, *, context_modules: List[str], expected_type: Type[T]
+) -> T:
     """
     Evaluate the given expression in the specified context.
 
@@ -57,18 +61,20 @@ def eval_in_context_of_modules(to_eval: str, context: Dict, *,
 
     # import into the context to be used for evaluation any additional modules requested
     for module_name in context_modules:
-        package_parts = module_name.split('.')
+        package_parts = module_name.split(".")
         # emulate the import statement's behavior of importing parent packages
         for package_part_idx in range(len(package_parts)):
-            package_name = '.'.join(package_parts[0:package_part_idx + 1])
+            package_name = ".".join(package_parts[0 : package_part_idx + 1])
             if package_name not in context:
                 context[package_name] = importlib.import_module(package_name)
     ret = eval(to_eval, context)  # pylint:disable=eval-used
     if isinstance(ret, expected_type):
         return ret
     else:
-        raise TypeError("Expected result of evaluating {!s} to be of type {!s} but "
-                        "got {!s}".format(to_eval, expected_type, ret))
+        raise TypeError(
+            "Expected result of evaluating {!s} to be of type {!s} but "
+            "got {!s}".format(to_eval, expected_type, ret)
+        )
 
 
 def pathify(p: Union[str, Path]) -> Path:
@@ -87,7 +93,7 @@ def strip_extension(name: str) -> str:
     """
     Remove a single extension from a file name, if present.
     """
-    last_dot = name.rfind('.')
+    last_dot = name.rfind(".")
     if last_dot > -1:
         return name[:last_dot]
     else:
@@ -112,6 +118,7 @@ class WithId(Generic[T]):
     This is typically used as an input to an Ingester when no document ID can be extracted
     from the data itself.
     """
+
     # can't use attr_instance_of due to circular import problems
     id: str = attrib()
     item: T = attrib()
@@ -127,6 +134,7 @@ class Scored(Generic[T]):
     """
     An item together with a score.
     """
+
     item: T = attrib()
     score: float = attrutils.attrib_instance_of(float)
 
