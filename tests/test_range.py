@@ -9,6 +9,7 @@ from vistautils.range import (
     _BELOW_ALL,
     ImmutableRangeSet,
     ImmutableRangeMap,
+    MutableRangeSet,
 )
 
 
@@ -400,18 +401,18 @@ class TestRange(TestCase):
 
     def test_range_set_equality(self) -> None:
         self.assertEqual(
-            ImmutableRangeSet.builder()
+            ImmutableRangeSet.builder()  # type: ignore
             .add(Range.at_most(2))
             .add(Range.at_least(5))
             .build(),
-            ImmutableRangeSet.builder()
+            ImmutableRangeSet.builder()  # type: ignore
             .add(Range.at_least(5))
             .add(Range.at_most(2))
             .build(),
         )
 
     def test_range_enclosing_range(self) -> None:
-        range_set = RangeSet.create_mutable()
+        range_set: MutableRangeSet[int] = RangeSet.create_mutable()
         range_set.add_all([Range.at_most(2), Range.open_closed(5, 8), Range.at_least(10)])
         self.assertEqual(None, range_set.range_enclosing_range(Range.closed(2, 3)))
         self.assertEqual(
@@ -424,7 +425,7 @@ class TestRange(TestCase):
         self.assertEqual(None, range_set.range_enclosing_range(Range.closed(5, 8)))
 
     def test_range_clear(self) -> None:
-        range_set = RangeSet.create_mutable()
+        range_set: MutableRangeSet[int] = RangeSet.create_mutable()
         range_set.add_all([Range.at_most(2), Range.open_closed(5, 8), Range.at_least(10)])
         range_set.clear()
         self.assertEqual(0, len(range_set.as_ranges()))
@@ -435,7 +436,7 @@ class TestRange(TestCase):
     def test_ranges_enclosed_by_out_of_bounds(self) -> None:
         self.assertEqual(
             ImmutableSet.empty(),
-            RangeSet.create_mutable()
+            RangeSet.create_mutable()  # type: ignore
             .add(Range.closed(0, 10))
             .ranges_enclosed_by(Range.at_least(20)),
         )

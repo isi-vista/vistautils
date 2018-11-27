@@ -108,3 +108,7 @@ venv.bak/
 
 # IntelliJ project files
 *.iml
+
+# vim temp files
+*.swp
+*.swo
