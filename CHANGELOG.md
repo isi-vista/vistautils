@@ -1,3 +1,12 @@
+Vistautils 0.6.0 (2018-11-28)
+=============================
+
+New Features
+------------
+
+- Added `class_utils.fully_qualified_name` to get class names with their packages and modules. (`#30 <https://github.com/isi-vista/vistautils/issues/30>`_)
+
+
 Vistautils 0.4.0 (2018-11-01)
 =============================
 
