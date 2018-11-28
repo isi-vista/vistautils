@@ -14,6 +14,7 @@ from vistautils.range import (
     _value_below,
     _value_at_or_below,
     _value_at_or_above,
+    MutableRangeSet,
 )
 
 
@@ -218,7 +219,7 @@ class TestRangeSet(TestCase):
     # support methods
 
     def _pair_test(self, a: Range[int], b: Range[int]) -> None:
-        range_set = RangeSet.create_mutable()
+        range_set: MutableRangeSet[int] = RangeSet.create_mutable()
         range_set.add(a)
         range_set.add(b)
         if a.is_empty() and b.is_empty():

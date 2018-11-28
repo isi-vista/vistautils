@@ -1,5 +1,5 @@
 from typing import TypeVar, Generic, Container
-from unittest import TestCase
+from unittest import TestCase, skip
 
 from attr import attrs
 
@@ -7,6 +7,10 @@ T = TypeVar("T")
 
 
 # this test is to track https://github.com/python-attrs/attrs/issues/313
+@skip(
+    "we skip this because we don't want to crash on Python 3.7, where this bug appears"
+    " to be gone"
+)
 class TestGenericBug(TestCase):
     def test_no_slots_ok(self):
         @attrs

@@ -16,7 +16,7 @@ NOSE_ALL_COVERAGE:=$(NOSE) $(NOSE_COVERAGE_ARGS) --cover-inclusive
 
 PYLINT:=pylint vistautils
 
-MYPY:=mypy $(MYPY_ARGS) vistautils
+MYPY:=mypy $(MYPY_ARGS) vistautils tests
 # Suppressed warnings:
 # Too many arguments, Unexpected keyword arguments: can't do static analysis on attrs __init__
 # Signature of "__getitem__": https://github.com/python/mypy/issues/4108
