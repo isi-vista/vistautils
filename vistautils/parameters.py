@@ -14,6 +14,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    Iterable,
 )
 
 import yaml
@@ -244,13 +245,21 @@ class Parameters:
         else:
             return None
 
-    def string(self, param_name: str) -> str:
+    def string(
+        self, param_name: str, valid_options: Optional[Iterable[str]] = None
+    ) -> str:
         """
         Gets a string-valued parameter.
 
         Throws a `ParameterError` if `param` is not a known parameter.
         """
-        return self.get(param_name, str)
+        ret = self.get(param_name, str)
+        if valid_options is not None and ret not in valid_options:
+            raise ParameterError(
+                f"The value {ret} for the parameter {param_name} is not one of the valid options "
+                f"{tuple(valid_options)}"
+            )
+        return ret
 
     def __contains__(self, param_name: str) -> bool:
         return self._private_get(param_name, optional=True) is not None
@@ -340,7 +349,7 @@ class Parameters:
         expected_type: Type[ParamType],
         *,  # type: ignore
         namespace_param_name: str = "value",
-        special_values: Dict[str, str] = ImmutableDict.empty()
+        special_values: Dict[str, str] = ImmutableDict.empty(),
     ) -> Optional[ParamType]:  # type: ignore
         """
         Get a parameter, if present, interpreting its value as Python code.
@@ -365,7 +374,7 @@ class Parameters:
         *,  # type: ignore
         context: Optional[Dict] = None,
         namespace_param_name: str = "value",
-        special_values: Dict[str, str] = ImmutableDict.empty()
+        special_values: Dict[str, str] = ImmutableDict.empty(),
     ) -> ParamType:
         """
         Get a parameter, interpreting its value as Python code.
@@ -420,7 +429,7 @@ class Parameters:
         context: Optional[Dict] = None,
         creator_namepace_param_name: str = "value",
         special_creator_values: Dict[str, str] = ImmutableDict.empty(),
-        default_creator: Optional[Any] = None
+        default_creator: Optional[Any] = None,
     ) -> ParamType:
         """
         Get an object of `expected_type`, initialized by the parameters in `name`.

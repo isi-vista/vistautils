@@ -90,3 +90,22 @@ moo:
             params.optional_existing_directory("a_file")
 
         shutil.rmtree(test_dir)
+
+    def test_string(self):
+        params = Parameters.from_mapping({"hello": "world"})
+        self.assertEqual("world", params.string("hello"))
+        self.assertEqual("world", params.string("hello", valid_options=("world", "Mars")))
+
+        with self.assertRaisesRegex(
+            ParameterError,
+            "Parameter foo not found. In in root context available parameters "
+            "are \\['hello'\\], available namespaces are \\[\\]",
+        ):
+            params.string("foo")
+
+        with self.assertRaisesRegex(
+            ParameterError,
+            "The value world for the parameter hello is not one of the "
+            "valid options \\('Earth', 'Mars'\\)",
+        ):
+            params.string("hello", valid_options=("Earth", "Mars"))
