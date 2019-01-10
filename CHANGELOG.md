@@ -1,3 +1,12 @@
+Vistautils 0.7.0 (2019-01-10)
+=============================
+
+New Features
+------------
+
+- Allow specifying limited set of valid options to string() in Parameters (`#33 <https://github.com/isi-vista/vistautils/issues/33>`_)
+
+
 Vistautils 0.6.0 (2018-11-28)
 =============================
 
