@@ -11,11 +11,13 @@ from typing import (
     Any,
     Optional,
     Mapping,
+    Sized,
+    Tuple,
 )
 
 from attr import attrib, attrs
-from immutablecollections import ImmutableSet, ImmutableDict
 from sortedcontainers import SortedDict
+from immutablecollections import ImmutableSet, ImmutableDict
 
 # Port of Guava's Range data type and associated classes
 from vistautils.attrutils import attrib_instance_of, attrib_immutable
@@ -600,7 +602,7 @@ class Range(Container[T], Generic[T], Hashable):
 RANGE_ALL = Range(_BELOW_ALL, _ABOVE_ALL)
 
 
-class RangeSet(Generic[T], Container[T], metaclass=ABCMeta):
+class RangeSet(Generic[T], Container[T], Sized, metaclass=ABCMeta):
     """
     A set comprising zero or more nonempty, disconnected ranges of type `T`.
 
@@ -676,6 +678,28 @@ class RangeSet(Generic[T], Container[T], metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
+    def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
+        """
+        Get the maximal range in this set whose lower bound does not exceed *upper_limit*.
+
+        Formally, this is the range `(x, y)` with minimal `y` such that `(upper_limit, +inf)`
+        does not contain `(x, y)`.
+
+        If there is no such set, `None` is returned.
+        """
+
+    @abstractmethod
+    def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
+        """
+        Get the minimal range in this set whose upper bound is not below *lower_limit*.
+
+        Formally, this is the range `(x, y)` with maximal `x` such that `(-inf, lower_limit)`
+        does not contain `(x, y)`.
+
+        If there is no such set, `None` is returned.
+        """
+
+    @abstractmethod
     def as_ranges(self) -> Sequence[Range[T]]:
         raise NotImplementedError()
 
@@ -739,7 +763,7 @@ class ImmutableRangeSet(RangeSet[T], metaclass=ABCMeta):
 class MutableRangeSet(RangeSet[T], metaclass=ABCMeta):
     __slots__ = ()
 
-    def add(self, rng: Range[T]) -> "RangeSet[T]":
+    def add(self, rng: Range[T]) -> "MutableRangeSet[T]":
         """
         Add the specified range to this RangeSet (optional operation).
 
@@ -748,14 +772,18 @@ class MutableRangeSet(RangeSet[T], metaclass=ABCMeta):
 
         Note that `range` will be coalesced with any ranges in the range set that are connected
          with it. Moreover, if range is empty, this is a no-op.
+
+        Returns the RangeSet itself to facilitate chaining operations, especially in tests.
          """
         raise NotImplementedError()
 
-    def add_all(self, rngs: Union["RangeSet[T]", Iterable[Range[T]]]) -> "RangeSet[T]":
+    def add_all(
+        self, rngs: Union["RangeSet[T]", Iterable[Range[T]]]
+    ) -> "MutableRangeSet[T]":
         """
         Add all the specified ranges to this RangeSet (optional operation).
 
-        This is equivalent to calling `add` on each range individually.
+        Returns the RangeSet itself to facilitate chaining operations, especially in tests.
         """
         if isinstance(rngs, RangeSet):
             return self.add_all(rngs.as_ranges())
@@ -773,18 +801,24 @@ class MutableRangeSet(RangeSet[T], metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    def remove(self, rng: Range[T]) -> "RangeSet[T]":
+    def remove(self, rng: Range[T]) -> "MutableRangeSet[T]":
         """
         Remove the specified range from this RangeSet (optional operation).
 
         After this operation, if `rng.contains(c)`, `self.contains(c)` will return `False`.
         If `rng` is empty, this is a no-op.
+
+        Returns the RangeSet itself to facilitate chaining operations, especially in tests.
         """
         raise NotImplementedError()
 
-    def remove_all(self, rngs: Union["RangeSet[T]", Iterable[Range[T]]]) -> "RangeSet[T]":
+    def remove_all(
+        self, rngs: Union["RangeSet[T]", Iterable[Range[T]]]
+    ) -> "MutableRangeSet[T]":
         """
         Remove each specified range.
+
+        Returns the RangeSet itself to facilitate chaining operations, especially in tests.
         """
         if isinstance(rngs, RangeSet):
             return self.remove_all(rngs.as_ranges())
@@ -883,6 +917,34 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
             and not lower_range.intersection(rng).is_empty()
         )
 
+    def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
+        return _value_at_or_below(self._ranges_by_lower_bound, _BelowValue(upper_limit))
+
+    def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
+        sorted_dict = self._ranges_by_lower_bound
+        # an AboveValue cut corresponds to a closed upper interval, which catches containment
+        # as desired
+        # I have no idea why mypy is asking for an explicit type assignment here
+        limit_as_bound: _AboveValue = _AboveValue(lower_limit)
+
+        # insertion index into the sorted list of sets
+        idx = sorted_dict.bisect_left(limit_as_bound)
+        # so the index of the "latest" set with a lower bound preceding lower_limit is back one
+        containing_or_below_index = idx - 1
+
+        if containing_or_below_index >= 0:
+            # if such a set exists, we need to check if we are contained in it...
+            latest_beginning_before = sorted_dict[
+                sorted_dict.iloc[containing_or_below_index]
+            ]
+            if limit_as_bound <= latest_beginning_before._upper_bound:
+                return latest_beginning_before
+
+        if idx < len(sorted_dict):
+            return sorted_dict[sorted_dict.iloc[idx]]
+        else:
+            return None
+
     def as_ranges(self) -> Sequence[Range[T]]:
         return self._ranges_by_lower_bound.values()
 
@@ -903,6 +965,9 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
 
     def __repr__(self):
         return repr(list(self.as_ranges()))
+
+    def __len__(self) -> int:
+        return len(self._ranges_by_lower_bound)
 
 
 class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
@@ -953,7 +1018,7 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
 
     def add_all(
         self, ranges_to_add: Union["RangeSet[T]", Iterable[Range[T]]]
-    ) -> "RangeSet[T]":
+    ) -> "MutableRangeSet[T]":
         if isinstance(ranges_to_add, RangeSet):
             return self.add_all(ranges_to_add.as_ranges())
         for rng in ranges_to_add:
@@ -963,7 +1028,7 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
     def clear(self) -> None:
         _clear(self._ranges_by_lower_bound, _BELOW_ALL, _ABOVE_ALL)
 
-    def remove(self, rng: Range[T]) -> "RangeSet[T]":
+    def remove(self, rng: Range[T]) -> "MutableRangeSet[T]":
         raise NotImplementedError(
             "I didn't need this, so I didn't bother to implement it yet."
         )
@@ -1030,6 +1095,30 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
+    @abstractmethod
+    def get_from_maximal_containing_or_below(self, key: K):
+        """
+        Get the value associated with the maximal range in this set whose lower bound does not
+        exceed *upper_limit*.
+
+        Formally, this is the value associated with the range `(x, y)` with minimal `y` such that
+        `(upper_limit, +inf)` does not contain `(x, y)`.
+
+        If there is no such set, `None` is returned.
+        """
+
+    @abstractmethod
+    def get_from_minimal_containing_or_above(self, key: K):
+        """
+        Get the value associated with the minimal range in this set whose upper bound is not below
+        *lower_limit*.
+
+        Formally, this is the value associated with the range `(x, y)` with maximal `x` such that
+        `(-inf, lower_limit)` does not contain `(x, y)`.
+
+        If there is no such set, `None` is returned.
+        """
+
     def __eq__(self, other) -> bool:
         if isinstance(other, RangeMap):
             return ImmutableSet.of(self.as_dict()) == ImmutableSet.of(other.as_dict())
@@ -1066,6 +1155,14 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
     rng_to_val: ImmutableDict[Range[K], V] = attrib_immutable(ImmutableDict)
     range_set: ImmutableRangeSet[K] = attrib(init=False)
 
+    def __attrs_post_init__(self) -> None:
+        if len(self.rng_to_val) != len(self.range_set):
+            raise ValueError(
+                "Some range keys are connected or overlapping. Overlapping keys "
+                "will never be supported. Support for connected keys is tracked in "
+                "https://github.com/isi-vista/vistautils/issues/37"
+            )
+
     @staticmethod
     def empty() -> "ImmutableRangeMap[K,V]":
         return ImmutableRangeMap(ImmutableDict.empty())
@@ -1093,17 +1190,18 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
     def as_dict(self) -> Mapping[Range[K], V]:
         return self.rng_to_val
 
+    def get_from_maximal_containing_or_below(self, key: K) -> Optional[V]:
+        probe_range = self.range_set.maximal_containing_or_below(key)
+        return self.rng_to_val[probe_range] if probe_range else None
+
+    def get_from_minimal_containing_or_above(self, key: K) -> Optional[V]:
+        probe_range = self.range_set.minimal_containing_or_above(key)
+        return self.rng_to_val[probe_range] if probe_range else None
+
     @range_set.default  # type: ignore
     def _init_range_set(self) -> ImmutableRangeSet[K]:
         return (  # type: ignore
             ImmutableRangeSet.builder().add_all(self.rng_to_val.keys()).build()
-        )
-
-    def __attrs_post_init__(self):
-        check_arg(
-            ImmutableSet.of(self.rng_to_val.keys())
-            == ImmutableSet.of(self.range_set.as_ranges()),
-            "Ranges of map are not disjoint",
         )
 
     class Builder(Generic[K2, V2]):
@@ -1116,6 +1214,10 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
 
         def build(self) -> "ImmutableRangeMap[K2, V2]":
             return ImmutableRangeMap(self.rng_to_val.build())
+
+
+def immutablerangemap(mappings: Iterable[Tuple[Range[K], V]]) -> ImmutableRangeMap[K, V]:
+    return ImmutableRangeMap(ImmutableDict.of(mappings))
 
 
 # utility functions for SortedDict to give it an interface more like Java's NavigableMap
