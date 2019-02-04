@@ -216,7 +216,7 @@ class TestRangeSet(TestCase):
             for query_2 in TestRangeSet.QUERY_RANGES:
                 self._test_intersects(RangeSet.create_mutable().add(query_1).add(query_2))
 
-    # forms the basis for corresponding tests in test_range_set
+    # forms the basis for corresponding tests in test_range_map
     def test_maximal_containing_or_below(self):
         range_set = RangeSet.create_mutable().add_all(
             (
