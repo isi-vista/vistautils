@@ -1,7 +1,9 @@
-from typing import Tuple, Iterable, Sized, Optional
-
-from attr import attrs
+from typing import Iterable, Optional, Sized, Tuple, TypeVar
 from typing_extensions import Protocol
+
+from attr import attrib, attrs
+from immutablecollections import ImmutableSet
+from immutablecollections.immutablemultidict import ImmutableSetMultiDict
 
 from vistautils.attrutils import attrib_instance_of
 from vistautils.preconditions import check_arg
@@ -137,3 +139,40 @@ class HasSpan(Protocol):
 
     def contains_span(self, other) -> bool:
         return self.span.contains_span(other)
+
+
+T = TypeVar("T", bound=HasSpan)
+
+
+class HasSpanIndex(Protocol[T]):
+    """
+    Support efficient lookup of items with spans.
+    """
+
+    def exactly_matching(self, span: Span) -> ImmutableSet[T]:
+        """
+        Gets all contained items whose spans match *span* exactly.
+        """
+
+    @staticmethod
+    def index(items: Iterable[T]) -> "HasSpanIndex[T]":
+        """
+        Creates a ``HasSpanIndex`` for the given items.
+        """
+        return _OverLappingHasSpanIndex(
+            ImmutableSetMultiDict.of(((item.span, item) for item in items))
+        )
+
+
+@attrs(frozen=True, slots=True)
+class _OverLappingHasSpanIndex(HasSpanIndex[T]):
+    """
+    An implementation of ``HasSpanIndex`` for items whose spans may overlap.
+    """
+
+    _span_to_item_index: ImmutableSetMultiDict[Span, T] = attrib(
+        converter=ImmutableSetMultiDict.of
+    )
+
+    def exactly_matching(self, span: Span) -> ImmutableSet[T]:
+        return self._span_to_item_index[span]

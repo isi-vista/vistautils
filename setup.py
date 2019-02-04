@@ -20,7 +20,8 @@ setup(name='vistautils',
       install_requires=[
           'immutablecollections>=0.1.2',
           'attrs>=18.2.0',
-          'pyyaml>=3.2'
+          'pyyaml>=3.2',
+          'typing_extensions'
       ],
       scripts=["scripts/join_key_value_stores.py",
           "scripts/join_binary_key_value_stores.py",
