@@ -1,3 +1,13 @@
+Vistautils 0.8.0 (2019-02-04)
+=============================
+
+New Features
+------------
+
+- Add support for getting the closest set to a given value in a RangeSet
+  Add support for getting the value associated to the closest key set with a given value in RangeMap (`#40 <https://github.com/isi-vista/vistautils/issues/40>`_)
+
+
 Vistautils 0.7.0 (2019-01-10)
 =============================
 
