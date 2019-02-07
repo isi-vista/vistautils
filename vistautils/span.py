@@ -2,9 +2,13 @@ from typing import Iterable, Optional, Sized, Tuple, TypeVar
 from typing_extensions import Protocol
 
 from attr import attrs, attrib
-from immutablecollections import ImmutableSet, ImmutableSetMultiDict, immutablesetmultidict
+from immutablecollections import (
+    ImmutableSet,
+    ImmutableSetMultiDict,
+    immutablesetmultidict,
+)
 
-from vistautils.attrutils import attrib_instance_of, attrib_immutable
+from vistautils.attrutils import attrib_instance_of
 from vistautils.preconditions import check_arg
 from vistautils.range import Range
 
@@ -170,7 +174,8 @@ class _OverLappingHasSpanIndex(HasSpanIndex[T]):
     """
 
     _span_to_item_index: ImmutableSetMultiDict[Span, T] = attrib(
-        converter=immutablesetmultidict, default=immutablesetmultidict())
+        converter=immutablesetmultidict, default=immutablesetmultidict()  # type: ignore
+    )
 
     def exactly_matching(self, span: Span) -> ImmutableSet[T]:
         return self._span_to_item_index[span]
