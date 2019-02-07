@@ -9,7 +9,7 @@ black==18.9b0
 nose
 nose-exclude
 coverage
-pylint==2.4.0
+pylint==2.2.2
 flake8==3.5.0
 mypy==0.620
 towncrier
