@@ -1,3 +1,18 @@
+Vistautils 0.8.1 (2019-02-07)
+=============================
+
+Bugfixes
+--------
+
+- Update for breaking changes in immutablecollections 0.4.0 (`#42 <https://github.com/isi-vista/vistautils/issues/42>`_)
+
+
+New Features
+------------
+
+- Initial implementation of indexing utility for objects with `Span`s (`#42 <https://github.com/isi-vista/vistautils/issues/42>`_)
+
+
 Vistautils 0.8.0 (2019-02-04)
 =============================
 
