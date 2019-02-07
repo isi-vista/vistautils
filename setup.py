@@ -23,6 +23,7 @@ setup(name='vistautils',
           'pyyaml>=3.2',
           'typing_extensions'
       ],
+      package_data={'vistautils': ['py.typed']},
       scripts=["scripts/join_key_value_stores.py",
           "scripts/join_binary_key_value_stores.py",
           "scripts/join_character_key_value_stores.py",
