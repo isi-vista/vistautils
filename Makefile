@@ -14,7 +14,7 @@ NOSE_CORE:=$(NOSE)
 NOSE_CORE_COVERAGE:=$(NOSE_CORE) $(NOSE_COVERAGE_ARGS)
 NOSE_ALL_COVERAGE:=$(NOSE) $(NOSE_COVERAGE_ARGS) --cover-inclusive
 
-PYLINT:=pylint vistautils
+PYLINT:=python3 -m pylint vistautils
 
 MYPY:=mypy $(MYPY_ARGS) vistautils tests
 # Suppressed warnings:

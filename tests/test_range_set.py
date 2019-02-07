@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Sequence
 from unittest import TestCase
 
 from sortedcontainers import SortedDict
@@ -392,7 +392,7 @@ class TestRangeSet(TestCase):
 
     def _test_invariants(self, range_set: RangeSet[int]):
         self.assertEqual(len(range_set.as_ranges()) == 0, range_set.is_empty())
-        as_ranges: List[Range[int]] = ImmutableList.of(range_set.as_ranges())
+        as_ranges: Sequence[Range[int]] = ImmutableList.of(range_set.as_ranges())
 
         # test that connected ranges are coalesced
         for (range_1, range_2) in tile_with_pairs(as_ranges):

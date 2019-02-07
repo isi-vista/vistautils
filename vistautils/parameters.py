@@ -5,7 +5,6 @@ import shutil
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
     List,
     Mapping,
     Match,
@@ -349,7 +348,7 @@ class Parameters:
         expected_type: Type[ParamType],
         *,  # type: ignore
         namespace_param_name: str = "value",
-        special_values: Dict[str, str] = ImmutableDict.empty(),
+        special_values: Mapping[str, str] = ImmutableDict.empty(),
     ) -> Optional[ParamType]:  # type: ignore
         """
         Get a parameter, if present, interpreting its value as Python code.
@@ -372,9 +371,9 @@ class Parameters:
         name: str,
         expected_type: Type[ParamType],
         *,  # type: ignore
-        context: Optional[Dict] = None,
+        context: Optional[Mapping] = None,
         namespace_param_name: str = "value",
-        special_values: Dict[str, str] = ImmutableDict.empty(),
+        special_values: Mapping[str, str] = ImmutableDict.empty(),
     ) -> ParamType:
         """
         Get a parameter, interpreting its value as Python code.
@@ -426,9 +425,9 @@ class Parameters:
         name: str,
         expected_type: Type[ParamType],
         *,
-        context: Optional[Dict] = None,
+        context: Optional[Mapping] = None,
         creator_namepace_param_name: str = "value",
-        special_creator_values: Dict[str, str] = ImmutableDict.empty(),
+        special_creator_values: Mapping[str, str] = ImmutableDict.empty(),
         default_creator: Optional[Any] = None,
     ) -> ParamType:
         """
