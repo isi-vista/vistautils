@@ -1,3 +1,12 @@
+Vistautils 0.9.0 (2019-02-07)
+=============================
+
+New Features
+------------
+
+- Distribute type information via PEP 561 (`#45 <https://github.com/isi-vista/vistautils/issues/45>`_)
+
+
 Vistautils 0.8.1 (2019-02-07)
 =============================
 
