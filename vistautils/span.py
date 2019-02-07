@@ -13,7 +13,8 @@ from vistautils.preconditions import check_arg
 from vistautils.range import Range
 
 
-@attrs(frozen=True, slots=True, repr=False)
+@attrs(frozen=True, slots=True, repr=False)  # pylint:disable=inherit-non-class
+# Pylint disable due to https://github.com/PyCQA/pylint/issues/2472
 class Span(Sized):
     """
     A range of character offsets.
@@ -163,7 +164,8 @@ class HasSpanIndex(Protocol[T]):
         Creates a ``HasSpanIndex`` for the given items.
         """
         return _OverLappingHasSpanIndex(
-            immutablesetmultidict(((item.span, item) for item in items))
+            # mypy is confused
+            immutablesetmultidict(((item.span, item) for item in items))  # type: ignore
         )
 
 

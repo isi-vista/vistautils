@@ -308,7 +308,8 @@ RANGE_ALL: "Range" = None  # type: ignore
 
 # this should have slots=True but cannot for the moment due to
 # https://github.com/python-attrs/attrs/issues/313
-@attrs(frozen=True, repr=False)
+# Pylint disable due to https://github.com/PyCQA/pylint/issues/2472
+@attrs(frozen=True, repr=False)  # pylint: disable=inherit-non-class
 class Range(Container[T], Generic[T], Hashable):
     """
     The boundaries of a contiguous span of values.
@@ -602,7 +603,10 @@ class Range(Container[T], Generic[T], Hashable):
 RANGE_ALL = Range(_BELOW_ALL, _ABOVE_ALL)
 
 
-class RangeSet(Generic[T], Container[T], Sized, metaclass=ABCMeta):
+# Pylint disable due to https://github.com/PyCQA/pylint/issues/2472
+class RangeSet(
+    Generic[T], Container[T], Sized, metaclass=ABCMeta
+):  # pylint:disable=E0239
     """
     A set comprising zero or more nonempty, disconnected ranges of type `T`.
 
@@ -1201,7 +1205,9 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
     @range_set.default  # type: ignore
     def _init_range_set(self) -> ImmutableRangeSet[K]:
         return (  # type: ignore
-            ImmutableRangeSet.builder().add_all(self.rng_to_val.keys()).build()
+            ImmutableRangeSet.builder()  # type: ignore
+            .add_all(self.rng_to_val.keys())  # type: ignore
+            .build()  # type: ignore
         )
 
     class Builder(Generic[K2, V2]):

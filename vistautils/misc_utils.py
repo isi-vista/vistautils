@@ -1,7 +1,7 @@
 import importlib
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Generic, Iterable, List, Type, TypeVar, Union
+from typing import Any, Generic, Iterable, List, Mapping, Sequence, Type, TypeVar, Union
 
 from attr import attrib, attrs
 
@@ -41,7 +41,11 @@ T = TypeVar("T")
 
 
 def eval_in_context_of_modules(
-    to_eval: str, context: Dict, *, context_modules: List[str], expected_type: Type[T]
+    to_eval: str,
+    context: Mapping[Any, Any],
+    *,
+    context_modules: Sequence[str],
+    expected_type: Type[T]
 ) -> T:
     """
     Evaluate the given expression in the specified context.
