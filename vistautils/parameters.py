@@ -17,8 +17,8 @@ from typing import (
 )
 
 import yaml
-from attr import attrs, attrib, validators
-from immutablecollections import ImmutableDict
+from attr import attrs, attrib
+from immutablecollections import ImmutableDict, immutabledict
 
 from vistautils.io_utils import CharSink, is_empty_directory
 from vistautils.misc_utils import eval_in_context_of_modules
@@ -58,7 +58,7 @@ class Parameters:
     """
 
     _data: ImmutableDict[str, Any] = attrib(
-        validator=validators.instance_of(ImmutableDict)
+        default=immutabledict(), converter=immutabledict
     )
 
     def __attrs_post_init__(self) -> None:
