@@ -11,11 +11,10 @@ import io
 import itertools
 from typing import Optional, List, Mapping, Collection, Iterable
 
-from attr import attrs, evolve
+from attr import attrs, evolve, attrib
 from immutablecollections import ImmutableDict
-
+from attr.validators import instance_of
 from vistautils.span import Span
-from vistautils.attrutils import attrib_instance_of, attrib_opt_immutable
 from vistautils.preconditions import check_arg
 
 DIV = "div"
@@ -34,9 +33,12 @@ class AnnotatedSpan:
     becomes attributes.
     """
 
-    label: str = attrib_instance_of(str)
-    span: Span = attrib_instance_of(Span)
-    attributes: Mapping[str, str] = attrib_opt_immutable(ImmutableDict)
+    label: str = attrib(validator=instance_of(str))
+    span: Span = attrib(validator=instance_of(Span))
+    attributes: Mapping[str, str] = attrib(
+        default=ImmutableDict.empty(),
+        validator=instance_of(ImmutableDict)
+        )
 
     @staticmethod
     def create_div_of_class(span: Span, clazz: str) -> "AnnotatedSpan":
@@ -146,9 +148,9 @@ class HTMLStyleAnnotationFormatter:
 
     @attrs(frozen=True, slots=True)
     class Tag:
-        string: str = attrib_instance_of(str)
-        is_start: bool = attrib_instance_of(bool)
-        offset: int = attrib_instance_of(int)
+        string: str = attrib(validator=instance_of(str))
+        is_start: bool = attrib(validator=instance_of(bool))
+        offset: int = attrib(validator=instance_of(int))
 
     @staticmethod
     def _tag_sequence(
