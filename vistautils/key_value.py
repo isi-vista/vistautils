@@ -18,11 +18,10 @@ from typing import (
 )
 from zipfile import ZipFile
 
-from attr import attrs
+from attr import attrs, attrib
 from immutablecollections import ImmutableDict, ImmutableSet
 
 from vistautils.parameters import Parameters
-from vistautils.attrutils import attrib_immutable
 from vistautils.io_utils import (
     CharSink,
     CharSource,
@@ -477,7 +476,7 @@ class _ZipBytesFileKeyValueSink(_ZipKeyValueSink[bytes]):
 
 @attrs(frozen=True)
 class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
-    id_to_path: ImmutableDict[str, Path] = attrib_immutable(ImmutableDict)
+    id_to_path: ImmutableDict[str, Path] = attrib(converter=ImmutableDict.of)
 
     def __getitem__(self, key: str) -> str:
         return CharSource.from_file(self.id_to_path[key]).read_all()
