@@ -24,10 +24,9 @@ from typing import (
 )
 from zipfile import ZipFile
 
-from attr import attrs
+from attr import attrs, attrib, validators
 from immutablecollections import ImmutableDict
 
-from vistautils.attrutils import attrib_instance_of
 from vistautils.misc_utils import pathify
 
 
@@ -164,7 +163,7 @@ class CharSource(metaclass=ABCMeta):
 
 @attrs(slots=True, frozen=True, repr=False)
 class _StringCharSource(CharSource):
-    _string = attrib_instance_of(str)
+    _string = attrib(validator=validators.instance_of(str))
 
     def open(self) -> TextIO:
         return io.StringIO(self._string)
@@ -182,7 +181,7 @@ class _StringCharSource(CharSource):
 
 @attrs(slots=True, frozen=True)
 class _FileCharSource(CharSource):
-    _path = attrib_instance_of(Path)
+    _path = attrib(validator=validators.instance_of(Path))
 
     def open(self) -> TextIO:
         return open(self._path, "r")
@@ -202,8 +201,8 @@ class _CharSourceWrappingByteSource(CharSource):
 
 @attrs(slots=True, frozen=True)
 class _GZipFileSource(CharSource):
-    _path: Path = attrib_instance_of(Path)
-    _encoding: str = attrib_instance_of(str)
+    _path: Path = attrib(validator=validators.instance_of(Path))
+    _encoding: str = attrib(validator=validators.instance_of(str))
 
     def open(self) -> TextIO:
         return gzip.open(self._path, "rt", encoding=self._encoding)  # type: ignore
@@ -216,9 +215,9 @@ class _GZipFileSource(CharSource):
 
 @attrs(slots=True, frozen=True)
 class _FileWithinTgzCharSource(CharSource):
-    _tgz_path: Path = attrib_instance_of(Path)
-    _path_within_tgz: str = attrib_instance_of(str)
-    _encoding: str = attrib_instance_of(str)
+    _tgz_path: Path = attrib(validator=validators.instance_of(Path))
+    _path_within_tgz: str = attrib(validator=validators.instance_of(str))
+    _encoding: str = attrib(validator=validators.instance_of(str))
 
     def open(self) -> TextIO:
         tgz_file = tarfile.open(self._tgz_path, "r:gz", encoding=self._encoding)
@@ -356,7 +355,7 @@ class ByteSource(metaclass=ABCMeta):
 
 @attrs(slots=True, frozen=True)
 class _FileByteSource(ByteSource):
-    _path = attrib_instance_of(Path)
+    _path = attrib(validator=validators.instance_of(Path))
 
     def open(self) -> BinaryIO:
         return open(self._path, "rb")
@@ -367,8 +366,8 @@ class _FileByteSource(ByteSource):
 
 @attrs(slots=True, frozen=True)
 class _ByteSourceFromPathInZipFile(ByteSource):
-    _zip_path = attrib_instance_of(Path)
-    _path_within_zip = attrib_instance_of(str)
+    _zip_path = attrib(validator=validators.instance_of(Path))
+    _path_within_zip = attrib(validator=validators.instance_of(str))
 
     def open(self) -> BytesIO:
         # pylint:disable=not-callable
@@ -389,8 +388,8 @@ class _ByteSourceFromPathInZipFile(ByteSource):
 
 @attrs(slots=True, frozen=True)
 class _ByteSourceFromPathInOpenZipFile(ByteSource):
-    _zip_file = attrib_instance_of(ZipFile)
-    _path_within_zip = attrib_instance_of(str)
+    _zip_file = attrib(validator=validators.instance_of(ZipFile))
+    _path_within_zip = attrib(validator=validators.instance_of(str))
 
     def open(self) -> BytesIO:
         return self._zip_file.open(self._path_within_zip, "r")
@@ -564,7 +563,7 @@ class StringCharSink(CharSink):
 
 @attrs(slots=True, frozen=True)
 class _FileCharSink(CharSink):
-    _path: Union[Path, str] = attrib_instance_of((Path, str))
+    _path: Union[Path, str] = attrib(validator=validators.instance_of((Path, str)))
 
     def open(self) -> TextIO:
         return open(self._path, "w")
@@ -572,8 +571,8 @@ class _FileCharSink(CharSink):
 
 @attrs(slots=True, frozen=True)
 class _FileInZipByteSink(ByteSink):
-    _zip_path = attrib_instance_of(Path)
-    _path_within_zip = attrib_instance_of(str)
+    _zip_path = attrib(validator=validators.instance_of(Path))
+    _path_within_zip = attrib(validator=validators.instance_of(str))
 
     def open(self) -> BytesIO:
         # pylint:disable=not-callable
