@@ -58,7 +58,7 @@ class Parameters:
     """
 
     _data: ImmutableDict[str, Any] = attrib(
-        default=ImmutableDict.empty(), validator=validators.instance_of(ImmutableDict)
+        validator=validators.instance_of(ImmutableDict)
     )
 
     def __attrs_post_init__(self) -> None:

@@ -391,8 +391,9 @@ class _ByteSourceFromPathInOpenZipFile(ByteSource):
     _zip_file = attrib(validator=validators.instance_of(ZipFile))
     _path_within_zip = attrib(validator=validators.instance_of(str))
 
-    def open(self) -> BytesIO:
-        return self._zip_file.open(self._path_within_zip, "r")
+    # mypy freaks out with this open function
+    def open(self) -> BytesIO:  # type: ignore
+        return self._zip_file.open(self._path_within_zip, "r")  # type: ignore
 
 
 class ByteSink(metaclass=ABCMeta):
@@ -563,7 +564,7 @@ class StringCharSink(CharSink):
 
 @attrs(slots=True, frozen=True)
 class _FileCharSink(CharSink):
-    _path: Union[Path, str] = attrib(validator=validators.instance_of((Path, str)))
+    _path: Union[Path, str] = attrib(validator=validators.instance_of(tuple((Path, str))))
 
     def open(self) -> TextIO:
         return open(self._path, "w")

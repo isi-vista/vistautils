@@ -12,7 +12,7 @@ import itertools
 from typing import Optional, List, Mapping, Collection, Iterable
 
 from attr import attrs, evolve, attrib
-from immutablecollections import ImmutableDict
+from immutablecollections import immutabledict
 from attr.validators import instance_of
 from vistautils.span import Span
 from vistautils.preconditions import check_arg
@@ -36,7 +36,7 @@ class AnnotatedSpan:
     label: str = attrib(validator=instance_of(str))
     span: Span = attrib(validator=instance_of(Span))
     attributes: Mapping[str, str] = attrib(
-        default=ImmutableDict.empty(), validator=instance_of(ImmutableDict)
+        default=immutabledict(), converter=immutabledict
     )
 
     @staticmethod
