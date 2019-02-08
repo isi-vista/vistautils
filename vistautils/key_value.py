@@ -305,7 +305,7 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
 
         The contents of the paths, interpreted as UTF-8, will be the values.
         """
-        return _PathMappingCharKeyValueSource(id_to_path)
+        return _PathMappingCharKeyValueSource(id_to_path)  # type: ignore
 
     @staticmethod
     def from_doc_id_to_file_map(
@@ -313,7 +313,9 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
     ) -> "KeyValueSource[str,str]":
         if not isinstance(map_file, CharSource):
             map_file = CharSource.from_file(map_file)
-        return _PathMappingCharKeyValueSource(read_doc_id_to_file_map(map_file))
+        return _PathMappingCharKeyValueSource(  # type: ignore
+            read_doc_id_to_file_map(map_file)
+        )
 
     @staticmethod
     def zip_character_source(
