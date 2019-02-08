@@ -151,7 +151,9 @@ class TestIOUtils(TestCase):
     def test_object_from_parameters(self):
         @attrs
         class TestObj:
-            val: int = attrib(default=None, validator=validators.optional(validators.instance_of(int)))
+            val: int = attrib(
+                default=None, validator=validators.optional(validators.instance_of(int))
+            )
 
             @staticmethod
             def from_parameters(params: Parameters) -> "TestObj":

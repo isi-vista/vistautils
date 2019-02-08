@@ -36,9 +36,8 @@ class AnnotatedSpan:
     label: str = attrib(validator=instance_of(str))
     span: Span = attrib(validator=instance_of(Span))
     attributes: Mapping[str, str] = attrib(
-        default=ImmutableDict.empty(),
-        validator=instance_of(ImmutableDict)
-        )
+        default=ImmutableDict.empty(), validator=instance_of(ImmutableDict)
+    )
 
     @staticmethod
     def create_div_of_class(span: Span, clazz: str) -> "AnnotatedSpan":

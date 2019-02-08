@@ -1210,7 +1210,9 @@ V2 = TypeVar("V2")
 # https://github.com/python-attrs/attrs/issues/313
 @attrs(frozen=True, repr=False)
 class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
-    rng_to_val: ImmutableDict[Range[K], V] = attrib(validator=validators.instance_of(ImmutableDict))
+    rng_to_val: ImmutableDict[Range[K], V] = attrib(
+        validator=validators.instance_of(ImmutableDict)
+    )
     range_set: ImmutableRangeSet[K] = attrib(init=False)
 
     def __attrs_post_init__(self) -> None:
