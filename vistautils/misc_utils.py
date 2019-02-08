@@ -3,9 +3,8 @@ from itertools import chain
 from pathlib import Path
 from typing import Any, Generic, Iterable, List, Mapping, Sequence, Type, TypeVar, Union
 
-from attr import attrib, attrs
-
-from vistautils import attrutils, preconditions
+from attr import attrib, attrs, validators
+from vistautils import preconditions
 
 
 def str_list_limited(_list: Iterable[Any], limit: int) -> str:
@@ -140,7 +139,7 @@ class Scored(Generic[T]):
     """
 
     item: T = attrib()
-    score: float = attrutils.attrib_instance_of(float)
+    score: float = attrib(validator=validators.instance_of(float))
 
     def __attrs_post_init__(self) -> None:
         preconditions.check_arg(self.item is not None, "Item of a scored may not be None")
