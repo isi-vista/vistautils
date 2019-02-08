@@ -15,12 +15,11 @@ from typing import (
     Tuple,
 )
 
-from attr import attrib, attrs
+from attr import attrib, attrs, validators
 from sortedcontainers import SortedDict
 from immutablecollections import ImmutableSet, ImmutableDict, immutableset, immutabledict
 
 # Port of Guava's Range data type and associated classes
-from vistautils.attrutils import attrib_instance_of, attrib_immutable
 from vistautils.preconditions import check_arg, check_not_none
 
 # will be initialized after bound type declarations
@@ -371,8 +370,8 @@ class Range(Container[T], Generic[T], Hashable):
     """
 
     # pylint:disable=protected-access
-    _lower_bound: _Cut[T] = attrib_instance_of(_Cut)
-    _upper_bound: _Cut[T] = attrib_instance_of(_Cut)
+    _lower_bound: _Cut[T] = attrib(validator=validators.instance_of(_Cut))
+    _upper_bound: _Cut[T] = attrib(validator=validators.instance_of(_Cut))
 
     def __attrs_post_init__(self):
         check_arg(
@@ -1211,7 +1210,7 @@ V2 = TypeVar("V2")
 # https://github.com/python-attrs/attrs/issues/313
 @attrs(frozen=True, repr=False)
 class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
-    rng_to_val: ImmutableDict[Range[K], V] = attrib_immutable(ImmutableDict)
+    rng_to_val: ImmutableDict[Range[K], V] = attrib(validator=validators.instance_of(ImmutableDict))
     range_set: ImmutableRangeSet[K] = attrib(init=False)
 
     def __attrs_post_init__(self) -> None:
