@@ -290,7 +290,9 @@ class Parameters:
                 )
             )
 
-    def floating_point(self, name: str, valid_range: Optional[Range[float]] = None) -> int:
+    def floating_point(
+        self, name: str, valid_range: Optional[Range[float]] = None
+    ) -> float:
         """
         Gets a float parameter.
 
@@ -299,7 +301,7 @@ class Parameters:
         ret = self.get(name, float)
         if valid_range is not None and ret not in valid_range:
             raise ParameterError(
-                "For parameter {!s}, expected a float in the range {!s} to {!s} but got {!s}".format(
+                "For parameter {!s}, expected float in the range {!s} to {!s} but got {!s}".format(
                     name, valid_range.lower_endpoint, valid_range.upper_endpoint, ret
                 )
             )
