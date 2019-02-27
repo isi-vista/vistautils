@@ -301,8 +301,8 @@ class Parameters:
         ret = self.get(name, float)
         if valid_range is not None and ret not in valid_range:
             raise ParameterError(
-                "For parameter {!s}, expected float in the range {!s} to {!s} but got {!s}".format(
-                    name, valid_range.lower_endpoint, valid_range.upper_endpoint, ret
+                "For parameter {!s}, expected a float in the range {!s} but got {!s}".format(
+                    name, valid_range, ret
                 )
             )
         return ret

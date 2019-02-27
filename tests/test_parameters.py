@@ -120,6 +120,6 @@ moo:
 
         with self.assertRaisesRegex(
             ParameterError,
-            "For parameter test_float, expected float in the range 0.0 to 1.0 but got 5.5",
+            "For parameter test_float, expected a float in the range \\(0.0..1.0\\) but got 5.5",
         ):
             params.floating_point("test_float", valid_range=Range.open(0.0, 1.0))
