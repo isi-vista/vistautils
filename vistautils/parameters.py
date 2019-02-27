@@ -290,7 +290,7 @@ class Parameters:
                 )
             )
 
-    def float(self, name: str, valid_range: Optional[Range[float]] = None) -> int:
+    def floating_point(self, name: str, valid_range: Optional[Range[float]] = None) -> int:
         """
         Gets a float parameter.
 
