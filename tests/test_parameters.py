@@ -6,6 +6,7 @@ from unittest import TestCase
 
 from vistautils.parameters import Parameters, YAMLParametersWriter, ParameterError
 from vistautils.io_utils import CharSink
+from vistautils.range import Range
 
 
 class TestParameters(TestCase):
@@ -109,3 +110,14 @@ moo:
             "valid options \\('Earth', 'Mars'\\)",
         ):
             params.string("hello", valid_options=("Earth", "Mars"))
+
+    def test_float(self):
+        params = Parameters.from_mapping({"test_float": 5.5})
+        self.assertEqual(5.5, params.float("test_float"))
+        self.assertEqual(5.5, params.float("test_float", valid_range=Range.open(5, 6)))
+
+        with self.assertRaisesRegex(
+            ParameterError,
+            "For parameter test_float, expected a float in the range 0.0 to 1.0 but got 5.5",
+        ):
+            params.float("test_float", valid_range=Range.open(0.0, 1.0))
