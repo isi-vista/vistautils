@@ -24,6 +24,7 @@ from vistautils.attrutils import attrib_opt_immutable
 from vistautils.io_utils import CharSink, is_empty_directory
 from vistautils.misc_utils import eval_in_context_of_modules
 from vistautils.preconditions import check_arg, check_isinstance
+from vistautils.range import Range
 
 _logger = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
@@ -288,6 +289,23 @@ class Parameters:
                     name, ret
                 )
             )
+
+    def floating_point(
+        self, name: str, valid_range: Optional[Range[float]] = None
+    ) -> float:
+        """
+        Gets a float parameter.
+
+        Throws a `ParameterError` if `param` is not within the given range.
+        """
+        ret = self.get(name, float)
+        if valid_range is not None and ret not in valid_range:
+            raise ParameterError(
+                "For parameter {!s}, expected a float in the range {!s} but got {!s}".format(
+                    name, valid_range, ret
+                )
+            )
+        return ret
 
     def optional_boolean(self, name: str) -> Optional[bool]:
         """
