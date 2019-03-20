@@ -4,7 +4,7 @@ from unittest import TestCase
 from sortedcontainers import SortedDict
 
 from vistautils.iterutils import tile_with_pairs
-from immutablecollections import ImmutableSet, ImmutableList
+from immutablecollections import ImmutableSet
 
 # noinspection PyProtectedMember
 from vistautils.range import (
@@ -96,10 +96,7 @@ class TestRangeSet(TestCase):
         range_set.add(Range.closed(1, 6))
         range_set.add(Range.closed(1, 4))
         self._test_invariants(range_set)
-        self.assertEqual(
-            ImmutableList.of([Range.closed(1, 6)]),
-            ImmutableList.of(range_set.as_ranges()),
-        )
+        self.assertEqual(tuple([Range.closed(1, 6)]), tuple(range_set.as_ranges()))
 
     def test_ignores_smaller_sharing_upper_bound(self):
         range_set = RangeSet.create_mutable()
@@ -157,10 +154,7 @@ class TestRangeSet(TestCase):
         range_set.add(Range.closed_open(4, 6))
         range_set.add(Range.closed_open(2, 5))
         self._test_invariants(range_set)
-        self.assertEqual(
-            ImmutableList.of([Range.closed_open(1, 6)]),
-            ImmutableList.of(range_set.as_ranges()),
-        )
+        self.assertEqual(tuple([Range.closed_open(1, 6)]), tuple(range_set.as_ranges()))
 
     def test_add_many_pairs(self):
         for a_low in range(0, 6):
@@ -202,10 +196,7 @@ class TestRangeSet(TestCase):
         range_set = RangeSet.create_mutable()
         range_set.add(Range.closed(3, 10))
         range_set.add_all([Range.open(1, 3), Range.closed(5, 8), Range.closed(9, 11)])
-        self.assertEqual(
-            ImmutableList.of(range_set.as_ranges()),
-            ImmutableList.of([Range.open_closed(1, 11)]),
-        )
+        self.assertEqual(tuple(range_set.as_ranges()), tuple([Range.open_closed(1, 11)]))
 
     def test_all_single_ranges_intersecting(self):
         for query in TestRangeSet.QUERY_RANGES:
@@ -360,14 +351,10 @@ class TestRangeSet(TestCase):
         elif b.is_empty():
             self.assertTrue(a in range_set.as_ranges())
         elif a.is_connected(b):
-            self.assertEqual(
-                ImmutableList.of(range_set.as_ranges()), ImmutableList.of([a.span(b)])
-            )
+            self.assertEqual(tuple(range_set.as_ranges()), tuple([a.span(b)]))
         else:
             if a.lower_endpoint < b.lower_endpoint:
-                self.assertEqual(
-                    ImmutableList.of(range_set.as_ranges()), ImmutableList.of([a, b])
-                )
+                self.assertEqual(tuple(range_set.as_ranges()), tuple([a, b]))
             else:
                 self.assertEqual(
                     ImmutableSet.of([a, b]), ImmutableSet.of(range_set.as_ranges())
@@ -392,7 +379,7 @@ class TestRangeSet(TestCase):
 
     def _test_invariants(self, range_set: RangeSet[int]):
         self.assertEqual(len(range_set.as_ranges()) == 0, range_set.is_empty())
-        as_ranges: Sequence[Range[int]] = ImmutableList.of(range_set.as_ranges())
+        as_ranges: Sequence[Range[int]] = tuple(range_set.as_ranges())
 
         # test that connected ranges are coalesced
         for (range_1, range_2) in tile_with_pairs(as_ranges):
