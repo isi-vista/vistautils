@@ -973,6 +973,12 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
     def __len__(self) -> int:
         return len(self._ranges_by_lower_bound)
 
+    def __getstate__(self):
+        return tuple(self._ranges_by_lower_bound.items())
+
+    def __setstate__(self, state):
+        self._ranges_by_lower_bound = SortedDict(state)
+
 
 class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
     # pylint:disable=protected-access
