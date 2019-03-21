@@ -1216,6 +1216,13 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
         probe_range = self.range_set.minimal_containing_or_above(key)
         return self.rng_to_val[probe_range] if probe_range else None
 
+    def __reduce__(self):
+        # __getstate__/__setstate__ cannot be used because the implementation is frozen.
+        _repr = ()
+        if not self.is_empty():
+            _repr = tuple(self.as_dict().items())
+        return (immutablerangemap, (_repr,))
+
     @range_set.default  # type: ignore
     def _init_range_set(self) -> ImmutableRangeSet[K]:
         return (  # type: ignore
