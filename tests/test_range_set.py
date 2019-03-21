@@ -458,26 +458,22 @@ class TestRangeSet(TestCase):
         empty_mutable_rangeset = MutableRangeSet.create_mutable()
         empty_immutable_rangeset = ImmutableRangeSet.builder().build()
         ranges = (Range.closed(0, 2), Range.closed(5, 29), Range.closed(35, 39))
-        abovevalues = tuple(_BelowValue(rng.lower_endpoint) for rng in ranges)
         mutable_rangeset = MutableRangeSet.create_mutable().add_all(ranges)
         immutable_rangeset = ImmutableRangeSet.builder().add_all(ranges).build()
 
-        empty_mutable_rangeset_cycled = pickle.loads(pickle.dumps(empty_mutable_rangeset))
-        empty_immutable_rangeset_cycled = pickle.loads(
-            pickle.dumps(empty_immutable_rangeset)
+        self.assertEqual(
+            empty_mutable_rangeset, pickle.loads(pickle.dumps(empty_mutable_rangeset))
         )
-        mutable_rangeset_cycled = pickle.loads(pickle.dumps(mutable_rangeset))
-        immutable_rangeset_cycled = pickle.loads(pickle.dumps(immutable_rangeset))
-
-        self.assertEqual(empty_mutable_rangeset, empty_mutable_rangeset_cycled)
-        self.assertEqual(empty_immutable_rangeset, empty_immutable_rangeset_cycled)
-        self.assertEqual(mutable_rangeset, mutable_rangeset_cycled)
-        self.assertEqual(immutable_rangeset, immutable_rangeset_cycled)
+        self.assertEqual(
+            empty_immutable_rangeset, pickle.loads(pickle.dumps(empty_immutable_rangeset))
+        )
+        self.assertEqual(mutable_rangeset, pickle.loads(pickle.dumps(mutable_rangeset)))
+        self.assertEqual(
+            immutable_rangeset, pickle.loads(pickle.dumps(immutable_rangeset))
+        )
 
         self.assertEqual(empty_mutable_rangeset.__getstate__(), ())
         self.assertEqual(empty_immutable_rangeset.__getstate__(), ())
 
-        self.assertEqual(mutable_rangeset.__getstate__(), tuple(zip(abovevalues, ranges)))
-        self.assertEqual(
-            immutable_rangeset.__getstate__(), tuple(zip(abovevalues, ranges))
-        )
+        self.assertEqual(mutable_rangeset.__getstate__(), ranges)
+        self.assertEqual(immutable_rangeset.__getstate__(), ranges)

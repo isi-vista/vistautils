@@ -734,6 +734,11 @@ class RangeSet(
     def __repr__(self):
         return self.__class__.__name__ + "(" + str(self.as_ranges()) + ")"
 
+    def __getstate__(self):
+        if self.is_empty():
+            return ()
+        return tuple(self.as_ranges())
+
 
 T2 = TypeVar("T2")
 
@@ -973,11 +978,10 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
     def __len__(self) -> int:
         return len(self._ranges_by_lower_bound)
 
-    def __getstate__(self):
-        return tuple(self._ranges_by_lower_bound.items())
-
-    def __setstate__(self, state):
-        self._ranges_by_lower_bound = SortedDict(state)
+    def __setstate__(self, state: Iterable[Range]) -> None:
+        self._ranges_by_lower_bound = SortedDict(
+            [(rng._lower_bound, rng) for rng in state]
+        )
 
 
 class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
