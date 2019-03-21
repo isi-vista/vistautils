@@ -1,9 +1,14 @@
+from abc import ABC
+from itertools import combinations
 from typing import Iterable, Optional, Sized, Tuple, TypeVar
 from typing_extensions import Protocol
 
 from attr import attrs, attrib
 from immutablecollections import (
+    ImmutableDict,
+    immutabledict,
     ImmutableSet,
+    immutableset,
     ImmutableSetMultiDict,
     immutablesetmultidict,
 )
@@ -153,11 +158,6 @@ class HasSpanIndex(Protocol[T]):
     Support efficient lookup of items with spans.
     """
 
-    def exactly_matching(self, span: Span) -> ImmutableSet[T]:
-        """
-        Gets all contained items whose spans match *span* exactly.
-        """
-
     @staticmethod
     def index(items: Iterable[T]) -> "HasSpanIndex[T]":
         """
@@ -167,6 +167,63 @@ class HasSpanIndex(Protocol[T]):
             # mypy is confused
             immutablesetmultidict(((item.span, item) for item in items))  # type: ignore
         )
+
+    @staticmethod
+    def index_disjoint(items: Iterable[T]) -> "DisjointHasSpanIndex[T]":
+        """
+        Creates a ``DisjointHasSpanIndex`` for the given items, which disallows
+        """
+        return DisjointHasSpanIndex(((item.span, item) for item in items))
+
+    def get_exactly_matching(self, span: Span) -> ImmutableSet[T]:
+        """
+        Gets all items whose spans match `span` exactly.
+        """
+        raise NotImplementedError()
+
+    def get_overlapping(self, span: Span) -> ImmutableSet[T]:
+        """
+        Gets all items whose spans overlap `span`.
+        """
+        raise NotImplementedError()
+
+    def get_contained(self, span: Span) -> ImmutableSet[T]:
+        """
+        Get all items whose spans are contained in the given `span`.
+        """
+        raise NotImplementedError()
+
+    def get_containing(self, span: Span) -> ImmutableSet[T]:
+        """
+        Get all items whose spans contain the given `span`.
+        """
+        raise NotImplementedError()
+
+
+@attrs(frozen=True, slots=True)
+class DisjointHasSpanIndex(HasSpanIndex[T], ABC):
+    """A HasSpanIndex where all member spans are guaranteed to be disjoint (non-overlapping)."""
+
+    _span_to_item_index: ImmutableDict[Span, T] = attrib(
+        converter=immutabledict, default=immutabledict()
+    )
+
+    @_span_to_item_index.validator
+    def validate(self, _, items: ImmutableDict[Span, T]) -> None:
+        for span1, span2 in combinations(items.keys(), 2):
+            if span1.overlaps(span2):
+                raise ValueError(
+                    "Cannot construct an index of disjoint HasSpans due to overlapping "
+                    f"spans {span1} and {span2}: {items[span1]} and {items[span2]}"
+                )
+
+    def get_exactly_matching(self, span: Span) -> Optional[T]:
+        return self._span_to_item_index.get(span, None)
+
+    def get_containing(self, span: Span) -> Optional[T]:
+        for candidate_span in self._span_to_item_index:
+            if candidate_span.contains_span(span):
+                return self._span_to_item_index[candidate_span]
 
 
 @attrs(frozen=True, slots=True)
@@ -179,5 +236,29 @@ class _OverLappingHasSpanIndex(HasSpanIndex[T]):
         converter=immutablesetmultidict, default=immutablesetmultidict()  # type: ignore
     )
 
-    def exactly_matching(self, span: Span) -> ImmutableSet[T]:
+    def get_exactly_matching(self, span: Span) -> ImmutableSet[T]:
         return self._span_to_item_index[span]
+
+    def get_overlapping(self, span: Span) -> ImmutableSet[T]:
+        return immutableset(
+            item
+            for candidate_span in self._span_to_item_index
+            for item in self._span_to_item_index[candidate_span]
+            if candidate_span.overlaps(span)
+        )
+
+    def get_contained(self, span: Span) -> ImmutableSet[T]:
+        return immutableset(
+            item
+            for candidate_span in self._span_to_item_index
+            for item in self._span_to_item_index[candidate_span]
+            if span.contains_span(candidate_span)
+        )
+
+    def get_containing(self, span: Span) -> ImmutableSet[T]:
+        return immutableset(
+            item
+            for candidate_span in self._span_to_item_index
+            for item in self._span_to_item_index[candidate_span]
+            if candidate_span.contains_span(span)
+        )
