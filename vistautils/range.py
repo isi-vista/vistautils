@@ -734,10 +734,14 @@ class RangeSet(
     def __repr__(self):
         return self.__class__.__name__ + "(" + str(self.as_ranges()) + ")"
 
-    def __getstate__(self):
+    def __getstate__(self) -> Tuple[Range[T], ...]:
         if self.is_empty():
             return ()
         return tuple(self.as_ranges())
+
+    @abstractmethod
+    def __setstate__(self, state: Iterable[Range[T]]) -> None:
+        raise NotImplementedError()
 
 
 T2 = TypeVar("T2")
@@ -978,7 +982,7 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
     def __len__(self) -> int:
         return len(self._ranges_by_lower_bound)
 
-    def __setstate__(self, state: Iterable[Range]) -> None:
+    def __setstate__(self, state: Iterable[Range[T]]) -> None:
         self._ranges_by_lower_bound = SortedDict(
             [(rng._lower_bound, rng) for rng in state]
         )
