@@ -1,3 +1,4 @@
+import pickle
 from unittest import TestCase
 
 from immutablecollections import ImmutableSet
@@ -178,4 +179,18 @@ class TestRangeMap(TestCase):
             immutablerangemap(
                 ((Range.open(1.0, 2.0), 1),)
             ).get_from_minimal_containing_or_above(2.0)
+        )
+
+    def test_pickling(self):
+        empty_rangemap = immutablerangemap({})
+        ranges = (Range.closed(0, 2), Range.closed(5, 29), Range.closed(35, 39))
+        values = ("foo", "bar", "meep")
+        rangemap = immutablerangemap(zip(ranges, values))
+
+        self.assertEqual(empty_rangemap, pickle.loads(pickle.dumps(empty_rangemap)))
+        self.assertEqual(rangemap, pickle.loads(pickle.dumps(rangemap)))
+
+        self.assertEqual(empty_rangemap.__reduce__(), (immutablerangemap, ((),)))
+        self.assertEqual(
+            rangemap.__reduce__(), (immutablerangemap, (tuple(zip(ranges, values)),))
         )
