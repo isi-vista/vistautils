@@ -1,3 +1,4 @@
+import pickle
 from typing import List, Sequence
 from unittest import TestCase
 
@@ -15,6 +16,7 @@ from vistautils.range import (
     _value_at_or_below,
     _value_at_or_above,
     MutableRangeSet,
+    ImmutableRangeSet,
 )
 
 
@@ -450,3 +452,27 @@ class TestRangeSet(TestCase):
         )
         for (key, ref) in value_at_or_above_reference:
             self.assertEqual(_value_at_or_above(sorted_dict, key), ref)
+
+    def test_pickling(self):
+        empty_mutable_rangeset = MutableRangeSet.create_mutable()
+        empty_immutable_rangeset = ImmutableRangeSet.builder().build()
+        ranges = (Range.closed(0, 2), Range.closed(5, 29), Range.closed(35, 39))
+        mutable_rangeset = MutableRangeSet.create_mutable().add_all(ranges)
+        immutable_rangeset = ImmutableRangeSet.builder().add_all(ranges).build()
+
+        self.assertEqual(
+            empty_mutable_rangeset, pickle.loads(pickle.dumps(empty_mutable_rangeset))
+        )
+        self.assertEqual(
+            empty_immutable_rangeset, pickle.loads(pickle.dumps(empty_immutable_rangeset))
+        )
+        self.assertEqual(mutable_rangeset, pickle.loads(pickle.dumps(mutable_rangeset)))
+        self.assertEqual(
+            immutable_rangeset, pickle.loads(pickle.dumps(immutable_rangeset))
+        )
+
+        self.assertEqual(empty_mutable_rangeset.__getstate__(), ())
+        self.assertEqual(empty_immutable_rangeset.__getstate__(), ())
+
+        self.assertEqual(mutable_rangeset.__getstate__(), ranges)
+        self.assertEqual(immutable_rangeset.__getstate__(), ranges)
