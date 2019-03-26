@@ -17,7 +17,7 @@ from typing import (
 
 from attr import attrib, attrs
 from sortedcontainers import SortedDict
-from immutablecollections import ImmutableSet, ImmutableDict, immutableset
+from immutablecollections import ImmutableSet, ImmutableDict, immutableset, immutabledict
 
 # Port of Guava's Range data type and associated classes
 from vistautils.attrutils import attrib_instance_of, attrib_immutable
@@ -895,7 +895,7 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
                     break
             return ret.build()
         else:
-            return ImmutableSet.empty()
+            return immutableset()
 
     # noinspection PyTypeHints
     def __contains__(self, value: T) -> bool:  # type: ignore
@@ -1221,7 +1221,8 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
 
     @staticmethod
     def empty() -> "ImmutableRangeMap[K, V]":
-        return ImmutableRangeMap(ImmutableDict.empty())
+        """Deprecated - prefer the module-level factory ``immutablerangemap`` with no arguments."""
+        return ImmutableRangeMap(immutabledict())
 
     @staticmethod
     def builder() -> "ImmutableRangeMap.Builder[K, V]":
@@ -1281,8 +1282,10 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
             return ImmutableRangeMap(self.rng_to_val.build())
 
 
-def immutablerangemap(mappings: Iterable[Tuple[Range[K], V]]) -> ImmutableRangeMap[K, V]:
-    return ImmutableRangeMap(ImmutableDict.of(mappings))
+def immutablerangemap(
+    mappings: Optional[Iterable[Tuple[Range[K], V]]] = None
+) -> ImmutableRangeMap[K, V]:
+    return ImmutableRangeMap(immutabledict(mappings))
 
 
 # utility functions for SortedDict to give it an interface more like Java's NavigableMap

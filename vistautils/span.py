@@ -199,7 +199,7 @@ def _build_range_to_item_index(
     inp: Optional[Iterable[Tuple[Span, T]]]
 ) -> ImmutableRangeMap[int, T]:
     if inp is None:
-        return ImmutableRangeMap.empty()
+        return immutablerangemap()
     return immutablerangemap((span.as_range(), item) for span, item in inp)
 
 
