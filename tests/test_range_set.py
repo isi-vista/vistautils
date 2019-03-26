@@ -5,7 +5,7 @@ from unittest import TestCase
 from sortedcontainers import SortedDict
 
 from vistautils.iterutils import tile_with_pairs
-from immutablecollections import ImmutableSet
+from immutablecollections import ImmutableSet, immutableset
 
 # noinspection PyProtectedMember
 from vistautils.range import (
@@ -71,6 +71,32 @@ class TestRangeSet(TestCase):
                 self._test_encloses(
                     RangeSet.create_mutable().add(query_range_1).add(query_range_2)
                 )
+
+    def test_intersect_ranges(self):
+        range_set = RangeSet.create_mutable()
+        range_set.add_all(
+            [
+                Range.closed(2, 4),
+                Range.closed(5, 7),
+                Range.closed(10, 12),
+                Range.closed(18, 20),
+            ]
+        )
+        self.assertEqual(range_set.intersect_ranges(Range.closed(0, 1)), immutableset())
+        self.assertEqual(range_set.intersect_ranges(Range.closed(21, 23)), immutableset())
+        self.assertEqual(range_set.intersect_ranges(Range.closed(13, 15)), immutableset())
+        self.assertEqual(
+            range_set.intersect_ranges(Range.closed(0, 2)),
+            immutableset([Range.closed(2, 4)]),
+        )
+        self.assertEqual(
+            range_set.intersect_ranges(Range.closed(12, 15)),
+            immutableset([Range.closed(10, 12)]),
+        )
+        self.assertEqual(
+            range_set.intersect_ranges(Range.closed(5, 16)),
+            immutableset([Range.closed(5, 7), Range.closed(10, 12)]),
+        )
 
     def test_merges_connected_with_overlap(self):
         range_set = RangeSet.create_mutable()

@@ -17,7 +17,7 @@ from typing import (
 
 from attr import attrib, attrs
 from sortedcontainers import SortedDict
-from immutablecollections import ImmutableSet, ImmutableDict
+from immutablecollections import ImmutableSet, ImmutableDict, immutableset
 
 # Port of Guava's Range data type and associated classes
 from vistautils.attrutils import attrib_instance_of, attrib_immutable
@@ -670,6 +670,13 @@ class RangeSet(
         raise NotImplementedError()
 
     @abstractmethod
+    def intersect_ranges(self, rng: Range[T]) -> ImmutableSet[Range[T]]:
+        """
+        Get the nonempty intersections of `rng` with the ranges in this set.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
     def range_containing(self, value: T) -> Optional[Range[T]]:
         raise NotImplementedError()
 
@@ -930,6 +937,37 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
             and not lower_range.intersection(rng).is_empty()
         )
 
+    def intersect_ranges(self, rng: Range[T]) -> ImmutableSet[Range[T]]:
+        check_not_none(rng)
+        if self.is_empty():
+            return immutableset()
+        rlb = self._ranges_by_lower_bound
+        from_index = rlb.bisect(rng._lower_bound)
+        # If we would insert at the end (are greater than all the elements, the only range that
+        # could possibly overlap is the last one.
+        if from_index == len(rlb):
+            last_range: Range[T] = rlb[rlb.iloc[-1]]
+            if last_range.intersects(rng):
+                return immutableset([last_range])
+            return immutableset()
+        to_index = rlb.bisect(rng._upper_bound)
+        # If we would insert at the start (are smaller than all the elements, the only range that
+        # could possibly overlap is the first one.
+        if to_index == 0:
+            first_range: Range[T] = rlb[rlb.iloc[0]]
+            if first_range.intersects(rng):
+                return immutableset([first_range])
+            return immutableset()
+        return immutableset(
+            [
+                rlb[rlb.iloc[index]]
+                # The ranges at the extreme indices do not necessarily overlap,
+                for index in range(max(0, from_index - 1), min(to_index, len(rlb) - 1))
+                # so this explicit check is needed.
+                if rlb[rlb.iloc[index]].intersects(rng)
+            ]
+        )
+
     def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
         return _value_at_or_below(self._ranges_by_lower_bound, _BelowValue(upper_limit))
 
@@ -1182,11 +1220,11 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
             )
 
     @staticmethod
-    def empty() -> "ImmutableRangeMap[K,V]":
+    def empty() -> "ImmutableRangeMap[K, V]":
         return ImmutableRangeMap(ImmutableDict.empty())
 
     @staticmethod
-    def builder() -> "ImmutableRangeMap.Builder[K,V]":
+    def builder() -> "ImmutableRangeMap.Builder[K, V]":
         return ImmutableRangeMap.Builder()
 
     def __contains__(self, key: K) -> bool:

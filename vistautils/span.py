@@ -1,12 +1,8 @@
-from abc import ABC
-from itertools import combinations
-from typing import Iterable, Optional, Sized, Tuple, TypeVar
+from typing import Iterable, Optional, Sized, Tuple, TypeVar, Union
 from typing_extensions import Protocol
 
 from attr import attrs, attrib
 from immutablecollections import (
-    ImmutableDict,
-    immutabledict,
     ImmutableSet,
     immutableset,
     ImmutableSetMultiDict,
@@ -15,7 +11,7 @@ from immutablecollections import (
 
 from vistautils.attrutils import attrib_instance_of
 from vistautils.preconditions import check_arg
-from vistautils.range import Range
+from vistautils.range import Range, immutablerangemap, ImmutableRangeMap
 
 
 @attrs(frozen=True, slots=True, repr=False)  # pylint:disable=inherit-non-class
@@ -173,9 +169,12 @@ class HasSpanIndex(Protocol[T]):
         """
         Creates a ``DisjointHasSpanIndex`` for the given items that disallows overlapping spans.
         """
-        return DisjointHasSpanIndex(((item.span, item) for item in items))
+        return DisjointHasSpanIndex(
+            # mypy is confused
+            ((item.span, item) for item in items)  # type: ignore
+        )
 
-    def get_exactly_matching(self, span: Span) -> ImmutableSet[T]:
+    def get_exactly_matching(self, span: Span) -> Union[ImmutableSet[T], Optional[T]]:
         """
         Gets all items whose spans match `span` exactly.
         """
@@ -190,36 +189,50 @@ class HasSpanIndex(Protocol[T]):
         Get all items whose spans are contained in the given `span`.
         """
 
-    def get_containing(self, span: Span) -> ImmutableSet[T]:
+    def get_containing(self, span: Span) -> Union[ImmutableSet[T], Optional[T]]:
         """
         Get all items whose spans contain the given `span`.
         """
 
 
+def _build_range_to_item_index(
+    inp: Optional[Iterable[Tuple[Span, T]]]
+) -> ImmutableRangeMap[int, T]:
+    if inp is None:
+        return ImmutableRangeMap.empty()
+    return immutablerangemap((span.as_range(), item) for span, item in inp)
+
+
 @attrs(frozen=True, slots=True)
-class DisjointHasSpanIndex(HasSpanIndex[T], ABC):
+class DisjointHasSpanIndex(HasSpanIndex[T]):
     """A ``HasSpanIndex`` where all member spans are guaranteed to be disjoint (non-overlapping)."""
 
-    _span_to_item_index: ImmutableDict[Span, T] = attrib(
-        converter=immutabledict, default=immutabledict()
+    _range_to_item_index: ImmutableRangeMap[int, T] = attrib(
+        converter=_build_range_to_item_index
     )
 
-    @_span_to_item_index.validator
-    def validate(self, _, items: ImmutableDict[Span, T]) -> None:
-        for span1, span2 in combinations(items.keys(), 2):
-            if span1.overlaps(span2):
-                raise ValueError(
-                    "Cannot construct an index of disjoint HasSpans due to overlapping "
-                    f"spans {span1} and {span2}: {items[span1]} and {items[span2]}"
-                )
-
     def get_exactly_matching(self, span: Span) -> Optional[T]:
-        return self._span_to_item_index.get(span, None)
+        return self._range_to_item_index.rng_to_val.get(span.as_range())
+
+    def get_overlapping(self, span: Span) -> ImmutableSet[T]:
+        return immutableset(
+            self._range_to_item_index.rng_to_val[rng]
+            for rng in self._range_to_item_index.range_set.intersect_ranges(
+                span.as_range()
+            )
+        )
+
+    def get_contained(self, span: Span) -> ImmutableSet[T]:
+        return self._range_to_item_index.get_enclosed_by(span.as_range())
 
     def get_containing(self, span: Span) -> Optional[T]:
-        for candidate_span in self._span_to_item_index:
-            if candidate_span.contains_span(span):
-                return self._span_to_item_index[candidate_span]
+        rng = span.as_range()
+        if (
+            self._range_to_item_index[rng.lower_endpoint]
+            == self._range_to_item_index[rng.upper_endpoint]
+        ):
+            return self._range_to_item_index[rng.lower_endpoint]
+        return None
 
 
 @attrs(frozen=True, slots=True)
