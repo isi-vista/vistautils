@@ -89,9 +89,7 @@ class TestSpan(TestCase):
 
         self.assertIsNone(index.get_exactly_matching(s2_within))
         self.assertEqual(fs3, index.get_exactly_matching(s3))
-        with self.assertRaises(NotImplementedError):
-            index.get_overlapping(s1)
-        with self.assertRaises(NotImplementedError):
-            index.get_contained(s1)
+        self.assertIsNone(index.get_overlapping(s1))
+        self.assertIsNone(index.get_contained(s1))
         self.assertIsNone(index.get_containing(s4))
         self.assertEqual(fs2, index.get_containing(s2_within))

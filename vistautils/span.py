@@ -171,7 +171,7 @@ class HasSpanIndex(Protocol[T]):
     @staticmethod
     def index_disjoint(items: Iterable[T]) -> "DisjointHasSpanIndex[T]":
         """
-        Creates a ``DisjointHasSpanIndex`` for the given items, which disallows
+        Creates a ``DisjointHasSpanIndex`` for the given items that disallows overlapping spans.
         """
         return DisjointHasSpanIndex(((item.span, item) for item in items))
 
@@ -179,30 +179,26 @@ class HasSpanIndex(Protocol[T]):
         """
         Gets all items whose spans match `span` exactly.
         """
-        raise NotImplementedError()
 
     def get_overlapping(self, span: Span) -> ImmutableSet[T]:
         """
         Gets all items whose spans overlap `span`.
         """
-        raise NotImplementedError()
 
     def get_contained(self, span: Span) -> ImmutableSet[T]:
         """
         Get all items whose spans are contained in the given `span`.
         """
-        raise NotImplementedError()
 
     def get_containing(self, span: Span) -> ImmutableSet[T]:
         """
         Get all items whose spans contain the given `span`.
         """
-        raise NotImplementedError()
 
 
 @attrs(frozen=True, slots=True)
 class DisjointHasSpanIndex(HasSpanIndex[T], ABC):
-    """A HasSpanIndex where all member spans are guaranteed to be disjoint (non-overlapping)."""
+    """A ``HasSpanIndex`` where all member spans are guaranteed to be disjoint (non-overlapping)."""
 
     _span_to_item_index: ImmutableDict[Span, T] = attrib(
         converter=immutabledict, default=immutabledict()
