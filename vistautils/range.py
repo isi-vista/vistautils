@@ -670,9 +670,12 @@ class RangeSet(
         raise NotImplementedError()
 
     @abstractmethod
-    def intersect_ranges(self, rng: Range[T]) -> ImmutableSet[Range[T]]:
+    def ranges_overlapping(self, rng: Range[T]) -> ImmutableSet[Range[T]]:
         """
-        Get the nonempty intersections of `rng` with the ranges in this set.
+        Get all ranges in this set that overlap (have an intersection) with `rng`.
+
+        Unlike Guava's `intersectRanges`, this does not truncate partially intersecting ranges to
+        just the intersecting portion.
         """
         raise NotImplementedError()
 
@@ -937,7 +940,7 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
             and not lower_range.intersection(rng).is_empty()
         )
 
-    def intersect_ranges(self, rng: Range[T]) -> ImmutableSet[Range[T]]:
+    def ranges_overlapping(self, rng: Range[T]) -> ImmutableSet[Range[T]]:
         check_not_none(rng)
         if self.is_empty():
             return immutableset()

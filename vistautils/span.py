@@ -217,7 +217,7 @@ class DisjointHasSpanIndex(HasSpanIndex[T]):
     def get_overlapping(self, span: Span) -> ImmutableSet[T]:
         return immutableset(
             self._range_to_item_index.rng_to_val[rng]
-            for rng in self._range_to_item_index.range_set.intersect_ranges(
+            for rng in self._range_to_item_index.range_set.ranges_overlapping(
                 span.as_range()
             )
         )

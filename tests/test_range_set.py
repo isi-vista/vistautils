@@ -82,19 +82,23 @@ class TestRangeSet(TestCase):
                 Range.closed(18, 20),
             ]
         )
-        self.assertEqual(range_set.intersect_ranges(Range.closed(0, 1)), immutableset())
-        self.assertEqual(range_set.intersect_ranges(Range.closed(21, 23)), immutableset())
-        self.assertEqual(range_set.intersect_ranges(Range.closed(13, 15)), immutableset())
+        self.assertEqual(range_set.ranges_overlapping(Range.closed(0, 1)), immutableset())
         self.assertEqual(
-            range_set.intersect_ranges(Range.closed(0, 2)),
+            range_set.ranges_overlapping(Range.closed(21, 23)), immutableset()
+        )
+        self.assertEqual(
+            range_set.ranges_overlapping(Range.closed(13, 15)), immutableset()
+        )
+        self.assertEqual(
+            range_set.ranges_overlapping(Range.closed(0, 2)),
             immutableset([Range.closed(2, 4)]),
         )
         self.assertEqual(
-            range_set.intersect_ranges(Range.closed(12, 15)),
+            range_set.ranges_overlapping(Range.closed(12, 15)),
             immutableset([Range.closed(10, 12)]),
         )
         self.assertEqual(
-            range_set.intersect_ranges(Range.closed(5, 16)),
+            range_set.ranges_overlapping(Range.closed(5, 16)),
             immutableset([Range.closed(5, 7), Range.closed(10, 12)]),
         )
 
