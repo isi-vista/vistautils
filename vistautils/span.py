@@ -1,16 +1,17 @@
-from typing import Iterable, Optional, Sized, Tuple, TypeVar
+from typing import Iterable, Optional, Sized, Tuple, TypeVar, Union
 from typing_extensions import Protocol
 
 from attr import attrs, attrib
 from immutablecollections import (
     ImmutableSet,
+    immutableset,
     ImmutableSetMultiDict,
     immutablesetmultidict,
 )
 
 from vistautils.attrutils import attrib_instance_of
 from vistautils.preconditions import check_arg
-from vistautils.range import Range
+from vistautils.range import Range, immutablerangemap, ImmutableRangeMap
 
 
 @attrs(frozen=True, slots=True, repr=False)  # pylint:disable=inherit-non-class
@@ -153,11 +154,6 @@ class HasSpanIndex(Protocol[T]):
     Support efficient lookup of items with spans.
     """
 
-    def exactly_matching(self, span: Span) -> ImmutableSet[T]:
-        """
-        Gets all contained items whose spans match *span* exactly.
-        """
-
     @staticmethod
     def index(items: Iterable[T]) -> "HasSpanIndex[T]":
         """
@@ -167,6 +163,76 @@ class HasSpanIndex(Protocol[T]):
             # mypy is confused
             immutablesetmultidict(((item.span, item) for item in items))  # type: ignore
         )
+
+    @staticmethod
+    def index_disjoint(items: Iterable[T]) -> "HasSpanIndex[T]":
+        """
+        Creates a ``DisjointHasSpanIndex`` for the given items that disallows overlapping spans.
+        """
+        return _DisjointHasSpanIndex(
+            # mypy is confused
+            ((item.span, item) for item in items)  # type: ignore
+        )
+
+    def get_exactly_matching(self, span: Span) -> Union[ImmutableSet[T], Optional[T]]:
+        """
+        Gets all items whose spans match `span` exactly.
+        """
+
+    def get_overlapping(self, span: Span) -> ImmutableSet[T]:
+        """
+        Gets all items whose spans overlap `span`.
+        """
+
+    def get_contained(self, span: Span) -> ImmutableSet[T]:
+        """
+        Get all items whose spans are contained in the given `span`.
+        """
+
+    def get_containing(self, span: Span) -> Union[ImmutableSet[T], Optional[T]]:
+        """
+        Get all items whose spans contain the given `span`.
+        """
+
+
+def _build_range_to_item_index(
+    inp: Optional[Iterable[Tuple[Span, T]]]
+) -> ImmutableRangeMap[int, T]:
+    if inp is None:
+        return immutablerangemap()
+    return immutablerangemap((span.as_range(), item) for span, item in inp)
+
+
+@attrs(frozen=True, slots=True)
+class _DisjointHasSpanIndex(HasSpanIndex[T]):
+    """A ``HasSpanIndex`` where all member spans are guaranteed to be disjoint (non-overlapping)."""
+
+    _range_to_item_index: ImmutableRangeMap[int, T] = attrib(
+        converter=_build_range_to_item_index
+    )
+
+    def get_exactly_matching(self, span: Span) -> Optional[T]:
+        return self._range_to_item_index.rng_to_val.get(span.as_range())
+
+    def get_overlapping(self, span: Span) -> ImmutableSet[T]:
+        return immutableset(
+            self._range_to_item_index.rng_to_val[rng]
+            for rng in self._range_to_item_index.range_set.ranges_overlapping(
+                span.as_range()
+            )
+        )
+
+    def get_contained(self, span: Span) -> ImmutableSet[T]:
+        return self._range_to_item_index.get_enclosed_by(span.as_range())
+
+    def get_containing(self, span: Span) -> Optional[T]:
+        rng = span.as_range()
+        if (
+            self._range_to_item_index[rng.lower_endpoint]
+            == self._range_to_item_index[rng.upper_endpoint]
+        ):
+            return self._range_to_item_index[rng.lower_endpoint]
+        return None
 
 
 @attrs(frozen=True, slots=True)
@@ -179,5 +245,29 @@ class _OverLappingHasSpanIndex(HasSpanIndex[T]):
         converter=immutablesetmultidict, default=immutablesetmultidict()  # type: ignore
     )
 
-    def exactly_matching(self, span: Span) -> ImmutableSet[T]:
+    def get_exactly_matching(self, span: Span) -> ImmutableSet[T]:
         return self._span_to_item_index[span]
+
+    def get_overlapping(self, span: Span) -> ImmutableSet[T]:
+        return immutableset(
+            item
+            for candidate_span in self._span_to_item_index
+            for item in self._span_to_item_index[candidate_span]
+            if candidate_span.overlaps(span)
+        )
+
+    def get_contained(self, span: Span) -> ImmutableSet[T]:
+        return immutableset(
+            item
+            for candidate_span in self._span_to_item_index
+            for item in self._span_to_item_index[candidate_span]
+            if span.contains_span(candidate_span)
+        )
+
+    def get_containing(self, span: Span) -> ImmutableSet[T]:
+        return immutableset(
+            item
+            for candidate_span in self._span_to_item_index
+            for item in self._span_to_item_index[candidate_span]
+            if candidate_span.contains_span(span)
+        )
