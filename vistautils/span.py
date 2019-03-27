@@ -165,11 +165,11 @@ class HasSpanIndex(Protocol[T]):
         )
 
     @staticmethod
-    def index_disjoint(items: Iterable[T]) -> "DisjointHasSpanIndex[T]":
+    def index_disjoint(items: Iterable[T]) -> "HasSpanIndex[T]":
         """
         Creates a ``DisjointHasSpanIndex`` for the given items that disallows overlapping spans.
         """
-        return DisjointHasSpanIndex(
+        return _DisjointHasSpanIndex(
             # mypy is confused
             ((item.span, item) for item in items)  # type: ignore
         )
@@ -204,7 +204,7 @@ def _build_range_to_item_index(
 
 
 @attrs(frozen=True, slots=True)
-class DisjointHasSpanIndex(HasSpanIndex[T]):
+class _DisjointHasSpanIndex(HasSpanIndex[T]):
     """A ``HasSpanIndex`` where all member spans are guaranteed to be disjoint (non-overlapping)."""
 
     _range_to_item_index: ImmutableRangeMap[int, T] = attrib(
