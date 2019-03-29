@@ -156,7 +156,7 @@ class _Cut(Generic[T], metaclass=ABCMeta):
         return self.compare_to(other) == 0
 
 
-@attrs(frozen=True, slots=True, hash=False, cmp=False)
+@attrs(frozen=True, slots=True, hash=False, cache_hash=False, cmp=False)
 class _BelowAll(_Cut[T]):
     # pylint:disable=protected-access
     @property
@@ -189,7 +189,7 @@ class _BelowAll(_Cut[T]):
         return 233904909
 
 
-@attrs(frozen=True, slots=True, hash=False, cmp=False)
+@attrs(frozen=True, slots=True, hash=False, cache_hash=False, cmp=False)
 class _AboveAll(_Cut[T]):
     # pylint:disable=protected-access
     @property
@@ -232,6 +232,7 @@ _ABOVE_ALL = _AboveAll()
 class _BelowValue(_Cut[T]):
     # pylint:disable=protected-access
     _endpoint = attrib()
+    _hash: int = attrib(init=False)
 
     @property
     def endpoint(self) -> T:
@@ -246,8 +247,12 @@ class _BelowValue(_Cut[T]):
     def as_lower_bound(self) -> BoundType:
         return _CLOSED
 
-    def __hash__(self):
+    @_hash.default
+    def _compute_hash(self) -> int:
         return hash(self._endpoint)
+
+    def __hash__(self):
+        return self._hash
 
     def __eq__(self, other):
         if isinstance(other, _BelowValue):
@@ -268,6 +273,7 @@ class _BelowValue(_Cut[T]):
 class _AboveValue(_Cut[T]):
     # pylint:disable=protected-access
     _endpoint = attrib()
+    _hash: int = attrib(init=False)
 
     @property
     def endpoint(self) -> T:
@@ -282,9 +288,13 @@ class _AboveValue(_Cut[T]):
     def as_lower_bound(self) -> BoundType:
         return _OPEN
 
-    def __hash__(self):
+    @_hash.default
+    def _compute_hash(self) -> int:
         # bitwise complement to distinguish it from the corresponding _BelowValue
         return ~hash(self._endpoint)
+
+    def __hash__(self):
+        return self._hash
 
     def __eq__(self, other):
         if isinstance(other, _AboveValue):
@@ -1209,7 +1219,7 @@ V2 = TypeVar("V2")
 
 # this should have slots=True but cannot for the moment due to
 # https://github.com/python-attrs/attrs/issues/313
-@attrs(frozen=True, repr=False)
+@attrs(frozen=True, cache_hash=True, repr=False)
 class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
     rng_to_val: ImmutableDict[Range[K], V] = attrib_immutable(ImmutableDict)
     range_set: ImmutableRangeSet[K] = attrib(init=False)

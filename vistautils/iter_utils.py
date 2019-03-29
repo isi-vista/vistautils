@@ -118,7 +118,7 @@ def windowed(it, window_size: int, *, partial_windows: bool = False):  # noqa: F
 # implementation helpers for drop()
 
 
-@attrs(auto_attribs=True)
+@attrs(auto_attribs=True, frozen=True, slots=True, cache_hash=True)
 class _DropIterable(Generic[_T], Iterable[_T]):
     # we dispense with type and sign checks here since they already happened in drop
     _wrapped_iterable: Iterable[_T]
@@ -131,7 +131,7 @@ class _DropIterable(Generic[_T], Iterable[_T]):
 # implementation helpers for windowed()
 
 
-@attrs(auto_attribs=True)
+@attrs(auto_attribs=True, frozen=True, slots=True, cache_hash=True)
 class _WindowedIterable(Generic[_T], Iterable[Tuple[_T, ...]]):
     # we dispense with checks on these fields because `windowed` already handles it
     _wrapped_iterable: Iterable[_T]

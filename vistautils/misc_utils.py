@@ -114,7 +114,7 @@ def flatten_once_to_list(iterable_of_iterables: Iterable[Iterable[T]]) -> List[T
 
 
 # can't set slots=True or you get https://github.com/python-attrs/attrs/issues/313
-@attrs(frozen=True)
+@attrs(frozen=True, cache_hash=True)
 class WithId(Generic[T]):
     """
     Pair some object with some ID.
@@ -133,7 +133,7 @@ class WithId(Generic[T]):
         preconditions.check_arg(self.id, "Doc IDs may not be empty")
 
 
-@attrs(frozen=True)
+@attrs(frozen=True, cache_hash=True)
 class Scored(Generic[T]):
     """
     An item together with a score.

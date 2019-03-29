@@ -39,7 +39,7 @@ class Checkpoints(Container[str], metaclass=ABCMeta):
         return _CheckPointDirectory(directory)
 
 
-@attrs(frozen=True, slots=True)
+@attrs(frozen=True, slots=True, cache_hash=True)
 class _CheckPointDirectory(Checkpoints):
     """
     Track checkpoints for a program using files in a directory.

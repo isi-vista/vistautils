@@ -475,7 +475,7 @@ class _ZipBytesFileKeyValueSink(_ZipKeyValueSink[bytes]):
         return val
 
 
-@attrs(frozen=True)
+@attrs(frozen=True, slots=True, cache_hash=True)
 class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
     id_to_path: ImmutableDict[str, Path] = attrib_immutable(ImmutableDict)
 

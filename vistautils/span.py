@@ -14,7 +14,9 @@ from vistautils.preconditions import check_arg
 from vistautils.range import Range, immutablerangemap, ImmutableRangeMap
 
 
-@attrs(frozen=True, slots=True, repr=False)  # pylint:disable=inherit-non-class
+@attrs(
+    frozen=True, slots=True, cache_hash=True, repr=False
+)  # pylint:disable=inherit-non-class
 # Pylint disable due to https://github.com/PyCQA/pylint/issues/2472
 class Span(Sized):
     """
@@ -203,7 +205,7 @@ def _build_range_to_item_index(
     return immutablerangemap((span.as_range(), item) for span, item in inp)
 
 
-@attrs(frozen=True, slots=True)
+@attrs(frozen=True, slots=True, cache_hash=True)
 class _DisjointHasSpanIndex(HasSpanIndex[T]):
     """A ``HasSpanIndex`` where all member spans are guaranteed to be disjoint (non-overlapping)."""
 
@@ -235,7 +237,7 @@ class _DisjointHasSpanIndex(HasSpanIndex[T]):
         return None
 
 
-@attrs(frozen=True, slots=True)
+@attrs(frozen=True, slots=True, cache_hash=True)
 class _OverLappingHasSpanIndex(HasSpanIndex[T]):
     """
     An implementation of ``HasSpanIndex`` for items whose spans may overlap.

@@ -162,7 +162,7 @@ class CharSource(metaclass=ABCMeta):
         )
 
 
-@attrs(slots=True, frozen=True, repr=False)
+@attrs(slots=True, frozen=True, cache_hash=True, repr=False)
 class _StringCharSource(CharSource):
     _string = attrib_instance_of(str)
 
@@ -180,7 +180,7 @@ class _StringCharSource(CharSource):
         return f"_StringCharSource({s})"
 
 
-@attrs(slots=True, frozen=True)
+@attrs(slots=True, frozen=True, cache_hash=True)
 class _FileCharSource(CharSource):
     _path = attrib_instance_of(Path)
 
@@ -191,7 +191,7 @@ class _FileCharSource(CharSource):
         return os.path.getsize(self._path) == 0
 
 
-@attrs(slots=True, frozen=True, auto_attribs=True)
+@attrs(slots=True, frozen=True, cache_hash=True, auto_attribs=True)
 class _CharSourceWrappingByteSource(CharSource):
     _wrapped_source: "ByteSource"
     _encoding: str
@@ -200,7 +200,7 @@ class _CharSourceWrappingByteSource(CharSource):
         return io.TextIOWrapper(self._wrapped_source.open(), encoding=self._encoding)
 
 
-@attrs(slots=True, frozen=True)
+@attrs(slots=True, frozen=True, cache_hash=True)
 class _GZipFileSource(CharSource):
     _path: Path = attrib_instance_of(Path)
     _encoding: str = attrib_instance_of(str)
@@ -214,7 +214,7 @@ class _GZipFileSource(CharSource):
         return len(data) == 0
 
 
-@attrs(slots=True, frozen=True)
+@attrs(slots=True, frozen=True, cache_hash=True)
 class _FileWithinTgzCharSource(CharSource):
     _tgz_path: Path = attrib_instance_of(Path)
     _path_within_tgz: str = attrib_instance_of(str)
@@ -354,7 +354,7 @@ class ByteSource(metaclass=ABCMeta):
             return _ByteSourceFromPathInZipFile(zip_file, path_within_zip)
 
 
-@attrs(slots=True, frozen=True)
+@attrs(slots=True, frozen=True, cache_hash=True)
 class _FileByteSource(ByteSource):
     _path = attrib_instance_of(Path)
 
@@ -365,7 +365,7 @@ class _FileByteSource(ByteSource):
         return os.path.getsize(self._path) == 0
 
 
-@attrs(slots=True, frozen=True)
+@attrs(slots=True, frozen=True, cache_hash=True)
 class _ByteSourceFromPathInZipFile(ByteSource):
     _zip_path = attrib_instance_of(Path)
     _path_within_zip = attrib_instance_of(str)
@@ -387,7 +387,7 @@ class _ByteSourceFromPathInZipFile(ByteSource):
         return ret  # type: ignore
 
 
-@attrs(slots=True, frozen=True)
+@attrs(slots=True, frozen=True, cache_hash=True)
 class _ByteSourceFromPathInOpenZipFile(ByteSource):
     _zip_file = attrib_instance_of(ZipFile)
     _path_within_zip = attrib_instance_of(str)
@@ -441,7 +441,7 @@ class ByteSink(metaclass=ABCMeta):
             out.write(data)
 
 
-@attrs(slots=True, frozen=True)
+@attrs(slots=True, frozen=True, cache_hash=True)
 class _NullCharSink(CharSink):
     """
     A `CharSink` which throws away anything sent to it.
@@ -562,7 +562,7 @@ class StringCharSink(CharSink):
         return StringFileLike()
 
 
-@attrs(slots=True, frozen=True)
+@attrs(slots=True, frozen=True, cache_hash=True)
 class _FileCharSink(CharSink):
     _path: Union[Path, str] = attrib_instance_of((Path, str))
 
@@ -570,7 +570,7 @@ class _FileCharSink(CharSink):
         return open(self._path, "w")
 
 
-@attrs(slots=True, frozen=True)
+@attrs(slots=True, frozen=True, cache_hash=True)
 class _FileInZipByteSink(ByteSink):
     _zip_path = attrib_instance_of(Path)
     _path_within_zip = attrib_instance_of(str)

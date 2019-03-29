@@ -22,7 +22,7 @@ DIV = "div"
 SPAN = "span"
 
 
-@attrs(frozen=True, slots=True)
+@attrs(frozen=True, slots=True, cache_hash=True)
 class AnnotatedSpan:
     """
     An HTML-like annotation applied to a span of offsets.
@@ -65,7 +65,7 @@ def to_end_tag(annotated_range: AnnotatedSpan) -> str:
     return f"</{annotated_range.label}>"
 
 
-@attrs(frozen=True, slots=True)
+@attrs(frozen=True, slots=True, cache_hash=True)
 class HTMLStyleAnnotationFormatter:
     def annotated_text(
         self,
@@ -144,7 +144,7 @@ class HTMLStyleAnnotationFormatter:
             # otherwise, we are in case (c) and we drop the annotation
         return ret
 
-    @attrs(frozen=True, slots=True)
+    @attrs(frozen=True, slots=True, cache_hash=True)
     class Tag:
         string: str = attrib_instance_of(str)
         is_start: bool = attrib_instance_of(bool)
