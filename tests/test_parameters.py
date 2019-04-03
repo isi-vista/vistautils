@@ -141,6 +141,10 @@ apple: \"%banana%\"
 banana: \"%pear%\"
 pear: \"raspberry/%hello%\"
 """
+    NESTED_INTERPOLATION = """key: \"%moo.nested_dict.meep%\"
+key2: \"%moo.nested_dict.lalala%\"
+key3: \"%moo.nested_dict%\"
+"""
 
     def test_interpolation(self):
         context = Parameters.from_mapping(yaml.load(self.WRITING_REFERENCE))
@@ -173,6 +177,23 @@ pear: \"raspberry/%hello%\"
                     ("apple", "raspberry/world"),
                     ("the_ultimate_fruit", "raspberry/world"),
                     # the actual pair ("hello", "world") should not be present
+                ]
+            ),
+        )
+        self.assertEqual(
+            loader._interpolate(
+                Parameters.from_mapping(yaml.load(self.NESTED_INTERPOLATION)), context
+            )._data,
+            immutabledict(
+                [
+                    ("key", 2),
+                    ("key2", "fooo"),
+                    (
+                        "key3",
+                        Parameters.from_mapping(
+                            {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]}
+                        ),
+                    ),
                 ]
             ),
         )

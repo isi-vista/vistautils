@@ -38,17 +38,22 @@ ParamType = TypeVar("ParamType")  # pylint:disable=invalid-name
 
 
 def _recursive_replace_matches(
-    candidate: str, pattern: Pattern[str], mapping: Mapping[str, str]
-) -> str:
+    candidate: Any, pattern: Pattern[str], mapping: Mapping[str, Any]
+) -> Any:
+    if not isinstance(candidate, str):
+        return candidate
     match = pattern.search(candidate)
     if not match:
         return candidate
     # TODO should have no knowledge of regex characters
     interp_match = match.group()[1:-1]
+    if not isinstance(mapping[interp_match], str):
+        return mapping[interp_match]
     # TODO should have no knowledge of regex characters
     return _recursive_replace_matches(
         candidate.replace(f"%{interp_match}%", mapping[interp_match]), pattern, mapping
     )
+    # TODO should be reusing the pattern
     # return _recursive_replace_matches(
     #     pattern.sub(mapping[interp_match], candidate), pattern, mapping
     # )
@@ -606,7 +611,7 @@ class Parameters:
         <number> <log_name> from <file>"
         """
         file_map_file = self.existing_file(param)
-        with open(file_map_file, "r") as inp:
+        with open(str(file_map_file), encoding="utf-8") as inp:
             ret_b: ImmutableDict.Builder[str, Path] = ImmutableDict.builder()
             for (line_num, line) in enumerate(inp):
                 try:
@@ -789,24 +794,50 @@ class YAMLParametersLoader:
     @staticmethod
     def _interpolate(to_interpolate: Parameters, context: Parameters) -> Parameters:
         # pylint:disable=protected-access
-        # def interpolate(key, raw_value) -> Any:
+
+        g = DiGraph()
+        g.add_nodes_from(to_interpolate._data.keys())
+        for key, val in to_interpolate._data.items():
+            if isinstance(val, str):
+                for interp_match in YAMLParametersLoader._INTERPOLATION_REGEX.findall(
+                    val
+                ):
+                    g.add_edge(key, interp_match)
+        # Since each edge points from a key to a dependency,
+        # the ordering must start from the leaves.
+        try:
+            ordering = tuple(reversed(tuple(topological_sort(g))))
+        except NetworkXUnfeasible:
+            raise ParameterError(
+                "A cycle was found when trying to interpolate parameters"
+            )
+
+        # Perform the interpolation in-place.
+        interpolation = dict(to_interpolate._data)
+
+        # def interpolate(key_: str, raw_value: Any, interpolation_mapping: Mapping) -> Any:
         #     def lookup_interpolation(interpolation_key: Match) -> str:
+        #         match = interpolation_key.group()[1:-1]
+        #         if match in interpolation_mapping:
+        #             return interpolation_mapping[match]
         #         try:
         #             # we know it is safe to strip off the edge characters because they must
         #             # be the wrapping '%'s
-        #             return context.string(interpolation_key.group()[1:-1])
+        #             return context.string(match)
         #         except ParameterError:
         #             raise ParameterError(
         #                 "Exception while interpolating parameter "
-        #                 + key
+        #                 + key_
         #                 + " with raw value "
         #                 + raw_value
         #             )
         #
         #     if isinstance(raw_value, str):
-        #         return YAMLParametersLoader._INTERPOLATION_REGEX.sub(
-        #             lookup_interpolation, raw_value
-        #         )
+        #         # return YAMLParametersLoader._INTERPOLATION_REGEX.sub(
+        #         #     lookup_interpolation, raw_value
+        #         # )
+        #         return _recursive_replace_matches(
+        #         raw_value, YAMLParametersLoader._INTERPOLATION_REGEX, interpolation_mapping)
         #     elif isinstance(raw_value, Parameters):
         #         # TODO: need topological sort. Issue #258
         #         return YAMLParametersLoader._interpolate(raw_value, context)
@@ -816,33 +847,24 @@ class YAMLParametersLoader:
         # return Parameters.from_mapping(
         #     {key: interpolate(key, val) for (key, val) in to_interpolate._data.items()}
         # )
-        g = DiGraph()
-        g.add_nodes_from(to_interpolate._data.keys())
-        for key, val in to_interpolate._data.items():
-            for interp_match in YAMLParametersLoader._INTERPOLATION_REGEX.findall(val):
-                g.add_edge(key, interp_match)
-        # Since each edge points from a key to a dependency,
-        # the ordering must start from the leaves.
-        try:
-            ordering = tuple(reversed(tuple(topological_sort(g))))
-        except NetworkXUnfeasible:
-            raise ParameterError(
-                "A cycle was found when trying to interpolate parameters"
-            )
-        # Perform the interpolation in-place.
-        interpolation = dict(to_interpolate._data)
         for start in ordering:
             if start in interpolation:
                 end = interpolation[start]
-            elif start in context._data:
-                end = context._data[start]
             else:
-                raise ParameterError(
-                    f"The key '{start}' doesn't exist in the parameters."
+                try:
+                    end = context._private_get(start)
+                except ParameterError:
+                    raise ParameterError(
+                        f"The key '{start}' doesn't exist in the parameters."
+                    )
+            if isinstance(end, str):
+                replaced = _recursive_replace_matches(
+                    end, YAMLParametersLoader._INTERPOLATION_REGEX, interpolation
                 )
-            replaced = _recursive_replace_matches(
-                end, YAMLParametersLoader._INTERPOLATION_REGEX, interpolation
-            )
+            elif isinstance(end, Parameters):
+                replaced = YAMLParametersLoader._interpolate(end, context)
+            else:
+                replaced = end
             interpolation[start] = replaced
         return Parameters.from_mapping(
             {key: interpolation[key] for key in to_interpolate._data}
