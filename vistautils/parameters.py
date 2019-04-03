@@ -7,8 +7,8 @@ from typing import (
     Any,
     List,
     Mapping,
-    Match,
     Optional,
+    Pattern,
     Sequence,
     Type,
     TypeVar,
@@ -17,6 +17,7 @@ from typing import (
 )
 
 import yaml
+from networkx import DiGraph, topological_sort, NetworkXUnfeasible
 from attr import attrs
 from immutablecollections import ImmutableDict
 
@@ -34,6 +35,23 @@ class ParameterError(Exception):
 
 
 ParamType = TypeVar("ParamType")  # pylint:disable=invalid-name
+
+
+def _recursive_replace_matches(
+    candidate: str, pattern: Pattern[str], mapping: Mapping[str, str]
+) -> str:
+    match = pattern.search(candidate)
+    if not match:
+        return candidate
+    # TODO should have no knowledge of regex characters
+    interp_match = match.group()[1:-1]
+    # TODO should have no knowledge of regex characters
+    return _recursive_replace_matches(
+        candidate.replace(f"%{interp_match}%", mapping[interp_match]), pattern, mapping
+    )
+    # return _recursive_replace_matches(
+    #     pattern.sub(mapping[interp_match], candidate), pattern, mapping
+    # )
 
 
 @attrs(frozen=True, slots=True)
@@ -78,7 +96,7 @@ class Parameters:
         Convert a dictionary of dictionaries into a `Parameter`s
 
         The top-level dictionary becomes the top-level namespace.  Each mapping-valued parameter
-        becomes a namepace.
+        becomes a namespace.
         """
         check_isinstance(mapping, Mapping)
         ret: ImmutableDict.Builder[str, Any] = ImmutableDict.builder()
@@ -691,8 +709,7 @@ class YAMLParametersLoader:
 
     * any parameters containing strings surrounded by `%` will be interpolated by replacing that
     string (and the `%`s) with the value of the parameter.  Failed interpolations will result
-    in a `ParameterError`.  You cannot currently interpolate from parameters in the same file,
-    but this capability will be added in the future.
+    in a `ParameterError`.
 
     See unit tests in `test_parameters` for examples.
     """
@@ -767,41 +784,72 @@ class YAMLParametersLoader:
             if isinstance(val, Mapping):
                 YAMLParametersLoader._check_all_keys_strings(val)
 
-    _INTERPOLATION_REGEX = re.compile("%((\\w|\\.)+)%")
+    _INTERPOLATION_REGEX = re.compile(r"%([\w\.]+)%")
 
     @staticmethod
     def _interpolate(to_interpolate: Parameters, context: Parameters) -> Parameters:
         # pylint:disable=protected-access
-        def interpolate(key, raw_value) -> Any:
-            def lookup_interpolation(interpolation_key: Match) -> str:
-                try:
-                    # we know it is safe to strip off the edge characters because they must
-                    # be the wrapping '%'s
-                    return context.string(interpolation_key.group()[1:-1])
-                except ParameterError:
-                    raise ParameterError(
-                        "Exception while interpolating parameter "
-                        + key
-                        + " with raw value "
-                        + raw_value
-                    )
-
-            if isinstance(raw_value, str):
-                return YAMLParametersLoader._INTERPOLATION_REGEX.sub(
-                    lookup_interpolation, raw_value
-                )
-            elif isinstance(raw_value, Parameters):
-                # TODO: need topological sort. Issue #258
-                return YAMLParametersLoader._interpolate(raw_value, context)
+        # def interpolate(key, raw_value) -> Any:
+        #     def lookup_interpolation(interpolation_key: Match) -> str:
+        #         try:
+        #             # we know it is safe to strip off the edge characters because they must
+        #             # be the wrapping '%'s
+        #             return context.string(interpolation_key.group()[1:-1])
+        #         except ParameterError:
+        #             raise ParameterError(
+        #                 "Exception while interpolating parameter "
+        #                 + key
+        #                 + " with raw value "
+        #                 + raw_value
+        #             )
+        #
+        #     if isinstance(raw_value, str):
+        #         return YAMLParametersLoader._INTERPOLATION_REGEX.sub(
+        #             lookup_interpolation, raw_value
+        #         )
+        #     elif isinstance(raw_value, Parameters):
+        #         # TODO: need topological sort. Issue #258
+        #         return YAMLParametersLoader._interpolate(raw_value, context)
+        #     else:
+        #         return raw_value
+        #
+        # return Parameters.from_mapping(
+        #     {key: interpolate(key, val) for (key, val) in to_interpolate._data.items()}
+        # )
+        g = DiGraph()
+        g.add_nodes_from(to_interpolate._data.keys())
+        for key, val in to_interpolate._data.items():
+            for interp_match in YAMLParametersLoader._INTERPOLATION_REGEX.findall(val):
+                g.add_edge(key, interp_match)
+        # Since each edge points from a key to a dependency,
+        # the ordering must start from the leaves.
+        try:
+            ordering = tuple(reversed(tuple(topological_sort(g))))
+        except NetworkXUnfeasible:
+            raise ParameterError(
+                "A cycle was found when trying to interpolate parameters"
+            )
+        # Perform the interpolation in-place.
+        interpolation = dict(to_interpolate._data)
+        for start in ordering:
+            if start in interpolation:
+                end = interpolation[start]
+            elif start in context._data:
+                end = context._data[start]
             else:
-                return raw_value
-
+                raise ParameterError(
+                    f"The key '{start}' doesn't exist in the parameters."
+                )
+            replaced = _recursive_replace_matches(
+                end, YAMLParametersLoader._INTERPOLATION_REGEX, interpolation
+            )
+            interpolation[start] = replaced
         return Parameters.from_mapping(
-            {key: interpolate(key, val) for (key, val) in to_interpolate._data.items()}
+            {key: interpolation[key] for key in to_interpolate._data}
         )
 
     def _unify(self, old: Parameters, new: Parameters, namespace="") -> Parameters:
-        #  pylint:disable=protected-access
+        # pylint:disable=protected-access
         ret = dict()
         for (key, old_val) in old._data.items():
             if key in new:

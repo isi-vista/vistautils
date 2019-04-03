@@ -1,10 +1,17 @@
 import os
 import shutil
 import tempfile
+import yaml
 from pathlib import Path
 from unittest import TestCase
 
-from vistautils.parameters import Parameters, YAMLParametersWriter, ParameterError
+from immutablecollections import immutabledict
+from vistautils.parameters import (
+    Parameters,
+    YAMLParametersWriter,
+    ParameterError,
+    YAMLParametersLoader,
+)
 from vistautils.io_utils import CharSink
 from vistautils.range import Range
 
@@ -123,3 +130,49 @@ moo:
             "For parameter test_float, expected a float in the range \\(0.0..1.0\\) but got 5.5",
         ):
             params.floating_point("test_float", valid_range=Range.open(0.0, 1.0))
+
+    MULTIPLE_INTERPOLATION_REFERENCE = """the_ultimate_fruit: \"%apple%\"
+apple: \"%banana%\"
+banana: \"%pear%\"
+pear: raspberry
+"""
+    MULTIPLE_INTERPOLATION_REFERENCE_NEEDING_CONTEXT = """the_ultimate_fruit: \"%apple%\"
+apple: \"%banana%\"
+banana: \"%pear%\"
+pear: \"raspberry/%hello%\"
+"""
+
+    def test_interpolation(self):
+        context = Parameters.from_mapping(yaml.load(self.WRITING_REFERENCE))
+        loader = YAMLParametersLoader()
+        self.assertEqual(
+            loader._interpolate(
+                Parameters.from_mapping(yaml.load(self.MULTIPLE_INTERPOLATION_REFERENCE)),
+                context,
+            )._data,
+            immutabledict(
+                [
+                    ("pear", "raspberry"),
+                    ("banana", "raspberry"),
+                    ("apple", "raspberry"),
+                    ("the_ultimate_fruit", "raspberry"),
+                ]
+            ),
+        )
+        self.assertEqual(
+            loader._interpolate(
+                Parameters.from_mapping(
+                    yaml.load(self.MULTIPLE_INTERPOLATION_REFERENCE_NEEDING_CONTEXT)
+                ),
+                context,
+            )._data,
+            immutabledict(
+                [
+                    ("pear", "raspberry/world"),
+                    ("banana", "raspberry/world"),
+                    ("apple", "raspberry/world"),
+                    ("the_ultimate_fruit", "raspberry/world"),
+                    # the actual pair ("hello", "world") should not be present
+                ]
+            ),
+        )
