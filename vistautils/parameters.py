@@ -17,7 +17,6 @@ from typing import (
 )
 
 import yaml
-from networkx import DiGraph, topological_sort, NetworkXUnfeasible
 from attr import attrs
 from immutablecollections import ImmutableDict
 
@@ -26,6 +25,7 @@ from vistautils.io_utils import CharSink, is_empty_directory
 from vistautils.misc_utils import eval_in_context_of_modules
 from vistautils.preconditions import check_arg, check_isinstance
 from vistautils.range import Range
+from vistautils._graph import Digraph, GraphAlgoUnfeasible
 
 _logger = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
@@ -219,7 +219,7 @@ class Parameters:
         Gets a path for an existing file, if specified.
 
         Interprets the string-valued parameter `param` as a file path. Returns `None`
-        if no parmeter by that name is present.  Throws a `ParameterError`
+        if no parameter by that name is present.  Throws a `ParameterError`
         if the path does not exist.
         """
         if param in self:
@@ -794,20 +794,21 @@ class YAMLParametersLoader:
     @staticmethod
     def _interpolate(to_interpolate: Parameters, context: Parameters) -> Parameters:
         # pylint:disable=protected-access
-
-        g = DiGraph()
-        g.add_nodes_from(to_interpolate._data.keys())
+        nodes = list(to_interpolate._data.keys())
+        edges = list()
         for key, val in to_interpolate._data.items():
             if isinstance(val, str):
                 for interp_match in YAMLParametersLoader._INTERPOLATION_REGEX.findall(
                     val
                 ):
-                    g.add_edge(key, interp_match)
-        # Since each edge points from a key to a dependency,
-        # the ordering must start from the leaves.
+                    nodes.append(interp_match)
+                    edges.append((key, interp_match))
+        g = Digraph(nodes=nodes, edges=edges)
+        # Since each edge has been created to point from a key to a dependency,
+        # this is to make the ordering start from the leaves.
         try:
-            ordering = tuple(reversed(tuple(topological_sort(g))))
-        except NetworkXUnfeasible:
+            ordering = tuple(reversed(tuple(g.topological_sort())))
+        except GraphAlgoUnfeasible:
             raise ParameterError(
                 "A cycle was found when trying to interpolate parameters"
             )
