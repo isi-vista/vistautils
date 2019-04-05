@@ -28,12 +28,14 @@ def validate_edges(
         )
 
 
+# mypy is confused
 def _to_immutableset(items: Any) -> ImmutableSet[str]:
     if not items:
         return immutableset()
     return immutableset(items)
 
 
+# mypy is confused
 def _to_immutablesetmultidict(items: Any) -> ImmutableSetMultiDict[str, str]:
     if not items:
         return immutablesetmultidict()
@@ -42,8 +44,17 @@ def _to_immutablesetmultidict(items: Any) -> ImmutableSetMultiDict[str, str]:
 
 @attrs(frozen=True, slots=True)
 class Digraph:
+    """A directed graph implementation.
+
+    Requirements:
+
+    - The edges are expected to be in successor form: for each key node, its value nodes are all
+      being pointed to. Worded another way, each edge must be in (node_from, node_to)
+      form. `predecessors` is the inverse.
+    - The nodes that participate in the edges must appear in the master node list.
+    """
+
     nodes: ImmutableSet[str] = attrib(converter=_to_immutableset, default=immutableset())
-    # edges are stored as successors in adjacency list format
     edges: ImmutableSetMultiDict[str, str] = attrib(
         converter=_to_immutablesetmultidict,
         default=immutablesetmultidict(),
@@ -55,6 +66,10 @@ class Digraph:
         return InDegreeView(self)
 
     def topological_sort(self) -> Iterator[str]:
+        """Algorithm adapted from NetworkX
+
+        https://github.com/networkx/networkx/blob/39a1c6f5471cd3adf476a3bd5355dcaa2e8a6160/networkx/algorithms/dag.py#L121
+        """
         indegree_map = {v: d for v, d in self.in_degree() if d > 0}
         zero_indegree = [v for v, d in self.in_degree() if d == 0]
 

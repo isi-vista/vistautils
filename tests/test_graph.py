@@ -1,10 +1,13 @@
 from unittest import TestCase
 
-from immutablecollections import immutablesetmultidict
+from immutablecollections import immutableset, immutablesetmultidict
 from vistautils._graph import Digraph
 
 
 class TestGraph(TestCase):
+    # This graph is taken from
+    # https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Directed_acyclic_graph_2.svg/360px-Directed_acyclic_graph_2.svg.png
+    # with the addition of a node "1" not participating in any edges.
     GRAPH = Digraph(
         nodes=("1", "2", "3", "5", "7", "8", "9", "10", "11"),
         edges=(
@@ -38,16 +41,15 @@ class TestGraph(TestCase):
             ),
         )
 
+        with self.assertRaisesRegex(
+            RuntimeError, f"These nodes are not in the master list: {immutableset(['3'])}"
+        ):
+            Digraph(nodes=("1", "2"), edges=(("1", "2"), ("1", "3")))
+
     def test_in_degree(self) -> None:
         self.assertEqual(self.GRAPH.in_degree()["1"], 0)
         self.assertEqual(self.GRAPH.in_degree()["2"], 1)
-        self.assertEqual(self.GRAPH.in_degree()["3"], 0)
-        self.assertEqual(self.GRAPH.in_degree()["5"], 0)
-        self.assertEqual(self.GRAPH.in_degree()["7"], 0)
         self.assertEqual(self.GRAPH.in_degree()["8"], 2)
-        self.assertEqual(self.GRAPH.in_degree()["9"], 2)
-        self.assertEqual(self.GRAPH.in_degree()["10"], 2)
-        self.assertEqual(self.GRAPH.in_degree()["11"], 2)
 
         self.assertEqual(
             dict(self.GRAPH.in_degree()),

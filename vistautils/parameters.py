@@ -37,28 +37,6 @@ class ParameterError(Exception):
 ParamType = TypeVar("ParamType")  # pylint:disable=invalid-name
 
 
-def _recursive_replace_matches(
-    candidate: Any, pattern: Pattern[str], mapping: Mapping[str, Any]
-) -> Any:
-    if not isinstance(candidate, str):
-        return candidate
-    match = pattern.search(candidate)
-    if not match:
-        return candidate
-    # TODO should have no knowledge of regex characters
-    interp_match = match.group()[1:-1]
-    if not isinstance(mapping[interp_match], str):
-        return mapping[interp_match]
-    # TODO should have no knowledge of regex characters
-    return _recursive_replace_matches(
-        candidate.replace(f"%{interp_match}%", mapping[interp_match]), pattern, mapping
-    )
-    # TODO should be reusing the pattern
-    # return _recursive_replace_matches(
-    #     pattern.sub(mapping[interp_match], candidate), pattern, mapping
-    # )
-
-
 @attrs(frozen=True, slots=True)
 class Parameters:
     """
@@ -793,6 +771,17 @@ class YAMLParametersLoader:
 
     @staticmethod
     def _interpolate(to_interpolate: Parameters, context: Parameters) -> Parameters:
+        """Perform interpolation within arbitrarily nested Parameters, looking up values
+        in a context if necessary.
+
+        Limitations:
+        - There cannot be interpolation in keys.
+        """
+        # In order to perform arbitrary interpolation, we perform topological sort on a graph where
+        # the nodes are parameter keys, and edges point from those keys to each interpolation group
+        # in that key's value. For example, the parameter entry `foo: %bar%/projects/%meep.baz%`
+        # would give the edges (foo, bar) and (foo, meep.baz).
+        #
         # pylint:disable=protected-access
         nodes = list(to_interpolate._data.keys())
         edges = list()
@@ -804,71 +793,41 @@ class YAMLParametersLoader:
                     nodes.append(interp_match)
                     edges.append((key, interp_match))
         g = Digraph(nodes=nodes, edges=edges)
-        # Since each edge has been created to point from a key to a dependency,
-        # this is to make the ordering start from the leaves.
+        # Since each edge has been created to point from a key to a dependency, this is to make the
+        # ordering start from the leaves.
         try:
             ordering = tuple(reversed(tuple(g.topological_sort())))
         except GraphAlgoUnfeasible:
             raise ParameterError(
-                "A cycle was found when trying to interpolate parameters"
+                "An impossible dependency was found when trying to interpolate parameters"
             )
 
         # Perform the interpolation in-place.
-        interpolation = dict(to_interpolate._data)
+        interpolation_mapping = dict(to_interpolate._data)
 
-        # def interpolate(key_: str, raw_value: Any, interpolation_mapping: Mapping) -> Any:
-        #     def lookup_interpolation(interpolation_key: Match) -> str:
-        #         match = interpolation_key.group()[1:-1]
-        #         if match in interpolation_mapping:
-        #             return interpolation_mapping[match]
-        #         try:
-        #             # we know it is safe to strip off the edge characters because they must
-        #             # be the wrapping '%'s
-        #             return context.string(match)
-        #         except ParameterError:
-        #             raise ParameterError(
-        #                 "Exception while interpolating parameter "
-        #                 + key_
-        #                 + " with raw value "
-        #                 + raw_value
-        #             )
-        #
-        #     if isinstance(raw_value, str):
-        #         # return YAMLParametersLoader._INTERPOLATION_REGEX.sub(
-        #         #     lookup_interpolation, raw_value
-        #         # )
-        #         return _recursive_replace_matches(
-        #         raw_value, YAMLParametersLoader._INTERPOLATION_REGEX, interpolation_mapping)
-        #     elif isinstance(raw_value, Parameters):
-        #         # TODO: need topological sort. Issue #258
-        #         return YAMLParametersLoader._interpolate(raw_value, context)
-        #     else:
-        #         return raw_value
-        #
-        # return Parameters.from_mapping(
-        #     {key: interpolate(key, val) for (key, val) in to_interpolate._data.items()}
-        # )
-        for start in ordering:
-            if start in interpolation:
-                end = interpolation[start]
+        for start_node in ordering:
+            if start_node in interpolation_mapping:
+                end_node = interpolation_mapping[start_node]
             else:
                 try:
-                    end = context._private_get(start)
+                    end_node = context._private_get(start_node)
                 except ParameterError:
                     raise ParameterError(
-                        f"The key '{start}' doesn't exist in the parameters."
+                        f"The key '{start_node}' doesn't exist in the parameters."
                     )
-            if isinstance(end, str):
-                replaced = _recursive_replace_matches(
-                    end, YAMLParametersLoader._INTERPOLATION_REGEX, interpolation
+            if isinstance(end_node, str):
+                replaced_end_node = _recursively_replace_matches(
+                    end_node,
+                    YAMLParametersLoader._INTERPOLATION_REGEX,
+                    interpolation_mapping,
                 )
-            elif isinstance(end, Parameters):
-                replaced = YAMLParametersLoader._interpolate(end, context)
+            elif isinstance(end_node, Parameters):
+                replaced_end_node = YAMLParametersLoader._interpolate(end_node, context)
             else:
-                replaced = end
-            interpolation[start] = replaced
+                replaced_end_node = end_node
+            interpolation_mapping[start_node] = replaced_end_node
         return Parameters.from_mapping(
-            {key: interpolation[key] for key in to_interpolate._data}
+            {key: interpolation_mapping[key] for key in to_interpolate._data}
         )
 
     def _unify(self, old: Parameters, new: Parameters, namespace="") -> Parameters:
@@ -923,3 +882,25 @@ class YAMLParametersWriter:
                 indent=4,
                 width=78,
             )
+
+
+def _recursively_replace_matches(
+    candidate: Any, pattern: Pattern[str], mapping: Mapping[str, Any]
+) -> Any:
+    """Replace as many groups for interpolation in a string as possible.
+
+    For a candidate that may need to be interpolated,
+    - If we've reached something that isn't a string, we're done.
+    - If the interpolation pattern doesn't match, we're done.
+    """
+    if not isinstance(candidate, str):
+        return candidate
+    match = pattern.search(candidate)
+    if not match:
+        return candidate
+    interp_match = match.group()[1:-1]
+    if not isinstance(mapping[interp_match], str):
+        return mapping[interp_match]
+    return _recursively_replace_matches(
+        candidate.replace(f"%{interp_match}%", mapping[interp_match]), pattern, mapping
+    )
