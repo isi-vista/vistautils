@@ -1,3 +1,7 @@
+"""This file contains a minimal graph implementation meant only to support
+`vistautils.parameters.Parameters` and should not be used for anything else.
+"""
+
 from typing import Any, Iterator, Tuple
 
 from attr import attrib, attrs
@@ -75,13 +79,8 @@ class Digraph:
 
         while zero_indegree:
             node = zero_indegree.pop()
-            if node not in self.nodes:
-                raise RuntimeError("Graph changed during iteration")
             for child in self.edges[node]:
-                try:
-                    indegree_map[child] -= 1
-                except KeyError:
-                    raise RuntimeError("Graph changed during iteration")
+                indegree_map[child] -= 1
                 if indegree_map[child] == 0:
                     zero_indegree.append(child)
                     del indegree_map[child]
