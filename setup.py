@@ -21,7 +21,7 @@ setup(name='vistautils',
           'immutablecollections>=0.1.2',
           'attrs>=18.2.0',
           'pyyaml>=3.2',
-          'typing_extensions'
+          'typing_extensions',
       ],
       package_data={'vistautils': ['py.typed']},
       scripts=["scripts/join_key_value_stores.py",

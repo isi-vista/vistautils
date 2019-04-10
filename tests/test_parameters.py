@@ -1,12 +1,20 @@
 import os
 import shutil
 import tempfile
+import yaml
 from pathlib import Path
 from unittest import TestCase
 
-from vistautils.parameters import Parameters, YAMLParametersWriter, ParameterError
+from immutablecollections import immutabledict
+from vistautils.parameters import (
+    Parameters,
+    YAMLParametersWriter,
+    ParameterError,
+    YAMLParametersLoader,
+)
 from vistautils.io_utils import CharSink
 from vistautils.range import Range
+from vistautils._graph import ParameterInterpolationError
 
 
 class TestParameters(TestCase):
@@ -123,3 +131,79 @@ moo:
             "For parameter test_float, expected a float in the range \\(0.0..1.0\\) but got 5.5",
         ):
             params.floating_point("test_float", valid_range=Range.open(0.0, 1.0))
+
+    MULTIPLE_INTERPOLATION_REFERENCE = """the_ultimate_fruit: \"%apple%\"
+apple: \"%banana%\"
+banana: \"%pear%\"
+pear: raspberry
+"""
+    MULTIPLE_INTERPOLATION_REFERENCE_NEEDING_CONTEXT = """the_ultimate_fruit: \"%apple%\"
+apple: \"%banana%\"
+banana: \"%pear%\"
+pear: \"raspberry/%hello%\"
+"""
+    NESTED_INTERPOLATION = """key: \"%moo.nested_dict.meep%\"
+key2: \"%moo.nested_dict.lalala%\"
+key3: \"%moo.nested_dict%\"
+"""
+
+    def test_interpolation(self):
+        context = Parameters.from_mapping(yaml.load(self.WRITING_REFERENCE))
+        loader = YAMLParametersLoader()
+        self.assertEqual(
+            loader._interpolate(
+                Parameters.from_mapping(yaml.load(self.MULTIPLE_INTERPOLATION_REFERENCE)),
+                context,
+            )._data,
+            immutabledict(
+                [
+                    ("pear", "raspberry"),
+                    ("banana", "raspberry"),
+                    ("apple", "raspberry"),
+                    ("the_ultimate_fruit", "raspberry"),
+                ]
+            ),
+        )
+        self.assertEqual(
+            loader._interpolate(
+                Parameters.from_mapping(
+                    yaml.load(self.MULTIPLE_INTERPOLATION_REFERENCE_NEEDING_CONTEXT)
+                ),
+                context,
+            )._data,
+            immutabledict(
+                [
+                    ("pear", "raspberry/world"),
+                    ("banana", "raspberry/world"),
+                    ("apple", "raspberry/world"),
+                    ("the_ultimate_fruit", "raspberry/world"),
+                    # the actual pair ("hello", "world") should not be present
+                ]
+            ),
+        )
+        self.assertEqual(
+            loader._interpolate(
+                Parameters.from_mapping(yaml.load(self.NESTED_INTERPOLATION)), context
+            )._data,
+            immutabledict(
+                [
+                    ("key", 2),
+                    ("key2", "fooo"),
+                    (
+                        "key3",
+                        Parameters.from_mapping(
+                            {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]}
+                        ),
+                    ),
+                ]
+            ),
+        )
+
+        with self.assertRaisesRegex(
+            ParameterInterpolationError,
+            r"These interpolated parameters form at least one graph cycle that must be fixed: \('b', 'c'\)",
+        ):
+            loader._interpolate(
+                Parameters.from_mapping(yaml.load('a: "%b%"\nb: "%c%"\nc: "%b%"')),
+                context,
+            )
