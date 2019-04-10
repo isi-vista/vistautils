@@ -14,6 +14,7 @@ from vistautils.parameters import (
 )
 from vistautils.io_utils import CharSink
 from vistautils.range import Range
+from vistautils._graph import ParameterInterpolationError
 
 
 class TestParameters(TestCase):
@@ -197,3 +198,12 @@ key3: \"%moo.nested_dict%\"
                 ]
             ),
         )
+
+        with self.assertRaisesRegex(
+            ParameterInterpolationError,
+            r"These interpolated parameters form at least one graph cycle that must be fixed: \('b', 'c'\)",
+        ):
+            loader._interpolate(
+                Parameters.from_mapping(yaml.load('a: "%b%"\nb: "%c%"\nc: "%b%"')),
+                context,
+            )

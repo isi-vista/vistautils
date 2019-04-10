@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from immutablecollections import immutableset, immutablesetmultidict
-from vistautils._graph import Digraph
+from vistautils._graph import Digraph, ParameterInterpolationError
 
 
 class TestGraph(TestCase):
@@ -55,3 +55,20 @@ class TestGraph(TestCase):
             dict(self.GRAPH.in_degree()),
             {"1": 0, "2": 1, "3": 0, "5": 0, "7": 0, "8": 2, "9": 2, "10": 2, "11": 2},
         )
+
+    def test_topological_sort(self) -> None:
+        # TODO How to test that a sequence is a valid topological sort when >1 solution is possible?
+
+        g1 = Digraph(nodes=("a", "b", "c"), edges=(("a", "b"), ("b", "c"), ("c", "b")))
+        g2 = Digraph(nodes=("a", "b", "c"), edges=(("a", "b"), ("b", "c"), ("c", "a")))
+
+        with self.assertRaisesRegex(
+            ParameterInterpolationError,
+            r"These interpolated parameters form at least one graph cycle that must be fixed: \('b', 'c'\)",
+        ):
+            tuple(g1.topological_sort())
+        with self.assertRaisesRegex(
+            ParameterInterpolationError,
+            r"These interpolated parameters form at least one graph cycle that must be fixed: \('a', 'b', 'c'\)",
+        ):
+            tuple(g2.topological_sort())

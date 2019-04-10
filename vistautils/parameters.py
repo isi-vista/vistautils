@@ -25,7 +25,7 @@ from vistautils.io_utils import CharSink, is_empty_directory
 from vistautils.misc_utils import eval_in_context_of_modules
 from vistautils.preconditions import check_arg, check_isinstance
 from vistautils.range import Range
-from vistautils._graph import Digraph, GraphAlgoUnfeasible
+from vistautils._graph import Digraph
 
 _logger = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
@@ -795,17 +795,12 @@ class YAMLParametersLoader:
         g = Digraph(nodes=nodes, edges=edges)
         # Since each edge has been created to point from a key to a dependency, this is to make the
         # ordering start from the leaves.
-        try:
-            ordering = tuple(reversed(tuple(g.topological_sort())))
-        except GraphAlgoUnfeasible:
-            raise ParameterError(
-                "An impossible dependency was found when trying to interpolate parameters"
-            )
+        interpolation_ordering = tuple(reversed(tuple(g.topological_sort())))
 
         # Perform the interpolation in-place.
         interpolation_mapping = dict(to_interpolate._data)
 
-        for start_node in ordering:
+        for start_node in interpolation_ordering:
             if start_node in interpolation_mapping:
                 end_node = interpolation_mapping[start_node]
             else:

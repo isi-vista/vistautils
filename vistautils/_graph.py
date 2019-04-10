@@ -14,7 +14,7 @@ from immutablecollections import (
 )
 
 
-class GraphAlgoUnfeasible(Exception):
+class ParameterInterpolationError(Exception):
     pass
 
 
@@ -87,9 +87,12 @@ class Digraph:
 
             yield node
 
+        # Because this method is only for supporting parameter interpolation, provide a
+        # user-friendly error message here to avoid needing access to `indegree_map` externally.
         if indegree_map:
-            raise GraphAlgoUnfeasible(
-                "Graph contains a cycle or graph changed during iteration"
+            raise ParameterInterpolationError(
+                "These interpolated parameters form at least one graph cycle "
+                f"that must be fixed: {tuple(indegree_map.keys())}"
             )
 
     @predecessors.default
