@@ -7,12 +7,11 @@ sortedcontainers==2.1.0
 
 # extras for development
 black==18.9b0
-nose
-nose-exclude
-coverage
 pylint==2.3.1
 flake8==3.7.7
 mypy==0.701
+pytest==4.4.1
+pytest-cov==2.7.1
 towncrier
 sphinx
 sphinx-autodoc-typehints
