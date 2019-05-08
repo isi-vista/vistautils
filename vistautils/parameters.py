@@ -718,7 +718,7 @@ class YAMLParametersLoader:
                 root_path = f.parent
 
             with open(f, "r") as ymlfile:
-                raw_yaml = yaml.load(ymlfile)
+                raw_yaml = yaml.safe_load(ymlfile)
                 self._validate(raw_yaml)
             cur_context = context
 

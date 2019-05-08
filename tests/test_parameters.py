@@ -148,11 +148,13 @@ key3: \"%moo.nested_dict%\"
 """
 
     def test_interpolation(self):
-        context = Parameters.from_mapping(yaml.load(self.WRITING_REFERENCE))
+        context = Parameters.from_mapping(yaml.safe_load(self.WRITING_REFERENCE))
         loader = YAMLParametersLoader()
         self.assertEqual(
             loader._interpolate(
-                Parameters.from_mapping(yaml.load(self.MULTIPLE_INTERPOLATION_REFERENCE)),
+                Parameters.from_mapping(
+                    yaml.safe_load(self.MULTIPLE_INTERPOLATION_REFERENCE)
+                ),
                 context,
             )._data,
             immutabledict(
@@ -167,7 +169,7 @@ key3: \"%moo.nested_dict%\"
         self.assertEqual(
             loader._interpolate(
                 Parameters.from_mapping(
-                    yaml.load(self.MULTIPLE_INTERPOLATION_REFERENCE_NEEDING_CONTEXT)
+                    yaml.safe_load(self.MULTIPLE_INTERPOLATION_REFERENCE_NEEDING_CONTEXT)
                 ),
                 context,
             )._data,
@@ -183,7 +185,8 @@ key3: \"%moo.nested_dict%\"
         )
         self.assertEqual(
             loader._interpolate(
-                Parameters.from_mapping(yaml.load(self.NESTED_INTERPOLATION)), context
+                Parameters.from_mapping(yaml.safe_load(self.NESTED_INTERPOLATION)),
+                context,
             )._data,
             immutabledict(
                 [
@@ -204,6 +207,6 @@ key3: \"%moo.nested_dict%\"
             r"These interpolated parameters form at least one graph cycle that must be fixed: \('b', 'c'\)",
         ):
             loader._interpolate(
-                Parameters.from_mapping(yaml.load('a: "%b%"\nb: "%c%"\nc: "%b%"')),
+                Parameters.from_mapping(yaml.safe_load('a: "%b%"\nb: "%c%"\nc: "%b%"')),
                 context,
             )

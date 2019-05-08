@@ -5,18 +5,12 @@ default:
 PYTHON=python3
 
 SHELL=bash
+SOURCE_DIR_NAME=vistautils
 
-# Set NOSE_ARGS to affect all nose commands
-# Set NOSE_COVERAGE_ARGS to affect all nose commands with coverage
-NOSE:=nosetests --exe $(NOSE_ARGS)
-NOSE_COVERAGE_ARGS:=--with-coverage --cover-erase --cover-package=vistautils $(NOSE_COVERAGE_ARGS)
-NOSE_CORE:=$(NOSE) 
-NOSE_CORE_COVERAGE:=$(NOSE_CORE) $(NOSE_COVERAGE_ARGS)
-NOSE_ALL_COVERAGE:=$(NOSE) $(NOSE_COVERAGE_ARGS) --cover-inclusive
+PYLINT:=pylint $(SOURCE_DIR_NAME)
 
-PYLINT:=python3 -m pylint vistautils
+MYPY:=mypy $(MYPY_ARGS) $(SOURCE_DIR_NAME) tests
 
-MYPY:=mypy $(MYPY_ARGS) vistautils tests
 # Suppressed warnings:
 # Too many arguments, Unexpected keyword arguments: can't do static analysis on attrs __init__
 # Signature of "__getitem__": https://github.com/python/mypy/issues/4108
@@ -29,20 +23,13 @@ MYPY:=mypy $(MYPY_ARGS) vistautils tests
 #
 # we tee the output to a file and test if it is empty so that we can return an error exit code
 # if there are errors (for CI) while still displaying them to the user
-FILTERED_MYPY:=$(MYPY) | perl -ne 'print if !/(Too many arguments|Signature of "__getitem__"|Only concrete class|Unexpected keyword argument|mypy\/typeshed\/stdlib\/3\/builtins.pyi:39: note: "\w+" defined here|Module( '\''\w+'\'')? has no attribute|has no attribute "validator"|has no attribute "default"|SelfType" has no attribute)/' | tee ./.mypy_tmp && test ! -s ./.mypy_tmp  
+FILTERED_MYPY:=$(MYPY) | perl -ne 'print if !/(Too many arguments|Signature of "__getitem__"|Only concrete class|Unexpected keyword argument|mypy\/typeshed\/stdlib\/3\/builtins.pyi:39: note: "\w+" defined here|Module( '\''\w+'\'')? has no attribute|has no attribute "validator"|has no attribute "default"|SelfType" has no attribute)/' | tee ./.mypy_tmp && test ! -s ./.mypy_tmp
 
-# this is the standard ignore list plus ignores for hanging indents, pending figuring out how to auto-format them
-FLAKE8:=flake8
-FLAKE8_CMD:=$(FLAKE8) vistautils
-
-test: 
-	$(NOSE_CORE)
+test:
+	$(PYTHON) -m pytest tests
 
 coverage:
-	$(NOSE_CORE_COVERAGE)
-
-coverage-all:
-	$(NOSE_ALL_COVERAGE)
+	$(PYTHON) -m pytest --cov=$(SOURCE_DIR_NAME) tests
 
 lint:
 	$(PYLINT)
@@ -51,13 +38,13 @@ mypy:
 	$(FILTERED_MYPY)
 
 flake8:
-	$(FLAKE8_CMD)
+	flake8 $(SOURCE_DIR_NAME)
 
 black-fix:
-	black vistautils tests
+	black $(SOURCE_DIR_NAME) tests
 
 black-check:
-	black --check vistautils tests
+	black --check $(SOURCE_DIR_NAME) tests
 
 check: black-check lint mypy flake8
 
