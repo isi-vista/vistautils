@@ -1,17 +1,18 @@
 # core requirements
-attrs==18.2.0
-pyyaml==4.2b4
+attrs==19.1.0
+pyyaml==5.1
 immutablecollections==0.5.0
 typing_extensions  # for Protocol
+sortedcontainers==2.1.0
 
 # extras for development
 black==18.9b0
 nose
 nose-exclude
 coverage
-pylint==2.2.2
-flake8==3.5.0
-mypy==0.620
+pylint==2.3.1
+flake8==3.7.7
+mypy==0.701
 towncrier
 sphinx
 sphinx-autodoc-typehints
