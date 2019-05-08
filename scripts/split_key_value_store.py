@@ -18,7 +18,8 @@ The list of zip files created will be stored in "_slices.txt" in the output dire
 import sys
 from contextlib import ExitStack
 
-from vistautils.parameters import Parameters, YAMLParametersLoader
+from vistautils.parameters import Parameters
+from vistautils.parameters_only_entrypoint import parameters_only_entry_point
 from vistautils.io_utils import CharSink
 from vistautils.key_value import char_key_value_linear_source_from_params, KeyValueSink
 
@@ -41,4 +42,4 @@ def main(params: Parameters):
 
 
 if __name__ == '__main__':
-    main(YAMLParametersLoader().load(sys.argv[1]))
+    parameters_only_entry_point(main)

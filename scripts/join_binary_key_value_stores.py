@@ -16,7 +16,8 @@ char_key_value_sink_from_params for details.
 import sys
 from typing import Set
 
-from vistautils.parameters import Parameters, YAMLParametersLoader
+from vistautils.parameters import Parameters
+from vistautils.parameters_only_entrypoint import parameters_only_entry_point
 from vistautils.key_value import KeyValueSource, char_key_value_sink_from_params
 
 
@@ -36,4 +37,4 @@ def main(params: Parameters):
 
 
 if __name__ == '__main__':
-    main(YAMLParametersLoader().load(sys.argv[1]))
+    parameters_only_entry_point(main)
