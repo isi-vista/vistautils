@@ -12,8 +12,8 @@ import itertools
 from typing import Optional, List, Mapping, Collection, Iterable
 
 from attr import attrs, evolve, attrib
-from immutablecollections import immutabledict
 from attr.validators import instance_of
+from immutablecollections import immutabledict
 from vistautils.span import Span
 from vistautils.preconditions import check_arg
 

@@ -2,9 +2,9 @@ import warnings
 from functools import partial
 from typing import Any, Callable, Sized, Tuple, Type, Union
 
-import immutablecollections
 from attr import Factory, attrib, validators
 
+import immutablecollections
 import vistautils.preconditions
 
 

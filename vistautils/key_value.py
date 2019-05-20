@@ -684,7 +684,7 @@ class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
 
         return generator_function()  # type: ignore
 
-    def __enter__(self) -> "KeyValueLinearSource[str,V]":
+    def __enter__(self) -> "KeyValueLinearSource[str, V]":
         self.wrapped_source.__enter__()
         return self
 
