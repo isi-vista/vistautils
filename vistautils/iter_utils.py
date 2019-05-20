@@ -110,9 +110,9 @@ def windowed(it, window_size: int, *, partial_windows: bool = False):  # noqa: F
 
     # we know at this point that it is an Iterable, but mypy might not, hence the ignores below
     if partial_windows:
-        return _possibly_incomplete_windows(it, window_size)  # type: ignore
+        return _possibly_incomplete_windows(it, window_size)
     else:
-        return _complete_windows(it, window_size)  # type: ignore
+        return _complete_windows(it, window_size)
 
 
 # implementation helpers for drop()
