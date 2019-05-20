@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 from typing import (
     Any,
+    Callable,
     List,
     Mapping,
     Optional,
@@ -366,10 +367,10 @@ class Parameters:
         self,
         name: str,
         expected_type: Type[ParamType],
-        *,  # type: ignore
+        *,
         namespace_param_name: str = "value",
         special_values: Mapping[str, str] = ImmutableDict.empty(),
-    ) -> Optional[ParamType]:  # type: ignore
+    ) -> Optional[ParamType]:
         """
         Get a parameter, if present, interpreting its value as Python code.
 
@@ -390,7 +391,7 @@ class Parameters:
         self,
         name: str,
         expected_type: Type[ParamType],
-        *,  # type: ignore
+        *,
         context: Optional[Mapping] = None,
         namespace_param_name: str = "value",
         special_values: Mapping[str, str] = ImmutableDict.empty(),
@@ -440,7 +441,7 @@ class Parameters:
             ) from e
 
     # type ignored because ImmutableDict.empty() has type Dict[Any, Any]
-    def object_from_parameters(  # type: ignore
+    def object_from_parameters(
         self,
         name: str,
         expected_type: Type[ParamType],
@@ -500,7 +501,9 @@ class Parameters:
         params_to_pass = self.optional_namespace(name) or Parameters.empty()
         if inspect.isclass(creator):
             if hasattr(creator, "from_parameters"):
-                ret = getattr(creator, "from_parameters")(params_to_pass)
+                ret: Callable[[Optional[Parameters]], ParamType] = getattr(
+                    creator, "from_parameters"
+                )(params_to_pass)
             else:
                 ret = creator()  # type: ignore
         elif callable(creator):
