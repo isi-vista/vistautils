@@ -25,7 +25,7 @@ def str_list_limited(_list: Iterable[Any], limit: int) -> str:
     if not isinstance(_list, List):
         _list = list(_list)
 
-    if len(_list) <= limit:  # type: ignore
+    if len(_list) <= limit:
         return str(_list)
     else:
         return (
