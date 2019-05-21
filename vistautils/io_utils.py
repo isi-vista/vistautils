@@ -184,7 +184,7 @@ class _FileCharSource(CharSource):
     _path = attrib(validator=validators.instance_of(Path))
 
     def open(self) -> TextIO:
-        return open(self._path, "r")
+        return open(self._path, "r", encoding="utf-8")
 
     def is_empty(self) -> bool:
         return os.path.getsize(self._path) == 0
