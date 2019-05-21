@@ -1318,9 +1318,9 @@ def _value_at_or_below(sorted_dict: SortedDict, key: T) -> Optional[Any]:
 
     idx = sorted_dict.bisect_left(key)
 
-    if idx >= len(sorted_dict) or key != sorted_dict.iloc[idx]:
+    if idx >= len(sorted_dict) or key != sorted_dict.keys()[idx]:
         if idx > 0:
-            key = sorted_dict.iloc[idx - 1]
+            key = sorted_dict.keys()[idx - 1]
         else:
             return None
     return sorted_dict[key]
@@ -1333,7 +1333,7 @@ def _value_at_or_above(sorted_dict: SortedDict, key: T) -> Optional[Any]:
     if idx >= len(sorted_dict):
         return None
 
-    return sorted_dict[sorted_dict.iloc[idx]]
+    return sorted_dict[sorted_dict.keys()[idx]]
 
 
 def _clear(
