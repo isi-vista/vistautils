@@ -18,11 +18,10 @@ from typing import (
 )
 from zipfile import ZipFile
 
-from attr import attrs
-from immutablecollections import ImmutableDict, ImmutableSet
+from attr import attrs, attrib
+from immutablecollections import ImmutableDict, ImmutableSet, immutabledict
 
 from vistautils.parameters import Parameters
-from vistautils.attrutils import attrib_immutable
 from vistautils.io_utils import (
     CharSink,
     CharSource,
@@ -306,7 +305,7 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
 
         The contents of the paths, interpreted as UTF-8, will be the values.
         """
-        return _PathMappingCharKeyValueSource(id_to_path)
+        return _PathMappingCharKeyValueSource(id_to_path)  # type: ignore
 
     @staticmethod
     def from_doc_id_to_file_map(
@@ -314,7 +313,9 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
     ) -> "KeyValueSource[str,str]":
         if not isinstance(map_file, CharSource):
             map_file = CharSource.from_file(map_file)
-        return _PathMappingCharKeyValueSource(read_doc_id_to_file_map(map_file))
+        return _PathMappingCharKeyValueSource(  # type: ignore
+            read_doc_id_to_file_map(map_file)
+        )
 
     @staticmethod
     def zip_character_source(
@@ -477,7 +478,9 @@ class _ZipBytesFileKeyValueSink(_ZipKeyValueSink[bytes]):
 
 @attrs(frozen=True)
 class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
-    id_to_path: ImmutableDict[str, Path] = attrib_immutable(ImmutableDict)
+    id_to_path: ImmutableDict[str, Path] = attrib(
+        converter=immutabledict, default=immutabledict()
+    )
 
     def __getitem__(self, key: str) -> str:
         return CharSource.from_file(self.id_to_path[key]).read_all()
@@ -681,7 +684,7 @@ class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
 
         return generator_function()  # type: ignore
 
-    def __enter__(self) -> "KeyValueLinearSource[str,V]":
+    def __enter__(self) -> "KeyValueLinearSource[str, V]":
         self.wrapped_source.__enter__()
         return self
 

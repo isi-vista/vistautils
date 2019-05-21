@@ -4,10 +4,10 @@ from pathlib import Path
 from unittest import TestCase
 from zipfile import ZipFile
 
-from attr import attrs
+from attr import attrs, validators
 from immutablecollections import ImmutableDict
 
-from vistautils.attrutils import attrib_instance_of
+from attr import attrib
 from vistautils.io_utils import (
     ByteSink,
     CharSink,
@@ -151,7 +151,9 @@ class TestIOUtils(TestCase):
     def test_object_from_parameters(self):
         @attrs
         class TestObj:
-            val: int = attrib_instance_of(int)
+            val: int = attrib(
+                default=None, validator=validators.optional(validators.instance_of(int))
+            )
 
             @staticmethod
             def from_parameters(params: Parameters) -> "TestObj":

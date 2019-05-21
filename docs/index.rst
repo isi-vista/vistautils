@@ -12,7 +12,6 @@ Welcome to vistautils's documentation!
 
    vistautils
    vistautils.annotated_text_utils
-   vistautils.attrutils
    vistautils.checkpoints
    vistautils.collection_utils
    vistautils.io_utils

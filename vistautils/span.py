@@ -1,7 +1,7 @@
 from typing import Iterable, Optional, Sized, Tuple, TypeVar, Union
 from typing_extensions import Protocol
 
-from attr import attrs, attrib
+from attr import attrs, attrib, validators
 from immutablecollections import (
     ImmutableSet,
     immutableset,
@@ -9,7 +9,6 @@ from immutablecollections import (
     immutablesetmultidict,
 )
 
-from vistautils.attrutils import attrib_instance_of
 from vistautils.preconditions import check_arg
 from vistautils.range import Range, immutablerangemap, ImmutableRangeMap
 
@@ -26,8 +25,8 @@ class Span(Sized):
     For checking whether an offset lies in a span, use `contains_offset`
     """
 
-    start: int = attrib_instance_of(int)
-    end: int = attrib_instance_of(int)
+    start: int = attrib(validator=validators.instance_of(int))
+    end: int = attrib(validator=validators.instance_of(int))
 
     # noinspection PyUnusedLocal
     @start.validator
