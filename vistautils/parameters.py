@@ -16,8 +16,8 @@ from typing import (
     Iterable,
 )
 
-import yaml
 from attr import attrs
+import yaml
 from immutablecollections import ImmutableDict
 
 from vistautils.attrutils import attrib_opt_immutable
