@@ -232,6 +232,10 @@ class TestParameters(TestCase):
 
         self.assertEqual(reference_params, loaded_params)
 
+    def test_double_context_fail(self):
+        with self.assertRaises(ParameterError):
+            YAMLParametersLoader().load(f=None, context="bar", included_context="baz")
+
 
 # Used by test_environmental_variable_interpolation.
 # Here we test:
