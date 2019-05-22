@@ -920,7 +920,9 @@ class YAMLParametersLoader:
                 replaced_end_node = end_node
             interpolation_mapping[start_node] = replaced_end_node
         return Parameters.from_mapping(
-            {key: interpolation_mapping[key] for key in to_interpolate._data.keys()}
+            immutabledict(
+                (key, interpolation_mapping[key]) for key in to_interpolate._data.keys()
+            )
         )
 
     def _unify(self, old: Parameters, new: Parameters, namespace="") -> Parameters:
