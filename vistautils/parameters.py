@@ -1,5 +1,6 @@
 import inspect
 import logging
+import os
 import re
 import shutil
 from pathlib import Path
@@ -92,6 +93,12 @@ class Parameters:
                 # this case will also be triggered if the value is already a parameters object
                 ret.put(key, val)
         return Parameters(ret.build())
+
+    def as_mapping(self) -> Mapping[str, Any]:
+        """
+        Get these parameter values as a ``Mapping``.
+        """
+        return self._data
 
     def creatable_directory(self, param: str) -> Path:
         """
@@ -678,6 +685,7 @@ class Parameters:
         return current
 
 
+@attrs(auto_attribs=True)
 class YAMLParametersLoader:
     """
     Loads `Parameters` from a modified YAML format.
@@ -698,11 +706,83 @@ class YAMLParametersLoader:
     string (and the `%`s) with the value of the parameter.  Failed interpolations will result
     in a `ParameterError`.
 
+    If *interpolate_environmental_variables* (default: false) is specified, then environmental
+    variables will be available for interpolation, though they will not themselves appear in the
+    loaded parameters.  Explicitly-specified parameters have priority over environmental variables.
+
     See unit tests in `test_parameters` for examples.
     """
 
+    interpolate_environmental_variables: bool = False
+
     def load(
-        self, f: Union[str, Path], context=Parameters.empty(), root_path: Path = None
+        self,
+        f: Union[str, Path],
+        context=None,
+        root_path: Path = None,
+        *,
+        included_context: Parameters = None,
+    ):
+        """
+        Loads parameters from a YAML file.
+
+        If `included_context` is specified, its content will be included in the returned
+        Parameters (if not overridden) and will be available for interpolation.
+
+        If `root_path` is specified, that path is used for resolving relative path names in
+        includes instead of the path of the parameter file being loaded.
+        """
+
+        # handle deprecated context parameter
+        if context is not None:
+            if included_context is not None:
+                raise ParameterError(
+                    "Cannot specify both included_context and deprecated context"
+                    "parameters. Only specify the former."
+                )
+            else:
+                included_context = context
+
+        if isinstance(f, str):
+            f = Path(f)
+
+        # if no special path is specified, included files will be resolved relative to
+        # this file's path
+        if not root_path:
+            root_path = f.parent
+
+        return self._inner_load(
+            f.read_text(encoding="utf-8"),
+            error_string=str(f),
+            root_path=root_path,
+            included_context=included_context,
+        )
+
+    def load_string(
+        self,
+        param_file_content: str,
+        *,
+        included_context: Parameters = Parameters.empty(),
+    ) -> Parameters:
+        """
+        Loads parameters from a string.
+
+        This behaves just like *load*, except relative includes are not allowed.
+        """
+        return self._inner_load(
+            param_file_content,
+            error_string=f"String param file:\n{param_file_content}",
+            root_path=None,
+            included_context=included_context,
+        )
+
+    def _inner_load(
+        self,
+        param_file_content: str,
+        error_string: str,
+        *,
+        included_context=Parameters.empty(),
+        root_path: Optional[Path] = None,
     ):
         """
         Loads parameters from a YAML file.
@@ -713,38 +793,51 @@ class YAMLParametersLoader:
         If `root_path` is specified, that path is used for resolving relative path names in
         includes instead of the path of the parameter file being loaded.
         """
-        if isinstance(f, str):
-            f = Path(f)
         try:
-            # if no special path is specified, included files will be resolved relative to
-            # this file's path
-            if not root_path:
-                root_path = f.parent
-
-            with open(f, "r") as ymlfile:
-                raw_yaml = yaml.safe_load(ymlfile)
-                self._validate(raw_yaml)
-            cur_context = context
+            raw_yaml = yaml.safe_load(param_file_content)
+            self._validate(raw_yaml)
+            previously_loaded = included_context
 
             # process and remove special include directives
             if "_includes" in raw_yaml:
                 for included_file in raw_yaml["_includes"]:
                     _logger.info("Processing included parameter file %s", included_file)
-                    included_file_path = Path(root_path, included_file).resolve()
-                    cur_context = self._unify(
-                        cur_context,
+                    if not os.path.isabs(included_file):
+                        if root_path is not None:
+                            included_file_path = Path(root_path, included_file).resolve()
+                        else:
+                            raise ParameterError(
+                                "Cannot do relative includes when loading from"
+                                "a string."
+                            )
+                    else:
+                        included_file_path = Path(included_file)
+                    previously_loaded = self._unify(
+                        previously_loaded,
                         self.load(
-                            included_file_path, root_path=root_path, context=cur_context
+                            included_file_path,
+                            root_path=root_path,
+                            context=previously_loaded,
                         ),
                     )
                 del raw_yaml["_includes"]
 
+            interpolation_context = dict(included_context.as_mapping())
+            if self.interpolate_environmental_variables:
+                for k, v in os.environ.items():
+                    # environmental variables are overridden by explicit parameters
+                    if k not in interpolation_context:
+                        interpolation_context[k] = v
+
             return self._unify(
-                cur_context,
-                self._interpolate(Parameters.from_mapping(raw_yaml), cur_context),
+                previously_loaded,
+                self._interpolate(
+                    Parameters.from_mapping(raw_yaml),
+                    Parameters.from_mapping(interpolation_context),
+                ),
             )
         except Exception as e:
-            raise IOError("Failure while loading parameter file " + str(f)) from e
+            raise IOError(f"Failure while loading parameter file {error_string}") from e
 
     @staticmethod
     def _validate(raw_yaml: Mapping):
@@ -773,6 +866,7 @@ class YAMLParametersLoader:
 
     _INTERPOLATION_REGEX = re.compile(r"%([\w\.]+)%")
 
+    # noinspection PyProtectedMember
     @staticmethod
     def _interpolate(to_interpolate: Parameters, context: Parameters) -> Parameters:
         """Perform interpolation within arbitrarily nested Parameters, looking up values
@@ -826,7 +920,9 @@ class YAMLParametersLoader:
                 replaced_end_node = end_node
             interpolation_mapping[start_node] = replaced_end_node
         return Parameters.from_mapping(
-            {key: interpolation_mapping[key] for key in to_interpolate._data}
+            immutabledict(
+                (key, interpolation_mapping[key]) for key in to_interpolate._data.keys()
+            )
         )
 
     def _unify(self, old: Parameters, new: Parameters, namespace="") -> Parameters:

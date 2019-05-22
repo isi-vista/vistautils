@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import yaml
+from textwrap import dedent
 from pathlib import Path
 from unittest import TestCase
 
@@ -18,15 +19,19 @@ from vistautils._graph import ParameterInterpolationError
 
 
 class TestParameters(TestCase):
-    WRITING_REFERENCE = """hello: world
-moo:
-    nested_dict:
-        lalala: fooo
-        list:
-        - 1
-        - 2
-        - 3
-        meep: 2\n"""
+    WRITING_REFERENCE = dedent(
+        """\
+            hello: world
+            moo:
+                nested_dict:
+                    lalala: fooo
+                    list:
+                    - 1
+                    - 2
+                    - 3
+                    meep: 2
+        """
+    )
 
     def test_writing_to_yaml(self):
         params = Parameters.from_mapping(
@@ -132,20 +137,23 @@ moo:
         ):
             params.floating_point("test_float", valid_range=Range.open(0.0, 1.0))
 
-    MULTIPLE_INTERPOLATION_REFERENCE = """the_ultimate_fruit: \"%apple%\"
-apple: \"%banana%\"
-banana: \"%pear%\"
-pear: raspberry
-"""
-    MULTIPLE_INTERPOLATION_REFERENCE_NEEDING_CONTEXT = """the_ultimate_fruit: \"%apple%\"
-apple: \"%banana%\"
-banana: \"%pear%\"
-pear: \"raspberry/%hello%\"
-"""
-    NESTED_INTERPOLATION = """key: \"%moo.nested_dict.meep%\"
-key2: \"%moo.nested_dict.lalala%\"
-key3: \"%moo.nested_dict%\"
-"""
+    MULTIPLE_INTERPOLATION_REFERENCE = """
+            the_ultimate_fruit: "%apple%"
+            apple: "%banana%"
+            banana: "%pear%"
+            pear: raspberry
+            """
+    MULTIPLE_INTERPOLATION_REFERENCE_NEEDING_CONTEXT = """
+            the_ultimate_fruit: "%apple%"
+            apple: "%banana%"
+            banana: "%pear%"
+            pear: "raspberry/%hello%"
+            """
+    NESTED_INTERPOLATION = """
+            key: "%moo.nested_dict.meep%"
+            key2: "%moo.nested_dict.lalala%"
+            key3: "%moo.nested_dict%"
+            """
 
     def test_interpolation(self):
         context = Parameters.from_mapping(yaml.safe_load(self.WRITING_REFERENCE))
@@ -204,9 +212,50 @@ key3: \"%moo.nested_dict%\"
 
         with self.assertRaisesRegex(
             ParameterInterpolationError,
-            r"These interpolated parameters form at least one graph cycle that must be fixed: \('b', 'c'\)",
+            r"These interpolated parameters form at least one graph cycle that must be fixed: "
+            r"\('b', 'c'\)",
         ):
             loader._interpolate(
                 Parameters.from_mapping(yaml.safe_load('a: "%b%"\nb: "%c%"\nc: "%b%"')),
                 context,
             )
+
+    def test_environmental_variable_interpolation(self):
+        loader = YAMLParametersLoader(interpolate_environmental_variables=True)
+        os.environ["___TEST_PARAMETERS___"] = "foo"
+        os.environ["___TEST_CLASHING_PARAM___"] = "bar"
+        loaded_params = loader.load_string(ENV_VAR_INTERPOLATION_INPUT)
+
+        reference_params = Parameters.from_mapping(
+            yaml.safe_load(ENV_VAR_INTERPOLATION_REFERENCE)
+        )
+
+        self.assertEqual(reference_params, loaded_params)
+
+    def test_double_context_fail(self):
+        with self.assertRaises(ParameterError):
+            YAMLParametersLoader().load(f=None, context="bar", included_context="baz")
+
+
+# Used by test_environmental_variable_interpolation.
+# Here we test:
+# (a) one uninterpolated parameter
+# (b) one normally interpolated parameter
+# (c) one parameter interpolated with an environmental variable
+# (d) one parameter interpolated with a key which is both explicitly specified and and an
+#         environmental variable, demonstrating that the explicit parameter "wins"
+ENV_VAR_INTERPOLATION_INPUT = """
+        key1: "fred"
+        regular_interpolation: "moo %key1%"
+        env_var_interpolation: "moo %___TEST_PARAMETERS___%"
+        ___TEST_CLASHING_PARAM___: "rab"
+        interpolation_of_clashing_param: "moo %___TEST_CLASHING_PARAM___%"
+        """
+
+ENV_VAR_INTERPOLATION_REFERENCE = """
+        key1: "fred"
+        regular_interpolation: "moo fred"
+        env_var_interpolation: "moo foo"
+        ___TEST_CLASHING_PARAM___: "rab"
+        interpolation_of_clashing_param: "moo rab"
+        """
