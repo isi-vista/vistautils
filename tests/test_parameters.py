@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import yaml
+from textwrap import dedent
 from pathlib import Path
 from unittest import TestCase
 
@@ -18,15 +19,19 @@ from vistautils._graph import ParameterInterpolationError
 
 
 class TestParameters(TestCase):
-    WRITING_REFERENCE = """hello: world
-moo:
-    nested_dict:
-        lalala: fooo
-        list:
-        - 1
-        - 2
-        - 3
-        meep: 2\n"""
+    WRITING_REFERENCE = dedent(
+        """\
+            hello: world
+            moo:
+                nested_dict:
+                    lalala: fooo
+                    list:
+                    - 1
+                    - 2
+                    - 3
+                    meep: 2
+        """
+    )
 
     def test_writing_to_yaml(self):
         params = Parameters.from_mapping(
@@ -132,20 +137,23 @@ moo:
         ):
             params.floating_point("test_float", valid_range=Range.open(0.0, 1.0))
 
-    MULTIPLE_INTERPOLATION_REFERENCE = """the_ultimate_fruit: \"%apple%\"
-apple: \"%banana%\"
-banana: \"%pear%\"
-pear: raspberry
-"""
-    MULTIPLE_INTERPOLATION_REFERENCE_NEEDING_CONTEXT = """the_ultimate_fruit: \"%apple%\"
-apple: \"%banana%\"
-banana: \"%pear%\"
-pear: \"raspberry/%hello%\"
-"""
-    NESTED_INTERPOLATION = """key: \"%moo.nested_dict.meep%\"
-key2: \"%moo.nested_dict.lalala%\"
-key3: \"%moo.nested_dict%\"
-"""
+    MULTIPLE_INTERPOLATION_REFERENCE = """
+            the_ultimate_fruit: "%apple%"
+            apple: "%banana%"
+            banana: "%pear%"
+            pear: raspberry
+            """
+    MULTIPLE_INTERPOLATION_REFERENCE_NEEDING_CONTEXT = """
+            the_ultimate_fruit: "%apple%"
+            apple: "%banana%"
+            banana: "%pear%"
+            pear: "raspberry/%hello%"
+            """
+    NESTED_INTERPOLATION = """
+            key: "%moo.nested_dict.meep%"
+            key2: "%moo.nested_dict.lalala%"
+            key3: "%moo.nested_dict%"
+            """
 
     def test_interpolation(self):
         context = Parameters.from_mapping(yaml.safe_load(self.WRITING_REFERENCE))
