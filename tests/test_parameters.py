@@ -204,9 +204,42 @@ key3: \"%moo.nested_dict%\"
 
         with self.assertRaisesRegex(
             ParameterInterpolationError,
-            r"These interpolated parameters form at least one graph cycle that must be fixed: \('b', 'c'\)",
+            r"These interpolated parameters form at least one graph cycle that must be fixed: "
+            r"\('b', 'c'\)",
         ):
             loader._interpolate(
                 Parameters.from_mapping(yaml.safe_load('a: "%b%"\nb: "%c%"\nc: "%b%"')),
                 context,
             )
+
+    def test_environmental_variable_interpolation(self):
+        loader = YAMLParametersLoader(interpolate_environmental_variables=True)
+        os.environ["___TEST_PARAMETERS___"] = "foo"
+        os.environ["___TEST_CLASHING_PARAM___"] = "bar"
+        loaded_params = loader.load_string(ENV_VAR_INTERPOLATION_INPUT)
+
+        reference_params = Parameters.from_mapping(yaml.safe_load(ENV_VAR_INTERPOLATION_REFERENCE))
+
+        self.assertEqual(reference_params, loaded_params)
+
+
+# Used by test_environmental_variable_interpolation.
+# Here we test:
+# (a) one uninterpolated parameter
+# (b) one normally interpolated parameter
+# (c) one parameter interpolated with an environmental variable
+# (d) one parameter interpolated with a key which is both explicitly specified and and an
+#         environmental variable, demonstrating that the explicit parameter "wins"
+ENV_VAR_INTERPOLATION_INPUT = """key1: \"fred\"
+regular_interpolation: \"moo %key1%\"
+env_var_interpolation: \"moo %___TEST_PARAMETERS___%\"
+___TEST_CLASHING_PARAM___: \"rab\"
+interpolation_of_clashing_param: \"moo %___TEST_CLASHING_PARAM___%\"
+"""
+
+ENV_VAR_INTERPOLATION_REFERENCE = """key1: \"fred\"
+regular_interpolation: \"moo fred\"
+env_var_interpolation: \"moo foo\"
+___TEST_CLASHING_PARAM___: \"rab\"
+interpolation_of_clashing_param: \"moo rab\"
+"""
