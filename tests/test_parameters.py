@@ -218,7 +218,9 @@ key3: \"%moo.nested_dict%\"
         os.environ["___TEST_CLASHING_PARAM___"] = "bar"
         loaded_params = loader.load_string(ENV_VAR_INTERPOLATION_INPUT)
 
-        reference_params = Parameters.from_mapping(yaml.safe_load(ENV_VAR_INTERPOLATION_REFERENCE))
+        reference_params = Parameters.from_mapping(
+            yaml.safe_load(ENV_VAR_INTERPOLATION_REFERENCE)
+        )
 
         self.assertEqual(reference_params, loaded_params)
 

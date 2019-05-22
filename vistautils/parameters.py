@@ -712,13 +712,16 @@ class YAMLParametersLoader:
 
     See unit tests in `test_parameters` for examples.
     """
+
     interpolate_environmental_variables: bool = False
 
     def load(
-        self, f: Union[str, Path], context=None,
-            root_path: Path = None,
-            *,
-            included_context: Parameters = None
+        self,
+        f: Union[str, Path],
+        context=None,
+        root_path: Path = None,
+        *,
+        included_context: Parameters = None,
     ):
         """
         Loads parameters from a YAML file.
@@ -733,8 +736,10 @@ class YAMLParametersLoader:
         # handle deprecated context parameter
         if context is not None:
             if included_context is not None:
-                raise ParameterError("Cannot specify both included_context and deprecated context"
-                                     "parameters. Only specify the former.")
+                raise ParameterError(
+                    "Cannot specify both included_context and deprecated context"
+                    "parameters. Only specify the former."
+                )
             else:
                 included_context = context
 
@@ -746,25 +751,37 @@ class YAMLParametersLoader:
         if not root_path:
             root_path = f.parent
 
-        return self._inner_load(f.read_text(encoding="utf-8"),
-                                root_path=root_path,
-                                included_context=included_context)
+        return self._inner_load(
+            f.read_text(encoding="utf-8"),
+            error_string=str(f),
+            root_path=root_path,
+            included_context=included_context,
+        )
 
-    def load_string(self, param_file_content: str, *,
-                    included_context: Parameters = Parameters.empty()) -> Parameters:
+    def load_string(
+        self,
+        param_file_content: str,
+        *,
+        included_context: Parameters = Parameters.empty(),
+    ) -> Parameters:
         """
         Loads parameters from a string.
 
         This behaves just like *load*, except relative includes are not allowed.
         """
-        return self._inner_load(param_file_content,
-                                root_path=None,
-                                included_context=included_context)
+        return self._inner_load(
+            param_file_content,
+            error_string=f"String param file:\n{param_file_content}",
+            root_path=None, included_context=included_context
+        )
 
     def _inner_load(
-        self, param_file_content: str, *,
-            included_context=Parameters.empty(),
-            root_path: Optional[Path] = None,
+        self,
+        param_file_content: str,
+        error_string: str,
+        *,
+        included_context=Parameters.empty(),
+        root_path: Optional[Path] = None,
     ):
         """
         Loads parameters from a YAML file.
@@ -788,14 +805,18 @@ class YAMLParametersLoader:
                         if root_path is not None:
                             included_file_path = Path(root_path, included_file).resolve()
                         else:
-                            raise ParameterError("Cannot do relative includes when loading from"
-                                                 "a string.")
+                            raise ParameterError(
+                                "Cannot do relative includes when loading from"
+                                "a string."
+                            )
                     else:
                         included_file_path = Path(included_file)
                     previously_loaded = self._unify(
                         previously_loaded,
                         self.load(
-                            included_file_path, root_path=root_path, context=previously_loaded
+                            included_file_path,
+                            root_path=root_path,
+                            context=previously_loaded,
                         ),
                     )
                 del raw_yaml["_includes"]
@@ -809,11 +830,13 @@ class YAMLParametersLoader:
 
             return self._unify(
                 previously_loaded,
-                self._interpolate(Parameters.from_mapping(raw_yaml),
-                                  Parameters.from_mapping(interpolation_context)),
+                self._interpolate(
+                    Parameters.from_mapping(raw_yaml),
+                    Parameters.from_mapping(interpolation_context),
+                ),
             )
         except Exception as e:
-            raise IOError("Failure while loading parameter file " + str(f)) from e
+            raise IOError(f"Failure while loading parameter file {error_string}") from e
 
     @staticmethod
     def _validate(raw_yaml: Mapping):
