@@ -948,7 +948,7 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
         # If we would insert at the end (are greater than all the elements, the only range that
         # could possibly overlap is the last one.
         if from_index == len(rlb):
-            last_range: Range[T] = rlb[rlb.iloc[-1]]
+            last_range: Range[T] = rlb[rlb.keys()[-1]]
             if last_range.intersects(rng):
                 return immutableset([last_range])
             return immutableset()
@@ -956,17 +956,17 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
         # If we would insert at the start (are smaller than all the elements, the only range that
         # could possibly overlap is the first one.
         if to_index == 0:
-            first_range: Range[T] = rlb[rlb.iloc[0]]
+            first_range: Range[T] = rlb[rlb.keys()[0]]
             if first_range.intersects(rng):
                 return immutableset([first_range])
             return immutableset()
         return immutableset(
             [
-                rlb[rlb.iloc[index]]
+                rlb[rlb.keys()[index]]
                 # The ranges at the extreme indices do not necessarily overlap,
                 for index in range(max(0, from_index - 1), min(to_index, len(rlb) - 1))
                 # so this explicit check is needed.
-                if rlb[rlb.iloc[index]].intersects(rng)
+                if rlb[rlb.keys()[index]].intersects(rng)
             ]
         )
 
@@ -988,13 +988,13 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
         if containing_or_below_index >= 0:
             # if such a set exists, we need to check if we are contained in it...
             latest_beginning_before = sorted_dict[
-                sorted_dict.iloc[containing_or_below_index]
+                sorted_dict.keys()[containing_or_below_index]
             ]
             if limit_as_bound <= latest_beginning_before._upper_bound:
                 return latest_beginning_before
 
         if idx < len(sorted_dict):
-            return sorted_dict[sorted_dict.iloc[idx]]
+            return sorted_dict[sorted_dict.keys()[idx]]
         else:
             return None
 
@@ -1301,7 +1301,7 @@ def _value_below(sorted_dict: SortedDict, key: T) -> Optional[Any]:
     if idx >= 0:
         if idx >= len(sorted_dict):
             idx = len(sorted_dict) - 1
-        lb_key = sorted_dict.iloc[idx]
+        lb_key = sorted_dict.keys()[idx]
         return sorted_dict[lb_key]
     else:
         return None
@@ -1318,9 +1318,9 @@ def _value_at_or_below(sorted_dict: SortedDict, key: T) -> Optional[Any]:
 
     idx = sorted_dict.bisect_left(key)
 
-    if idx >= len(sorted_dict) or key != sorted_dict.iloc[idx]:
+    if idx >= len(sorted_dict) or key != sorted_dict.keys()[idx]:
         if idx > 0:
-            key = sorted_dict.iloc[idx - 1]
+            key = sorted_dict.keys()[idx - 1]
         else:
             return None
     return sorted_dict[key]
@@ -1333,7 +1333,7 @@ def _value_at_or_above(sorted_dict: SortedDict, key: T) -> Optional[Any]:
     if idx >= len(sorted_dict):
         return None
 
-    return sorted_dict[sorted_dict.iloc[idx]]
+    return sorted_dict[sorted_dict.keys()[idx]]
 
 
 def _clear(
