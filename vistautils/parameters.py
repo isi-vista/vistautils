@@ -772,7 +772,8 @@ class YAMLParametersLoader:
         return self._inner_load(
             param_file_content,
             error_string=f"String param file:\n{param_file_content}",
-            root_path=None, included_context=included_context
+            root_path=None,
+            included_context=included_context,
         )
 
     def _inner_load(
