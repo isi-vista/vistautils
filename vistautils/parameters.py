@@ -718,7 +718,7 @@ class YAMLParametersLoader:
     def load(
         self,
         f: Union[str, Path],
-        context: Optional[Parameters]=None,
+        context: Optional[Parameters] = None,
         root_path: Path = None,
         *,
         included_context: Optional[Parameters] = None,

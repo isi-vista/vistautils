@@ -235,16 +235,19 @@ class TestParameters(TestCase):
     def test_double_context_fail(self):
         # cannot specify both deprecated context argument and new included_context argument
         with self.assertRaises(ParameterError):
-            YAMLParametersLoader().load(f="foo: \"foo\"", context=Parameters.empty(),
-                                        included_context=Parameters.empty())
+            YAMLParametersLoader().load(
+                f='foo: "foo"',
+                context=Parameters.empty(),
+                included_context=Parameters.empty(),
+            )
 
     def test_inclusion(self):
         loader = YAMLParametersLoader()
         test_dir = Path(tempfile.mkdtemp())
         input_file = test_dir / "input.params"
-        input_file.write_text(INCLUSION_INPUT, encoding='utf-8')
+        input_file.write_text(INCLUSION_INPUT, encoding="utf-8")
         included_file = test_dir / "include_me.params"
-        included_file.write_text(INCLUSION_INCLUDED_FILE, encoding='utf-8')
+        included_file.write_text(INCLUSION_INCLUDED_FILE, encoding="utf-8")
         params = loader.load(input_file)
         shutil.rmtree(test_dir)
 
@@ -285,7 +288,4 @@ INCLUSION_INCLUDED_FILE = """
 foo: "meep"
 """
 
-INCLUSION_REFERENCE = {
-    "foo" : "meep",
-    "hello": "world meep"
-}
+INCLUSION_REFERENCE = {"foo": "meep", "hello": "world meep"}
