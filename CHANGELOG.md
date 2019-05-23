@@ -1,3 +1,12 @@
+Vistautils 0.11.0 (2019-05-23)
+==============================
+
+New Features
+------------
+
+- Parameters can now optionally interpolate environmental variables (`#68 <https://github.com/isi-vista/vistautils/issues/68>`_)
+
+
 Vistautils 0.10.0 (2019-05-21)
 ==============================
 
