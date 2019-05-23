@@ -46,6 +46,20 @@ class TestParameters(TestCase):
             TestParameters.WRITING_REFERENCE, string_buffer.last_string_written
         )
 
+    def test_boolean(self):
+        params = YAMLParametersLoader().load_string(
+            """
+            true_param : true
+            false_param : false
+            non_boolean_param: 'Fred'
+        """
+        )
+
+        self.assertTrue(params.boolean("true_param"))
+        self.assertFalse(params.boolean("false_param"))
+        with self.assertRaises(ParameterError):
+            params.boolean("non_boolean_param")
+
     def test_optional_existing_file(self):
         test_dir = Path(tempfile.mkdtemp()).absolute()
         existing_file_path = test_dir / "existing_file"

@@ -317,6 +317,12 @@ class Parameters:
             )
         return ret
 
+    def boolean(self, name: str) -> bool:
+        """
+        Gets a boolean parameter.
+        """
+        return self.get(name, bool)
+
     def optional_boolean(self, name: str) -> Optional[bool]:
         """
         Gets a boolean parameter if present.
