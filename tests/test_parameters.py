@@ -46,6 +46,20 @@ class TestParameters(TestCase):
             TestParameters.WRITING_REFERENCE, string_buffer.last_string_written
         )
 
+    def test_boolean(self):
+        params = YAMLParametersLoader().load_string(
+            """
+            true_param : true
+            false_param : false
+            non_boolean_param: 'Fred'
+        """
+        )
+
+        self.assertTrue(params.boolean("true_param"))
+        self.assertFalse(params.boolean("false_param"))
+        with self.assertRaises(ParameterError):
+            params.boolean("non_boolean_param")
+
     def test_optional_existing_file(self):
         test_dir = Path(tempfile.mkdtemp()).absolute()
         existing_file_path = test_dir / "existing_file"
@@ -233,8 +247,25 @@ class TestParameters(TestCase):
         self.assertEqual(reference_params, loaded_params)
 
     def test_double_context_fail(self):
+        # cannot specify both deprecated context argument and new included_context argument
         with self.assertRaises(ParameterError):
-            YAMLParametersLoader().load(f=None, context="bar", included_context="baz")
+            YAMLParametersLoader().load(
+                f='foo: "foo"',
+                context=Parameters.empty(),
+                included_context=Parameters.empty(),
+            )
+
+    def test_inclusion(self):
+        loader = YAMLParametersLoader()
+        test_dir = Path(tempfile.mkdtemp())
+        input_file = test_dir / "input.params"
+        input_file.write_text(INCLUSION_INPUT, encoding="utf-8")
+        included_file = test_dir / "include_me.params"
+        included_file.write_text(INCLUSION_INCLUDED_FILE, encoding="utf-8")
+        params = loader.load(input_file)
+        shutil.rmtree(test_dir)
+
+        self.assertEqual(INCLUSION_REFERENCE, dict(params.as_mapping()))
 
 
 # Used by test_environmental_variable_interpolation.
@@ -259,3 +290,16 @@ ENV_VAR_INTERPOLATION_REFERENCE = """
         ___TEST_CLASHING_PARAM___: "rab"
         interpolation_of_clashing_param: "moo rab"
         """
+
+# used for detecting inclusion
+INCLUSION_INPUT = """
+       _includes:
+            - "include_me.params"
+       hello: "world %foo%"
+"""
+
+INCLUSION_INCLUDED_FILE = """
+foo: "meep"
+"""
+
+INCLUSION_REFERENCE = {"foo": "meep", "hello": "world meep"}

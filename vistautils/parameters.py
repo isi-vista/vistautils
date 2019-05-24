@@ -317,6 +317,12 @@ class Parameters:
             )
         return ret
 
+    def boolean(self, name: str) -> bool:
+        """
+        Gets a boolean parameter.
+        """
+        return self.get(name, bool)
+
     def optional_boolean(self, name: str) -> Optional[bool]:
         """
         Gets a boolean parameter if present.
@@ -718,10 +724,10 @@ class YAMLParametersLoader:
     def load(
         self,
         f: Union[str, Path],
-        context=None,
+        context: Optional[Parameters] = None,
         root_path: Path = None,
         *,
-        included_context: Parameters = None,
+        included_context: Optional[Parameters] = None,
     ):
         """
         Loads parameters from a YAML file.
@@ -743,6 +749,12 @@ class YAMLParametersLoader:
             else:
                 included_context = context
 
+        # provide default value for included context
+        if included_context is None:
+            non_none_included_context = Parameters.empty()
+        else:
+            non_none_included_context = included_context
+
         if isinstance(f, str):
             f = Path(f)
 
@@ -755,7 +767,7 @@ class YAMLParametersLoader:
             f.read_text(encoding="utf-8"),
             error_string=str(f),
             root_path=root_path,
-            included_context=included_context,
+            included_context=non_none_included_context,
         )
 
     def load_string(
@@ -781,7 +793,7 @@ class YAMLParametersLoader:
         param_file_content: str,
         error_string: str,
         *,
-        included_context=Parameters.empty(),
+        included_context: Parameters = Parameters.empty(),
         root_path: Optional[Path] = None,
     ):
         """
@@ -822,7 +834,7 @@ class YAMLParametersLoader:
                     )
                 del raw_yaml["_includes"]
 
-            interpolation_context = dict(included_context.as_mapping())
+            interpolation_context = dict(previously_loaded.as_mapping())
             if self.interpolate_environmental_variables:
                 for k, v in os.environ.items():
                     # environmental variables are overridden by explicit parameters
