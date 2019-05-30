@@ -235,7 +235,7 @@ class TestParameters(TestCase):
             )
 
     def test_environmental_variable_interpolation(self):
-        loader = YAMLParametersLoader(interpolate_environmental_variables=True)
+        loader = YAMLParametersLoader()
         os.environ["___TEST_PARAMETERS___"] = "foo"
         os.environ["___TEST_CLASHING_PARAM___"] = "bar"
         loaded_params = loader.load_string(ENV_VAR_INTERPOLATION_INPUT)
