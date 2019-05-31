@@ -712,14 +712,14 @@ class YAMLParametersLoader:
     string (and the `%`s) with the value of the parameter.  Failed interpolations will result
     in a `ParameterError`.
 
-    If *interpolate_environmental_variables* (default: false) is specified, then environmental
+    If *interpolate_environmental_variables* (default: true) is specified, then environmental
     variables will be available for interpolation, though they will not themselves appear in the
     loaded parameters.  Explicitly-specified parameters have priority over environmental variables.
 
     See unit tests in `test_parameters` for examples.
     """
 
-    interpolate_environmental_variables: bool = False
+    interpolate_environmental_variables: bool = True
 
     def load(
         self,
