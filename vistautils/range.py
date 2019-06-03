@@ -693,7 +693,7 @@ class RangeSet(
 
     def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
         """
-        Alias for rightmost_containing_or_below(). Deprecated.
+        Deprecated. Alias for rightmost_containing_or_below().
         """
         warnings.warn(
             "Deprecated, use rightmost_containing_or_below(upper_limit).", DeprecationWarning
@@ -702,7 +702,7 @@ class RangeSet(
 
     def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
         """
-        Alias for leftmost_containing_or_below(). Deprecated.
+        Deprecated. Alias for leftmost_containing_or_below().
         """
         warnings.warn(
             "Deprecated, use leftmost_containing_or_above(upper_limit).", DeprecationWarning
@@ -1174,7 +1174,7 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
 
     def get_from_maximal_containing_or_below(self, key: K):
         """
-        Alias for get_from_rightmost_containing_or_below(key). Deprecated, do not use.
+        Deprecated. Alias for get_from_rightmost_containing_or_below(key).
         """
         warnings.warn(
             "Deprecated, use get_from_rightmost_containing_or_below(upper_limit).", DeprecationWarning
