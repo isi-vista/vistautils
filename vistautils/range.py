@@ -691,24 +691,6 @@ class RangeSet(
     def ranges_enclosed_by(self, rng) -> ImmutableSet[Range[T]]:
         raise NotImplementedError()
 
-    def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
-        """
-        Deprecated. Alias for rightmost_containing_or_below().
-        """
-        warnings.warn(
-            "Deprecated, use rightmost_containing_or_below(upper_limit).", DeprecationWarning
-        )
-        return self.rightmost_containing_or_below(upper_limit)
-
-    def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
-        """
-        Deprecated. Alias for leftmost_containing_or_below().
-        """
-        warnings.warn(
-            "Deprecated, use leftmost_containing_or_above(upper_limit).", DeprecationWarning
-        )
-        return self.leftmost_containing_or_below(lower_limit)
-
     @abstractmethod
     def rightmost_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
         """
@@ -730,6 +712,24 @@ class RangeSet(
 
         If there is no such set, `None` is returned.
         """
+
+    def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
+        """
+        Deprecated. Alias for rightmost_containing_or_below().
+        """
+        warnings.warn(
+            "Deprecated, use rightmost_containing_or_below(upper_limit).", DeprecationWarning
+        )
+        return self.rightmost_containing_or_below(upper_limit)
+
+    def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
+        """
+        Deprecated. Alias for leftmost_containing_or_below().
+        """
+        warnings.warn(
+            "Deprecated, use leftmost_containing_or_above(upper_limit).", DeprecationWarning
+        )
+        return self.leftmost_containing_or_below(lower_limit)
 
     @abstractmethod
     def as_ranges(self) -> Sequence[Range[T]]:
@@ -1172,15 +1172,6 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    def get_from_maximal_containing_or_below(self, key: K):
-        """
-        Deprecated. Alias for get_from_rightmost_containing_or_below(key).
-        """
-        warnings.warn(
-            "Deprecated, use get_from_rightmost_containing_or_below(upper_limit).", DeprecationWarning
-        )
-        return self.get_from_rightmost_containing_or_below(key)
-
     @abstractmethod
     def get_from_rightmost_containing_or_below(self, key: K):
         """
@@ -1193,15 +1184,6 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         If there is no such set, `None` is returned.
         """
 
-    def get_from_minimal_containing_or_above(self, key: K):
-        """
-        Deprecated. Alias for get_from_leftmost_containing_or_above(key).
-        """
-        warnings.warn(
-            "Deprecated, use get_from_leftmost_containing_or_below(key).", DeprecationWarning
-        )
-        return self.get_from_leftmost_containing_or_above(key)
-
     @abstractmethod
     def get_from_leftmost_containing_or_above(self, key: K):
         """
@@ -1213,6 +1195,24 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
 
         If there is no such set, `None` is returned.
         """
+
+    def get_from_maximal_containing_or_below(self, key: K):
+        """
+        Deprecated. Alias for get_from_rightmost_containing_or_below(key).
+        """
+        warnings.warn(
+            "Deprecated, use get_from_rightmost_containing_or_below(upper_limit).", DeprecationWarning
+        )
+        return self.get_from_rightmost_containing_or_below(key)
+
+    def get_from_minimal_containing_or_above(self, key: K):
+        """
+        Deprecated. Alias for get_from_leftmost_containing_or_above(key).
+        """
+        warnings.warn(
+            "Deprecated, use get_from_leftmost_containing_or_below(key).", DeprecationWarning
+        )
+        return self.get_from_leftmost_containing_or_above(key)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, RangeMap):
