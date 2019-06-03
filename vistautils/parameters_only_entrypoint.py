@@ -5,6 +5,8 @@ import sys
 
 import os
 
+import yaml
+
 from vistautils.parameters import YAMLParametersLoader, Parameters
 from vistautils.logging_utils import configure_logging_from
 
@@ -26,7 +28,7 @@ def parameters_only_entry_point(
     if len(sys.argv) == 2:
         params = YAMLParametersLoader().load(sys.argv[1])
         configure_logging_from(params)
-        log.info("Ran with parameters:\n%s", params)
+        log.info("Ran with parameters:\n%s", yaml.dump(params))
         main_method(params)
     else:
         if not usage_message:
