@@ -700,6 +700,21 @@ class RangeSet(
         does not contain `(x, y)`.
 
         If there is no such set, `None` is returned.
+
+        For example::
+
+         range_set: RangeSet[int] = immutablerangeset([
+             Range.open_closed(1, 10)
+             Range.open(12, 15)
+         ])
+
+         // range_set: {(1, 10], (12, 15)}
+         range_set.rightmost_containing_or_below(3)  // returns (1, 10]
+         range_set.rightmost_containing_or_below(11) // returns (1, 10]
+         range_set.rightmost_containing_or_below(12) // returns (1, 10]
+         range_set.rightmost_containing_or_below(13) // returns (12, 15)
+         range_set.rightmost_containing_or_below(15) // returns (12, 15)
+         range_set.rightmost_containing_or_below(1)  // returns None
         """
 
     @abstractmethod
@@ -711,6 +726,23 @@ class RangeSet(
         does not contain `(x, y)`.
 
         If there is no such set, `None` is returned.
+
+        For example::
+
+         range_set: RangeSet[int] = immutablerangeset([
+             Range.open(1, 10)
+             Range.open_closed(12, 15)
+         ])
+
+         // range_set: {(1, 10), (12, 15]}
+         range_set.leftmost_containing_or_above(1)  // returns (1, 10)
+         range_set.leftmost_containing_or_above(3)  // returns (1, 10)
+         range_set.leftmost_containing_or_above(10) // returns (12, 15]
+         range_set.leftmost_containing_or_above(11) // returns (12, 15]
+         range_set.leftmost_containing_or_above(12) // returns (12, 15]
+         range_set.leftmost_containing_or_above(13) // returns (12, 15]
+         range_set.leftmost_containing_or_above(15) // returns (12, 15]
+         range_set.leftmost_containing_or_above(16) // returns None
         """
 
     def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
@@ -1182,6 +1214,21 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         `(upper_limit, +inf)` does not contain `(x, y)`.
 
         If there is no such set, `None` is returned.
+
+        For example::
+
+         range_map: RangeMap[int, int] = immutablerangemap([
+           (Range.open_closed(1, 10), 36),  // (1, 10) maps to 36
+           (Range.open(12, 15), 17)         // (12, 13) maps to 17
+         ]);`
+
+         // range keys: {(1, 10], (12, 15)}
+         range_map.get_from_rightmost_containing_or_below(1)  // returns None
+         range_map.get_from_rightmost_containing_or_below(3)  // returns 36
+         range_map.get_from_rightmost_containing_or_below(11) // returns 36
+         range_map.get_from_rightmost_containing_or_below(12) // returns 36
+         range_map.get_from_rightmost_containing_or_below(13) // returns 17
+         range_map.get_from_rightmost_containing_or_below(15) // returns 17
         """
 
     @abstractmethod
@@ -1194,6 +1241,23 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         `(-inf, lower_limit)` does not contain `(x, y)`.
 
         If there is no such set, `None` is returned.
+
+        For example::
+
+         range_map: RangeSet[int] = immutablerangemap([
+             (Range.open(1, 10), 5),
+             (Range.open_closed(12, 15), 7)
+         ])
+
+         // range keys: {(1, 10), (12, 15]}
+         range_map.get_from_leftmost_containing_or_above(1)  // returns 5
+         range_map.get_from_leftmost_containing_or_above(3)  // returns 5
+         range_map.get_from_leftmost_containing_or_above(10) // returns 7
+         range_map.get_from_leftmost_containing_or_above(11) // returns 7
+         range_map.get_from_leftmost_containing_or_above(12) // returns 7
+         range_map.get_from_leftmost_containing_or_above(13) // returns 7
+         range_map.get_from_leftmost_containing_or_above(15) // returns 7
+         range_map.get_from_leftmost_containing_or_above(16) // returns None
         """
 
     def get_from_maximal_containing_or_below(self, key: K):
