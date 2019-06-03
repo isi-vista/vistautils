@@ -1,4 +1,5 @@
 # really needs to be totally-ordered
+import warnings
 from abc import abstractmethod, ABCMeta
 from typing import (
     Generic,
@@ -690,10 +691,28 @@ class RangeSet(
     def ranges_enclosed_by(self, rng) -> ImmutableSet[Range[T]]:
         raise NotImplementedError()
 
-    @abstractmethod
     def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
         """
-        Get the maximal range in this set whose lower bound does not exceed *upper_limit*.
+        Alias for rightmost_containing_or_below(). Deprecated.
+        """
+        warnings.warn(
+            "Deprecated, rightmost_containing_or_below(upper_limit).", DeprecationWarning
+        )
+        return self.rightmost_containing_or_below(upper_limit)
+
+    def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
+        """
+        Alias for leftmost_containing_or_below(). Deprecated.
+        """
+        warnings.warn(
+            "Deprecated, leftmost_containing_or_above(upper_limit).", DeprecationWarning
+        )
+        return self.leftmost_containing_or_below(lower_limit)
+
+    @abstractmethod
+    def rightmost_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
+        """
+        Get the rightmost range in this set whose lower bound does not exceed *upper_limit*.
 
         Formally, this is the range `(x, y)` with minimal `y` such that `(upper_limit, +inf)`
         does not contain `(x, y)`.
@@ -702,9 +721,9 @@ class RangeSet(
         """
 
     @abstractmethod
-    def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
+    def leftmost_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
         """
-        Get the minimal range in this set whose upper bound is not below *lower_limit*.
+        Get the leftmost range in this set whose upper bound is not below *lower_limit*.
 
         Formally, this is the range `(x, y)` with maximal `x` such that `(-inf, lower_limit)`
         does not contain `(x, y)`.
@@ -970,10 +989,10 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
             ]
         )
 
-    def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
+    def rightmost_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
         return _value_at_or_below(self._ranges_by_lower_bound, _BelowValue(upper_limit))
 
-    def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
+    def leftmost_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
         sorted_dict = self._ranges_by_lower_bound
         # an AboveValue cut corresponds to a closed upper interval, which catches containment
         # as desired
@@ -1250,11 +1269,11 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
         return self.rng_to_val
 
     def get_from_maximal_containing_or_below(self, key: K) -> Optional[V]:
-        probe_range = self.range_set.maximal_containing_or_below(key)
+        probe_range = self.range_set.rightmost_containing_or_below(key)
         return self.rng_to_val[probe_range] if probe_range else None
 
     def get_from_minimal_containing_or_above(self, key: K) -> Optional[V]:
-        probe_range = self.range_set.minimal_containing_or_above(key)
+        probe_range = self.range_set.leftmost_containing_or_above(key)
         return self.rng_to_val[probe_range] if probe_range else None
 
     def __reduce__(self):
