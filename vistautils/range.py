@@ -750,7 +750,8 @@ class RangeSet(
         Deprecated. Alias for rightmost_containing_or_below().
         """
         warnings.warn(
-            "Deprecated, use rightmost_containing_or_below(upper_limit).", DeprecationWarning
+            "Deprecated, use rightmost_containing_or_below(upper_limit).",
+            DeprecationWarning,
         )
         return self.rightmost_containing_or_below(upper_limit)
 
@@ -759,7 +760,8 @@ class RangeSet(
         Deprecated. Alias for leftmost_containing_or_below().
         """
         warnings.warn(
-            "Deprecated, use leftmost_containing_or_above(upper_limit).", DeprecationWarning
+            "Deprecated, use leftmost_containing_or_above(upper_limit).",
+            DeprecationWarning,
         )
         return self.leftmost_containing_or_below(lower_limit)
 
@@ -1265,7 +1267,8 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         Deprecated. Alias for get_from_rightmost_containing_or_below(key).
         """
         warnings.warn(
-            "Deprecated, use get_from_rightmost_containing_or_below(upper_limit).", DeprecationWarning
+            "Deprecated, use get_from_rightmost_containing_or_below(upper_limit).",
+            DeprecationWarning,
         )
         return self.get_from_rightmost_containing_or_below(key)
 
@@ -1274,7 +1277,8 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         Deprecated. Alias for get_from_leftmost_containing_or_above(key).
         """
         warnings.warn(
-            "Deprecated, use get_from_leftmost_containing_or_below(key).", DeprecationWarning
+            "Deprecated, use get_from_leftmost_containing_or_below(key).",
+            DeprecationWarning,
         )
         return self.get_from_leftmost_containing_or_above(key)
 
