@@ -696,7 +696,7 @@ class RangeSet(
         Alias for rightmost_containing_or_below(). Deprecated.
         """
         warnings.warn(
-            "Deprecated, rightmost_containing_or_below(upper_limit).", DeprecationWarning
+            "Deprecated, use rightmost_containing_or_below(upper_limit).", DeprecationWarning
         )
         return self.rightmost_containing_or_below(upper_limit)
 
@@ -705,7 +705,7 @@ class RangeSet(
         Alias for leftmost_containing_or_below(). Deprecated.
         """
         warnings.warn(
-            "Deprecated, leftmost_containing_or_above(upper_limit).", DeprecationWarning
+            "Deprecated, use leftmost_containing_or_above(upper_limit).", DeprecationWarning
         )
         return self.leftmost_containing_or_below(lower_limit)
 
@@ -1172,8 +1172,17 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    @abstractmethod
     def get_from_maximal_containing_or_below(self, key: K):
+        """
+        Alias for get_from_rightmost_containing_or_below(key). Deprecated, do not use.
+        """
+        warnings.warn(
+            "Deprecated, use get_from_rightmost_containing_or_below(upper_limit).", DeprecationWarning
+        )
+        return self.get_from_rightmost_containing_or_below(key)
+
+    @abstractmethod
+    def get_from_rightmost_containing_or_below(self, key: K):
         """
         Get the value associated with the maximal range in this set whose lower bound does not
         exceed *upper_limit*.
@@ -1184,8 +1193,17 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         If there is no such set, `None` is returned.
         """
 
-    @abstractmethod
     def get_from_minimal_containing_or_above(self, key: K):
+        """
+        Deprecated. Alias for get_from_leftmost_containing_or_above(key).
+        """
+        warnings.warn(
+            "Deprecated, use get_from_leftmost_containing_or_below(key).", DeprecationWarning
+        )
+        return self.get_from_leftmost_containing_or_above(key)
+
+    @abstractmethod
+    def get_from_leftmost_containing_or_above(self, key: K):
         """
         Get the value associated with the minimal range in this set whose upper bound is not below
         *lower_limit*.
@@ -1268,11 +1286,11 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
     def as_dict(self) -> Mapping[Range[K], V]:
         return self.rng_to_val
 
-    def get_from_maximal_containing_or_below(self, key: K) -> Optional[V]:
+    def get_from_rightmost_containing_or_below(self, key: K) -> Optional[V]:
         probe_range = self.range_set.rightmost_containing_or_below(key)
         return self.rng_to_val[probe_range] if probe_range else None
 
-    def get_from_minimal_containing_or_above(self, key: K) -> Optional[V]:
+    def get_from_leftmost_containing_or_above(self, key: K) -> Optional[V]:
         probe_range = self.range_set.leftmost_containing_or_above(key)
         return self.rng_to_val[probe_range] if probe_range else None
 
