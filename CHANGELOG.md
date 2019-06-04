@@ -1,3 +1,12 @@
+Vistautils 0.12.0 (2019-06-04)
+==============================
+
+New Features
+------------
+
+- Environmental variables are now interpolated into parameters loaded from YAML by default (`#71 <https://github.com/isi-vista/vistautils/issues/71>`_)
+
+
 Vistautils 0.11.0 (2019-05-23)
 ==============================
 
