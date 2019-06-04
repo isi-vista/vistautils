@@ -747,20 +747,26 @@ class RangeSet(
 
     def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
         """
-        Deprecated. Alias for rightmost_containing_or_below().
+        Deprecated. Instead, use rightmost_containing_or_below().
+
+        This may be removed in future versions.
         """
         warnings.warn(
-            "Deprecated, use rightmost_containing_or_below(upper_limit).",
+            "Deprecated, use rightmost_containing_or_below(upper_limit). "
+            "This method may be removed in a future release.",
             DeprecationWarning,
         )
         return self.rightmost_containing_or_below(upper_limit)
 
     def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
         """
-        Deprecated. Alias for leftmost_containing_or_below().
+        Deprecated. Instead, use leftmost_containing_or_below().
+
+        This may be removed in future versions.
         """
         warnings.warn(
-            "Deprecated, use leftmost_containing_or_above(upper_limit).",
+            "Deprecated, use leftmost_containing_or_above(upper_limit). "
+            "This method may be removed in a future release.",
             DeprecationWarning,
         )
         return self.leftmost_containing_or_below(lower_limit)
@@ -1264,20 +1270,26 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
 
     def get_from_maximal_containing_or_below(self, key: K):
         """
-        Deprecated. Alias for get_from_rightmost_containing_or_below(key).
+        Deprecated. Instead, use get_from_rightmost_containing_or_below(key).
+
+        This may be removed in future versions.
         """
         warnings.warn(
-            "Deprecated, use get_from_rightmost_containing_or_below(upper_limit).",
+            "Deprecated, use get_from_rightmost_containing_or_below(upper_limit). "
+            "This method may be removed in a future release.",
             DeprecationWarning,
         )
         return self.get_from_rightmost_containing_or_below(key)
 
     def get_from_minimal_containing_or_above(self, key: K):
         """
-        Deprecated. Alias for get_from_leftmost_containing_or_above(key).
+        Deprecated. Instead, use get_from_leftmost_containing_or_above(key).
+
+        This may be removed in future versions.
         """
         warnings.warn(
-            "Deprecated, use get_from_leftmost_containing_or_below(key).",
+            "Deprecated, use get_from_leftmost_containing_or_below(key). "
+            "This method may be removed in a future release.",
             DeprecationWarning,
         )
         return self.get_from_leftmost_containing_or_above(key)
