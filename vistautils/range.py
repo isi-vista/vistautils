@@ -1215,7 +1215,7 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
     @abstractmethod
     def get_from_rightmost_containing_or_below(self, key: K):
         """
-        Get the value associated with the maximal range in this set whose lower bound does not
+        Get the value associated with the rightmos range in this set whose lower bound does not
         exceed *upper_limit*.
 
         Formally, this is the value associated with the range `(x, y)` with minimal `y` such that
@@ -1242,7 +1242,7 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
     @abstractmethod
     def get_from_leftmost_containing_or_above(self, key: K):
         """
-        Get the value associated with the minimal range in this set whose upper bound is not below
+        Get the value associated with the leftmost range in this set whose upper bound is not below
         *lower_limit*.
 
         Formally, this is the value associated with the range `(x, y)` with maximal `x` such that
