@@ -36,7 +36,8 @@ def parameters_only_entry_point(
         params = YAMLParametersLoader().load(sys.argv[1])
         configure_logging_from(params)
         yaml.add_representer(Parameters, parameters_representer)
-        log.info("Ran with parameters:\n%s", yaml.dump(params, default_flow_style=False))
+        parameters_as_yaml = yaml.dump(params, default_flow_style=False)
+        log.info("Ran with parameters:\n%s", parameters_as_yaml)
         main_method(params)
     else:
         if not usage_message:
