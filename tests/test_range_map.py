@@ -84,7 +84,7 @@ class TestRangeMap(TestCase):
             )
 
     # adapted from corresponding tests in test_range_set
-    def test_get_maximal_containing_or_below(self):
+    def test_get_rightmost_containing_or_below(self):
         range_map = immutablerangemap(
             (
                 (Range.closed(-2, -1), 0),
@@ -99,41 +99,41 @@ class TestRangeMap(TestCase):
 
         # probe value is in the middle of a set
         # [2.1  ... *2.5* ... 3]
-        self.assertEqual(2, range_map.get_from_maximal_containing_or_below(2.5))
+        self.assertEqual(2, range_map.get_from_rightmost_containing_or_below(2.5))
         # probe value is at a closed upper limit
         # [2.1 .... *3*]
-        self.assertEqual(2, range_map.get_from_maximal_containing_or_below(3.0))
+        self.assertEqual(2, range_map.get_from_rightmost_containing_or_below(3.0))
         # probe value is at a closed lower limit
         # [*2.1* .... 3]
-        self.assertEqual(2, range_map.get_from_maximal_containing_or_below(2.1))
+        self.assertEqual(2, range_map.get_from_rightmost_containing_or_below(2.1))
         # probe value is at an open lower limit
         # [2.1 ... 3], (*4* ... 5]
-        self.assertEqual(2, range_map.get_from_maximal_containing_or_below(4.0))
+        self.assertEqual(2, range_map.get_from_rightmost_containing_or_below(4.0))
         # probe value is at an open upper limit
         # [0 ... *2.1*)
-        self.assertEqual(1, range_map.get_from_maximal_containing_or_below(2.0))
+        self.assertEqual(1, range_map.get_from_rightmost_containing_or_below(2.0))
         # probe value falls into a gap
         # [-2, -1] ... *-0.5* ... [0, 2)
-        self.assertEqual(0, range_map.get_from_maximal_containing_or_below(-0.5))
+        self.assertEqual(0, range_map.get_from_rightmost_containing_or_below(-0.5))
         # no range below
         # *-3* .... [-2,-1]
-        self.assertIsNone(range_map.get_from_maximal_containing_or_below(-3.0))
+        self.assertIsNone(range_map.get_from_rightmost_containing_or_below(-3.0))
         # empty rangeset
         self.assertIsNone(
             immutablerangemap(
                 ((Range.closed(1.0, 2.0), 1),)
-            ).get_from_maximal_containing_or_below(0.0)
+            ).get_from_rightmost_containing_or_below(0.0)
         )
         # lowest range has open lower bound
         # (*1*,2)
         self.assertIsNone(
             immutablerangemap(
                 ((Range.open(1.0, 2.0), 1),)
-            ).get_from_maximal_containing_or_below(1.0)
+            ).get_from_rightmost_containing_or_below(1.0)
         )
 
     # adapted from corresponding tests in test_range_set
-    def test_get_minimal_containing_or_above(self):
+    def test_get_leftmost_containing_or_above(self):
         range_map = immutablerangemap(
             (
                 (Range.closed(-2, -1), 0),
@@ -148,37 +148,37 @@ class TestRangeMap(TestCase):
 
         # probe value is in the middle of a set
         # [2.1  ... *2.5* ... 3]
-        self.assertEqual(2, range_map.get_from_minimal_containing_or_above(2.5))
+        self.assertEqual(2, range_map.get_from_leftmost_containing_or_above(2.5))
         # probe value is at a closed upper limit
         # [2.1 .... *3*]
-        self.assertEqual(2, range_map.get_from_minimal_containing_or_above(3.0))
+        self.assertEqual(2, range_map.get_from_leftmost_containing_or_above(3.0))
         # probe value is at a closed lower limit
         # [*2.1* .... 3]
-        self.assertEqual(2, range_map.get_from_minimal_containing_or_above(2.1))
+        self.assertEqual(2, range_map.get_from_leftmost_containing_or_above(2.1))
         # probe value is at an open lower limit
         # [2 ... 3], (*4* ... 5]
-        self.assertEqual(3, range_map.get_from_minimal_containing_or_above(4.0))
+        self.assertEqual(3, range_map.get_from_leftmost_containing_or_above(4.0))
         # probe value is at an open upper limit
         # [0 ... *2*) [2.1, 3.0]
-        self.assertEqual(2, range_map.get_from_minimal_containing_or_above(2.0))
+        self.assertEqual(2, range_map.get_from_leftmost_containing_or_above(2.0))
         # probe value falls into a gap
         # [-2, -1] ... *-0.5* ... [0, 2)
-        self.assertEqual(1, range_map.get_from_minimal_containing_or_above(-0.5))
+        self.assertEqual(1, range_map.get_from_leftmost_containing_or_above(-0.5))
         # no range above
         # (5.1 ... 7) ... *8*
-        self.assertIsNone(range_map.get_from_minimal_containing_or_above(8))
+        self.assertIsNone(range_map.get_from_leftmost_containing_or_above(8))
         # empty rangeset
         self.assertIsNone(
             immutablerangemap(
                 ((Range.closed(1.0, 2.0), 1),)
-            ).get_from_minimal_containing_or_above(3.0)
+            ).get_from_leftmost_containing_or_above(3.0)
         )
         # higher range has open upper bound
         # (1,*2*)
         self.assertIsNone(
             immutablerangemap(
                 ((Range.open(1.0, 2.0), 1),)
-            ).get_from_minimal_containing_or_above(2.0)
+            ).get_from_leftmost_containing_or_above(2.0)
         )
 
     def test_pickling(self):

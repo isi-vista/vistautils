@@ -1,4 +1,5 @@
 # really needs to be totally-ordered
+import warnings
 from abc import abstractmethod, ABCMeta
 from typing import (
     Generic,
@@ -691,26 +692,84 @@ class RangeSet(
         raise NotImplementedError()
 
     @abstractmethod
-    def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
+    def rightmost_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
         """
-        Get the maximal range in this set whose lower bound does not exceed *upper_limit*.
+        Get the rightmost range in this set whose lower bound does not exceed *upper_limit*.
 
         Formally, this is the range `(x, y)` with minimal `y` such that `(upper_limit, +inf)`
         does not contain `(x, y)`.
 
         If there is no such set, `None` is returned.
+
+        For example::
+
+         range_set: RangeSet[int] = immutablerangeset([
+             Range.open_closed(1, 10)
+             Range.open(12, 15)
+         ])
+
+         // range_set: {(1, 10], (12, 15)}
+         range_set.rightmost_containing_or_below(3)  // returns (1, 10]
+         range_set.rightmost_containing_or_below(11) // returns (1, 10]
+         range_set.rightmost_containing_or_below(12) // returns (1, 10]
+         range_set.rightmost_containing_or_below(13) // returns (12, 15)
+         range_set.rightmost_containing_or_below(15) // returns (12, 15)
+         range_set.rightmost_containing_or_below(1)  // returns None
         """
 
     @abstractmethod
-    def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
+    def leftmost_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
         """
-        Get the minimal range in this set whose upper bound is not below *lower_limit*.
+        Get the leftmost range in this set whose upper bound is not below *lower_limit*.
 
         Formally, this is the range `(x, y)` with maximal `x` such that `(-inf, lower_limit)`
         does not contain `(x, y)`.
 
         If there is no such set, `None` is returned.
+
+        For example::
+
+         range_set: RangeSet[int] = immutablerangeset([
+             Range.open(1, 10)
+             Range.open_closed(12, 15)
+         ])
+
+         // range_set: {(1, 10), (12, 15]}
+         range_set.leftmost_containing_or_above(1)  // returns (1, 10)
+         range_set.leftmost_containing_or_above(3)  // returns (1, 10)
+         range_set.leftmost_containing_or_above(10) // returns (12, 15]
+         range_set.leftmost_containing_or_above(11) // returns (12, 15]
+         range_set.leftmost_containing_or_above(12) // returns (12, 15]
+         range_set.leftmost_containing_or_above(13) // returns (12, 15]
+         range_set.leftmost_containing_or_above(15) // returns (12, 15]
+         range_set.leftmost_containing_or_above(16) // returns None
         """
+
+    def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
+        """
+        Deprecated. Instead, use rightmost_containing_or_below().
+
+        This may be removed in future versions.
+        """
+        warnings.warn(
+            "Deprecated, use rightmost_containing_or_below(upper_limit). "
+            "This method may be removed in a future release.",
+            DeprecationWarning,
+        )
+        return self.rightmost_containing_or_below(upper_limit)
+
+    def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
+        """
+        Deprecated. Instead, use leftmost_containing_or_below().
+
+        This may be removed in future versions.
+        """
+        warnings.warn(
+            "Deprecated, use leftmost_containing_or_above(upper_limit). "
+            "This method may be removed in a future release.",
+            DeprecationWarning,
+        )
+        return self.leftmost_containing_or_below(lower_limit)
 
     @abstractmethod
     def as_ranges(self) -> Sequence[Range[T]]:
@@ -970,10 +1029,10 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
             ]
         )
 
-    def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
+    def rightmost_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
         return _value_at_or_below(self._ranges_by_lower_bound, _BelowValue(upper_limit))
 
-    def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
+    def leftmost_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
         sorted_dict = self._ranges_by_lower_bound
         # an AboveValue cut corresponds to a closed upper interval, which catches containment
         # as desired
@@ -1154,28 +1213,86 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_from_maximal_containing_or_below(self, key: K):
+    def get_from_rightmost_containing_or_below(self, key: K):
         """
-        Get the value associated with the maximal range in this set whose lower bound does not
+        Get the value associated with the rightmost range in this set whose lower bound does not
         exceed *upper_limit*.
 
         Formally, this is the value associated with the range `(x, y)` with minimal `y` such that
         `(upper_limit, +inf)` does not contain `(x, y)`.
 
         If there is no such set, `None` is returned.
+
+        For example::
+
+         range_map: RangeMap[int, int] = immutablerangemap([
+           (Range.open_closed(1, 10), 36),  // (1, 10) maps to 36
+           (Range.open(12, 15), 17)         // (12, 13) maps to 17
+         ]);`
+
+         // range keys: {(1, 10], (12, 15)}
+         range_map.get_from_rightmost_containing_or_below(1)  // returns None
+         range_map.get_from_rightmost_containing_or_below(3)  // returns 36
+         range_map.get_from_rightmost_containing_or_below(11) // returns 36
+         range_map.get_from_rightmost_containing_or_below(12) // returns 36
+         range_map.get_from_rightmost_containing_or_below(13) // returns 17
+         range_map.get_from_rightmost_containing_or_below(15) // returns 17
         """
 
     @abstractmethod
-    def get_from_minimal_containing_or_above(self, key: K):
+    def get_from_leftmost_containing_or_above(self, key: K):
         """
-        Get the value associated with the minimal range in this set whose upper bound is not below
+        Get the value associated with the leftmost range in this set whose upper bound is not below
         *lower_limit*.
 
         Formally, this is the value associated with the range `(x, y)` with maximal `x` such that
         `(-inf, lower_limit)` does not contain `(x, y)`.
 
         If there is no such set, `None` is returned.
+
+        For example::
+
+         range_map: RangeSet[int] = immutablerangemap([
+             (Range.open(1, 10), 5),
+             (Range.open_closed(12, 15), 7)
+         ])
+
+         // range keys: {(1, 10), (12, 15]}
+         range_map.get_from_leftmost_containing_or_above(1)  // returns 5
+         range_map.get_from_leftmost_containing_or_above(3)  // returns 5
+         range_map.get_from_leftmost_containing_or_above(10) // returns 7
+         range_map.get_from_leftmost_containing_or_above(11) // returns 7
+         range_map.get_from_leftmost_containing_or_above(12) // returns 7
+         range_map.get_from_leftmost_containing_or_above(13) // returns 7
+         range_map.get_from_leftmost_containing_or_above(15) // returns 7
+         range_map.get_from_leftmost_containing_or_above(16) // returns None
         """
+
+    def get_from_maximal_containing_or_below(self, key: K):
+        """
+        Deprecated. Instead, use get_from_rightmost_containing_or_below(key).
+
+        This may be removed in future versions.
+        """
+        warnings.warn(
+            "Deprecated, use get_from_rightmost_containing_or_below(upper_limit). "
+            "This method may be removed in a future release.",
+            DeprecationWarning,
+        )
+        return self.get_from_rightmost_containing_or_below(key)
+
+    def get_from_minimal_containing_or_above(self, key: K):
+        """
+        Deprecated. Instead, use get_from_leftmost_containing_or_above(key).
+
+        This may be removed in future versions.
+        """
+        warnings.warn(
+            "Deprecated, use get_from_leftmost_containing_or_below(key). "
+            "This method may be removed in a future release.",
+            DeprecationWarning,
+        )
+        return self.get_from_leftmost_containing_or_above(key)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, RangeMap):
@@ -1249,12 +1366,12 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
     def as_dict(self) -> Mapping[Range[K], V]:
         return self.rng_to_val
 
-    def get_from_maximal_containing_or_below(self, key: K) -> Optional[V]:
-        probe_range = self.range_set.maximal_containing_or_below(key)
+    def get_from_rightmost_containing_or_below(self, key: K) -> Optional[V]:
+        probe_range = self.range_set.rightmost_containing_or_below(key)
         return self.rng_to_val[probe_range] if probe_range else None
 
-    def get_from_minimal_containing_or_above(self, key: K) -> Optional[V]:
-        probe_range = self.range_set.minimal_containing_or_above(key)
+    def get_from_leftmost_containing_or_above(self, key: K) -> Optional[V]:
+        probe_range = self.range_set.leftmost_containing_or_above(key)
         return self.rng_to_val[probe_range] if probe_range else None
 
     def __reduce__(self):

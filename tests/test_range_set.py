@@ -240,7 +240,7 @@ class TestRangeSet(TestCase):
                 self._test_intersects(RangeSet.create_mutable().add(query_1).add(query_2))
 
     # forms the basis for corresponding tests in test_range_map
-    def test_maximal_containing_or_below(self):
+    def test_rightmost_containing_or_below(self):
         range_set = RangeSet.create_mutable().add_all(
             (
                 Range.closed(-2, -1),
@@ -256,52 +256,52 @@ class TestRangeSet(TestCase):
         # probe value is in the middle of a set
         # [2.1  ... *2.5* ... 3]
         self.assertEqual(
-            Range.closed(2.1, 3.0), range_set.maximal_containing_or_below(2.5)
+            Range.closed(2.1, 3.0), range_set.rightmost_containing_or_below(2.5)
         )
         # probe value is at a closed upper limit
         # [2.1 .... *3*]
         self.assertEqual(
-            Range.closed(2.1, 3.0), range_set.maximal_containing_or_below(3.0)
+            Range.closed(2.1, 3.0), range_set.rightmost_containing_or_below(3.0)
         )
         # probe value is at a closed lower limit
         # [*2.1* .... 3]
         self.assertEqual(
-            Range.closed(2.1, 3.0), range_set.maximal_containing_or_below(2.1)
+            Range.closed(2.1, 3.0), range_set.rightmost_containing_or_below(2.1)
         )
         # probe value is at an open lower limit
         # [2.1 ... 3], (*4* ... 5]
         self.assertEqual(
-            Range.closed(2.1, 3.0), range_set.maximal_containing_or_below(4.0)
+            Range.closed(2.1, 3.0), range_set.rightmost_containing_or_below(4.0)
         )
         # probe value is at an open upper limit
         # [0 ... *2.1*)
         self.assertEqual(
-            Range.closed_open(0.0, 2.0), range_set.maximal_containing_or_below(2.0)
+            Range.closed_open(0.0, 2.0), range_set.rightmost_containing_or_below(2.0)
         )
         # probe value falls into a gap
         # [-2, -1] ... *-0.5* ... [0, 2)
         self.assertEqual(
-            Range.closed(-2.0, -1.0), range_set.maximal_containing_or_below(-0.5)
+            Range.closed(-2.0, -1.0), range_set.rightmost_containing_or_below(-0.5)
         )
         # no range below
         # *-3* .... [-2,-1]
-        self.assertIsNone(range_set.maximal_containing_or_below(-3.0))
+        self.assertIsNone(range_set.rightmost_containing_or_below(-3.0))
         # empty rangeset
         self.assertIsNone(
             RangeSet.create_mutable()
             .add(Range.closed(1.0, 2.0))
-            .maximal_containing_or_below(0.0)
+            .rightmost_containing_or_below(0.0)
         )
         # lowest range has open lower bound
         # (*1*,2)
         self.assertIsNone(
             RangeSet.create_mutable()
             .add(Range.open(1.0, 2.0))
-            .maximal_containing_or_below(1.0)
+            .rightmost_containing_or_below(1.0)
         )
 
     # forms the basis for corresponding tests in test_range_set
-    def test_minimal_containing_or_above(self):
+    def test_leftmost_containing_or_above(self):
         range_set = RangeSet.create_mutable().add_all(
             (
                 Range.closed(-2, -1),
@@ -317,48 +317,48 @@ class TestRangeSet(TestCase):
         # probe value is in the middle of a set
         # [2.1  ... *2.5* ... 3]
         self.assertEqual(
-            Range.closed(2.1, 3.0), range_set.minimal_containing_or_above(2.5)
+            Range.closed(2.1, 3.0), range_set.leftmost_containing_or_above(2.5)
         )
         # probe value is at a closed upper limit
         # [2.1 .... *3*]
         self.assertEqual(
-            Range.closed(2.1, 3.0), range_set.minimal_containing_or_above(3.0)
+            Range.closed(2.1, 3.0), range_set.leftmost_containing_or_above(3.0)
         )
         # probe value is at a closed lower limit
         # [*2.1* .... 3]
         self.assertEqual(
-            Range.closed(2.1, 3.0), range_set.minimal_containing_or_above(2.1)
+            Range.closed(2.1, 3.0), range_set.leftmost_containing_or_above(2.1)
         )
         # probe value is at an open lower limit
         # [2 ... 3], (*4* ... 5]
         self.assertEqual(
-            Range.open_closed(4.0, 5.0), range_set.minimal_containing_or_above(4.0)
+            Range.open_closed(4.0, 5.0), range_set.leftmost_containing_or_above(4.0)
         )
         # probe value is at an open upper limit
         # [0 ... *2*) [2.1, 3.0]
         self.assertEqual(
-            Range.closed(2.1, 3.0), range_set.minimal_containing_or_above(2.0)
+            Range.closed(2.1, 3.0), range_set.leftmost_containing_or_above(2.0)
         )
         # probe value falls into a gap
         # [-2, -1] ... *-0.5* ... [0, 2)
         self.assertEqual(
-            Range.closed_open(0, 2), range_set.minimal_containing_or_above(-0.5)
+            Range.closed_open(0, 2), range_set.leftmost_containing_or_above(-0.5)
         )
         # no range above
         # (5.1 ... 7) ... *8*
-        self.assertIsNone(range_set.minimal_containing_or_above(8))
+        self.assertIsNone(range_set.leftmost_containing_or_above(8))
         # empty rangeset
         self.assertIsNone(
             RangeSet.create_mutable()
             .add(Range.closed(1.0, 2.0))
-            .minimal_containing_or_above(3.0)
+            .leftmost_containing_or_above(3.0)
         )
         # higher range has open upper bound
         # (1,*2*)
         self.assertIsNone(
             RangeSet.create_mutable()
             .add(Range.open(1.0, 2.0))
-            .minimal_containing_or_above(2.0)
+            .leftmost_containing_or_above(2.0)
         )
 
     def test_len(self):
