@@ -13,6 +13,10 @@ from vistautils.logging_utils import configure_logging_from
 log = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
 
+def parameters_representer(dumper: yaml.Dumper, params: Parameters) -> None:
+    return dumper.represent_mapping("Parameters", params.as_mapping())
+
+
 def parameters_only_entry_point(
     main_method: Callable[[Parameters], None], usage_message: str = None
 ) -> None:
@@ -28,7 +32,8 @@ def parameters_only_entry_point(
     if len(sys.argv) == 2:
         params = YAMLParametersLoader().load(sys.argv[1])
         configure_logging_from(params)
-        log.info("Ran with parameters:\n%s", yaml.dump(params))
+        yaml.add_representer(Parameters, parameters_representer)
+        log.info("Ran with parameters:\n%s", yaml.dump(params, default_flow_style=False))
         main_method(params)
     else:
         if not usage_message:
