@@ -17,7 +17,7 @@ def parameters_representer(dumper: yaml.Dumper, params: Parameters) -> yaml.Node
     """
     PyYAML representer for Parameters objects.
     """
-    return dumper.represent_mapping("Parameters", params.as_mapping())
+    return dumper.represent_mapping("tag:yaml.org,2002:map", params.as_mapping())
 
 
 def parameters_only_entry_point(
