@@ -13,7 +13,10 @@ from vistautils.logging_utils import configure_logging_from
 log = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
 
-def parameters_representer(dumper: yaml.Dumper, params: Parameters) -> None:
+def parameters_representer(dumper: yaml.Dumper, params: Parameters) -> yaml.Node:
+    """
+    PyYAML representer for Parameters objects.
+    """
     return dumper.represent_mapping("Parameters", params.as_mapping())
 
 
