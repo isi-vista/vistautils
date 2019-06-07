@@ -769,7 +769,7 @@ class RangeSet(
             "This method may be removed in a future release.",
             DeprecationWarning,
         )
-        return self.leftmost_containing_or_below(lower_limit)
+        return self.leftmost_containing_or_above(lower_limit)
 
     @abstractmethod
     def as_ranges(self) -> Sequence[Range[T]]:
