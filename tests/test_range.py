@@ -85,13 +85,13 @@ class TestRange(TestCase):
         self.assertTrue(4 in rng)
         self.assertFalse(5 in rng)
         self.assertTrue(rng.has_lower_bound())
-        self.assertEquals(4, rng.lower_endpoint)
-        self.assertEquals(BoundType.closed(), rng.lower_bound_type)
+        self.assertEqual(4, rng.lower_endpoint)
+        self.assertEqual(BoundType.closed(), rng.lower_bound_type)
         self.assertTrue(rng.has_upper_bound())
-        self.assertEquals(4, rng.upper_endpoint)
-        self.assertEquals(BoundType.closed(), rng.upper_bound_type)
+        self.assertEqual(4, rng.upper_endpoint)
+        self.assertEqual(BoundType.closed(), rng.upper_bound_type)
         self.assertFalse(rng.is_empty())
-        self.assertEquals("[4..4]", str(rng))
+        self.assertEqual("[4..4]", str(rng))
 
     def test_empty_1(self):
         rng = Range.closed_open(4, 4)
@@ -99,13 +99,13 @@ class TestRange(TestCase):
         self.assertFalse(4 in rng)
         self.assertFalse(5 in rng)
         self.assertTrue(rng.has_lower_bound())
-        self.assertEquals(4, rng.lower_endpoint)
-        self.assertEquals(BoundType.closed(), rng.lower_bound_type)
+        self.assertEqual(4, rng.lower_endpoint)
+        self.assertEqual(BoundType.closed(), rng.lower_bound_type)
         self.assertTrue(rng.has_upper_bound())
-        self.assertEquals(4, rng.upper_endpoint)
-        self.assertEquals(BoundType.open(), rng.upper_bound_type)
+        self.assertEqual(4, rng.upper_endpoint)
+        self.assertEqual(BoundType.open(), rng.upper_bound_type)
         self.assertTrue(rng.is_empty())
-        self.assertEquals("[4..4)", str(rng))
+        self.assertEqual("[4..4)", str(rng))
 
     def test_empty_2(self):
         rng = Range.open_closed(4, 4)
@@ -113,13 +113,13 @@ class TestRange(TestCase):
         self.assertFalse(4 in rng)
         self.assertFalse(5 in rng)
         self.assertTrue(rng.has_lower_bound())
-        self.assertEquals(4, rng.lower_endpoint)
-        self.assertEquals(BoundType.open(), rng.lower_bound_type)
+        self.assertEqual(4, rng.lower_endpoint)
+        self.assertEqual(BoundType.open(), rng.lower_bound_type)
         self.assertTrue(rng.has_upper_bound())
-        self.assertEquals(4, rng.upper_endpoint)
-        self.assertEquals(BoundType.closed(), rng.upper_bound_type)
+        self.assertEqual(4, rng.upper_endpoint)
+        self.assertEqual(BoundType.closed(), rng.upper_bound_type)
         self.assertTrue(rng.is_empty())
-        self.assertEquals("(4..4]", str(rng))
+        self.assertEqual("(4..4]", str(rng))
 
     def test_less_than(self):
         rng = Range.less_than(5)
@@ -131,10 +131,10 @@ class TestRange(TestCase):
         self.assertFalse(5 in rng)
         self.assert_unbounded_below(rng)
         self.assertTrue(rng.has_upper_bound())
-        self.assertEquals(5, rng.upper_endpoint)
-        self.assertEquals(BoundType.open(), rng.upper_bound_type)
+        self.assertEqual(5, rng.upper_endpoint)
+        self.assertEqual(BoundType.open(), rng.upper_bound_type)
         self.assertFalse(rng.is_empty())
-        self.assertEquals("(-\u221e..5)", str(rng))
+        self.assertEqual("(-\u221e..5)", str(rng))
 
     def test_greater_than(self):
         rng = Range.greater_than(5)
@@ -142,11 +142,11 @@ class TestRange(TestCase):
         self.assertTrue(6 in rng)
         self.assertTrue(sys.maxsize in rng)
         self.assertTrue(rng.has_lower_bound())
-        self.assertEquals(5, rng.lower_endpoint)
-        self.assertEquals(BoundType.open(), rng.lower_bound_type)
+        self.assertEqual(5, rng.lower_endpoint)
+        self.assertEqual(BoundType.open(), rng.lower_bound_type)
         self.assert_unbounded_above(rng)
         self.assertFalse(rng.is_empty())
-        self.assertEquals("(5..+\u221e)", str(rng))
+        self.assertEqual("(5..+\u221e)", str(rng))
 
     def test_at_least(self):
         rng = Range.at_least(6)
@@ -154,11 +154,11 @@ class TestRange(TestCase):
         self.assertTrue(6 in rng)
         self.assertTrue(sys.maxsize in rng)
         self.assertTrue(rng.has_lower_bound())
-        self.assertEquals(6, rng.lower_endpoint)
-        self.assertEquals(BoundType.closed(), rng.lower_bound_type)
+        self.assertEqual(6, rng.lower_endpoint)
+        self.assertEqual(BoundType.closed(), rng.lower_bound_type)
         self.assert_unbounded_above(rng)
         self.assertFalse(rng.is_empty())
-        self.assertEquals("[6..+\u221e)", str(rng))
+        self.assertEqual("[6..+\u221e)", str(rng))
 
     def test_at_most(self):
         rng = Range.at_most(4)
@@ -170,10 +170,10 @@ class TestRange(TestCase):
         self.assertFalse(5 in rng)
         self.assert_unbounded_below(rng)
         self.assertTrue(rng.has_upper_bound())
-        self.assertEquals(4, rng.upper_endpoint)
-        self.assertEquals(BoundType.closed(), rng.upper_bound_type)
+        self.assertEqual(4, rng.upper_endpoint)
+        self.assertEqual(BoundType.closed(), rng.upper_bound_type)
         self.assertFalse(rng.is_empty())
-        self.assertEquals("(-\u221e..4]", str(rng))
+        self.assertEqual("(-\u221e..4]", str(rng))
 
     def test_all(self):
         rng = Range.all()
@@ -271,7 +271,7 @@ class TestRange(TestCase):
             rng.intersection(Range.greater_than(4))
 
         rng2 = Range.closed(3, 4)
-        self.assertEquals(
+        self.assertEqual(
             Range.open_closed(4, 4), rng2.intersection(Range.greater_than(4))
         )
 
@@ -279,15 +279,13 @@ class TestRange(TestCase):
         rng = Range.closed(3, 3)
         self.assertEqual(rng, rng.intersection(rng))
 
-        self.assertEquals(rng, rng.intersection(Range.at_most(4)))
-        self.assertEquals(rng, rng.intersection(Range.at_most(3)))
-        self.assertEquals(rng, rng.intersection(Range.at_least(3)))
-        self.assertEquals(rng, rng.intersection(Range.at_least(2)))
+        self.assertEqual(rng, rng.intersection(Range.at_most(4)))
+        self.assertEqual(rng, rng.intersection(Range.at_most(3)))
+        self.assertEqual(rng, rng.intersection(Range.at_least(3)))
+        self.assertEqual(rng, rng.intersection(Range.at_least(2)))
 
-        self.assertEquals(Range.closed_open(3, 3), rng.intersection(Range.less_than(3)))
-        self.assertEquals(
-            Range.open_closed(3, 3), rng.intersection(Range.greater_than(3))
-        )
+        self.assertEqual(Range.closed_open(3, 3), rng.intersection(Range.less_than(3)))
+        self.assertEqual(Range.open_closed(3, 3), rng.intersection(Range.greater_than(3)))
 
         with self.assertRaises(ValueError):
             rng.intersection(Range.at_least(4))
