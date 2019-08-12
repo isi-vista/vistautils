@@ -19,7 +19,7 @@ def parameters_only_entry_point(
 
     In addition to saving the boilerplate of loading parameters, this will also automatically
     configure logging from the param file itself (see `configure_logging_from`) and log the
-    contents of the parameter file. In the future, other such conveniencres may be added.
+    contents of the parameter file. In the future, other such conveniences may be added.
 
     This is primarily for ISI VISTA-internal use.
     """
