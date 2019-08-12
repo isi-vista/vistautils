@@ -5,19 +5,10 @@ import sys
 
 import os
 
-import yaml
-
 from vistautils.parameters import YAMLParametersLoader, Parameters
 from vistautils.logging_utils import configure_logging_from
 
 log = logging.getLogger(__name__)  # pylint:disable=invalid-name
-
-
-def parameters_representer(dumper: yaml.Dumper, params: Parameters) -> yaml.Node:
-    """
-    PyYAML representer for Parameters objects.
-    """
-    return dumper.represent_mapping("tag:yaml.org,2002:map", params.as_mapping())
 
 
 def parameters_only_entry_point(
@@ -35,9 +26,7 @@ def parameters_only_entry_point(
     if len(sys.argv) == 2:
         params = YAMLParametersLoader().load(sys.argv[1])
         configure_logging_from(params)
-        yaml.add_representer(Parameters, parameters_representer)
-        parameters_as_yaml = yaml.dump(params, default_flow_style=False)
-        log.info("Ran with parameters:\n%s", parameters_as_yaml)
+        log.info("Ran with parameters:\n%s", params)
         main_method(params)
     else:
         if not usage_message:

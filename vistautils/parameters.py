@@ -690,6 +690,11 @@ class Parameters:
 
         return current
 
+    def __str__(self) -> str:
+        str_sink = CharSink.to_string()
+        YAMLParametersWriter().write(self, str_sink)
+        return str_sink.last_string_written
+
 
 @attrs(auto_attribs=True)
 class YAMLParametersLoader:

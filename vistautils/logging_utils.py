@@ -19,7 +19,9 @@ _LEVEL_STRINGS_TO_LEVELS = {
 }
 
 
-def configure_logging_from(params: Parameters, *, log_params=True) -> None:
+# log_params defaults to false because this is frequently called by code which is already itself
+# logging the parameters
+def configure_logging_from(params: Parameters, *, log_params=False) -> None:
     """
     Configures logging from parameters.
 
@@ -43,11 +45,8 @@ def _config_logging_from_params(params):
     # so we change the default level to INFO unless overriden below
     set_root_level_to = "INFO"
 
-    if "logging" in params:
-        # if no config file is provided we default to logging to the Console
-        logging.getLogger().addHandler(logging.StreamHandler())
-        if "logging.root_level" in params:
-            set_root_level_to = params.string("logging.root_level")
+    if "logging.root_level" in params:
+        set_root_level_to = params.string("logging.root_level")
 
     try:
         level = _LEVEL_STRINGS_TO_LEVELS[set_root_level_to]

@@ -392,7 +392,7 @@ class _DirectoryCharKeyValueSink(KeyValueSink[str, str]):
     def __enter__(self) -> "KeyValueSink[str,str]":
         self._path.rmdir()
         self._path.mkdir(parents=True, exist_ok=True)
-        self.id_to_file: MutableMapping[str, Path] = dict()
+        self.id_to_file = dict()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
