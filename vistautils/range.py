@@ -309,7 +309,9 @@ RANGE_ALL: "Range" = None  # type: ignore
 # this should have slots=True but cannot for the moment due to
 # https://github.com/python-attrs/attrs/issues/313
 # Pylint disable due to https://github.com/PyCQA/pylint/issues/2472
-@attrs(frozen=True, repr=False)  # pylint: disable=inherit-non-class
+@attrs(
+    frozen=True, repr=False, cmp=False, hash=False
+)  # pylint: disable=inherit-non-class
 class Range(Container[T], Generic[T], Hashable):
     """
     The boundaries of a contiguous span of values.
