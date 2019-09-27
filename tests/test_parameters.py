@@ -267,6 +267,40 @@ class TestParameters(TestCase):
 
         self.assertEqual(INCLUSION_REFERENCE, dict(params.as_mapping()))
 
+    def test_absents(self):
+        empty_params = Parameters.from_mapping({})
+        assert empty_params.optional_arbitrary_list("foo") is None
+        assert empty_params.optional_boolean("foo") is None
+        assert empty_params.optional_creatable_directory("foo") is None
+        assert empty_params.optional_creatable_empty_directory("foo") is None
+        assert empty_params.optional_creatable_file("foo") is None
+        assert empty_params.optional_existing_directory("foo") is None
+        assert empty_params.optional_existing_file("foo") is None
+        assert empty_params.optional_floating_point("foo") is None
+        assert empty_params.optional_integer("foo") is None
+        assert empty_params.optional_namespace("foo") is None
+        assert empty_params.optional_positive_integer("foo") is None
+        assert empty_params.optional_string("foo") is None
+
+    def test_optionals_when_present(self):
+        params = Parameters.from_mapping(
+            {
+                "list": [1, 2, 3, ["a", "b", "c"]],
+                "boolean": True,
+                "float": 0.5,
+                "integer": 42,
+                "namespace": {"fred": "meep"},
+                "string": "foo",
+            }
+        )
+
+        assert params.optional_arbitrary_list("list") == [1, 2, 3, ["a", "b", "c"]]
+        assert params.optional_boolean("boolean") == True
+        assert params.optional_floating_point("float") == 0.5
+        assert params.optional_integer("integer") == 42
+        assert params.optional_namespace("namespace").as_mapping() == {"fred": "meep"}
+        assert params.optional_string("string") == "foo"
+
 
 # Used by test_environmental_variable_interpolation.
 # Here we test:
