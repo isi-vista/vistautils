@@ -730,7 +730,6 @@ class YAMLParametersLoader:
         self,
         f: Union[str, Path],
         context: Optional[Parameters] = None,
-        root_path: Path = None,
         *,
         included_context: Optional[Parameters] = None,
     ):
@@ -739,9 +738,6 @@ class YAMLParametersLoader:
 
         If `included_context` is specified, its content will be included in the returned
         Parameters (if not overridden) and will be available for interpolation.
-
-        If `root_path` is specified, that path is used for resolving relative path names in
-        includes instead of the path of the parameter file being loaded.
         """
 
         # handle deprecated context parameter
@@ -763,15 +759,10 @@ class YAMLParametersLoader:
         if isinstance(f, str):
             f = Path(f)
 
-        # if no special path is specified, included files will be resolved relative to
-        # this file's path
-        if not root_path:
-            root_path = f.parent
-
-        return self._inner_load(
+        return self._inner_load_from_string(
             f.read_text(encoding="utf-8"),
             error_string=str(f),
-            root_path=root_path,
+            includes_are_relative_to=f.parent,
             included_context=non_none_included_context,
         )
 
@@ -786,29 +777,26 @@ class YAMLParametersLoader:
 
         This behaves just like *load*, except relative includes are not allowed.
         """
-        return self._inner_load(
+        return self._inner_load_from_string(
             param_file_content,
             error_string=f"String param file:\n{param_file_content}",
-            root_path=None,
+            includes_are_relative_to=None,
             included_context=included_context,
         )
 
-    def _inner_load(
+    def _inner_load_from_string(
         self,
         param_file_content: str,
         error_string: str,
         *,
         included_context: Parameters = Parameters.empty(),
-        root_path: Optional[Path] = None,
+        includes_are_relative_to: Optional[Path] = None,
     ):
         """
         Loads parameters from a YAML file.
 
         If `context` is specified, its content will be included in the returned Parameters (if
         not overridden) and will be available for interpolation.
-
-        If `root_path` is specified, that path is used for resolving relative path names in
-        includes instead of the path of the parameter file being loaded.
         """
         try:
             raw_yaml = yaml.safe_load(param_file_content)
@@ -820,8 +808,10 @@ class YAMLParametersLoader:
                 for included_file in raw_yaml["_includes"]:
                     _logger.info("Processing included parameter file %s", included_file)
                     if not os.path.isabs(included_file):
-                        if root_path is not None:
-                            included_file_path = Path(root_path, included_file).resolve()
+                        if includes_are_relative_to is not None:
+                            included_file_path = Path(
+                                includes_are_relative_to, included_file
+                            ).resolve()
                         else:
                             raise ParameterError(
                                 "Cannot do relative includes when loading from"
@@ -831,10 +821,11 @@ class YAMLParametersLoader:
                         included_file_path = Path(included_file)
                     previously_loaded = self._unify(
                         previously_loaded,
-                        self.load(
-                            included_file_path,
-                            root_path=root_path,
-                            context=previously_loaded,
+                        self._inner_load_from_string(
+                            included_file_path.read_text(encoding="utf-8"),
+                            error_string=str(included_file_path),
+                            includes_are_relative_to=included_file_path.parent,
+                            included_context=previously_loaded,
                         ),
                     )
                 del raw_yaml["_includes"]

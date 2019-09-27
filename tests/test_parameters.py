@@ -257,13 +257,21 @@ class TestParameters(TestCase):
 
     def test_inclusion(self):
         loader = YAMLParametersLoader()
-        test_dir = Path(tempfile.mkdtemp())
-        input_file = test_dir / "input.params"
-        input_file.write_text(INCLUSION_INPUT, encoding="utf-8")
-        included_file = test_dir / "include_me.params"
-        included_file.write_text(INCLUSION_INCLUDED_FILE, encoding="utf-8")
+        test_root_dir = Path(tempfile.mkdtemp())
+        # we want test inclusion across different directories
+        test_nested_dir = test_root_dir / "nested"
+        test_nested_dir.mkdir(exist_ok=True, parents=True)
+        input_file = test_nested_dir / "input.params"
+        input_file.write_text(INCLUSION_INPUT_FIRST_FILE, encoding="utf-8")
+
+        included_file = test_root_dir / "include_one_level_up.params"
+        included_file.write_text(INCLUSION_INPUT_PARENT, encoding="utf-8")
+
+        grandparent_file = test_root_dir / "include_same_dir.params"
+        grandparent_file.write_text(INCLUSION_INPUT_GRANDPARENT, encoding="utf-8")
+
         params = loader.load(input_file)
-        shutil.rmtree(test_dir)
+        shutil.rmtree(test_root_dir)
 
         self.assertEqual(INCLUSION_REFERENCE, dict(params.as_mapping()))
 
@@ -292,14 +300,24 @@ ENV_VAR_INTERPOLATION_REFERENCE = """
         """
 
 # used for detecting inclusion
-INCLUSION_INPUT = """
+INCLUSION_INPUT_FIRST_FILE = """
        _includes:
-            - "include_me.params"
-       hello: "world %foo%"
+            - "../include_one_level_up.params"
+       hello: "hello %message%"
 """
 
-INCLUSION_INCLUDED_FILE = """
+INCLUSION_INPUT_PARENT = """
+       _includes:
+            - "include_same_dir.params"
+       message: "world %foo%"
+"""
+
+INCLUSION_INPUT_GRANDPARENT = """
 foo: "meep"
 """
 
-INCLUSION_REFERENCE = {"foo": "meep", "hello": "world meep"}
+INCLUSION_REFERENCE = {
+    "foo": "meep",
+    "message": "world meep",
+    "hello": "hello world meep",
+}
