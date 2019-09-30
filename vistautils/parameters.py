@@ -166,7 +166,7 @@ class Parameters:
             return self.creatable_directory(param)
 
     def optional_creatable_empty_directory(
-        self, param: str, *, delete=False
+        self, param: str, *, delete: bool = False
     ) -> Optional[Path]:
         """
         Get an empty directory which can be written to, if possible.
