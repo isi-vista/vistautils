@@ -811,7 +811,7 @@ class YAMLParametersLoader:
                         if includes_are_relative_to is not None:
                             included_file_path = Path(
                                 includes_are_relative_to, included_file
-                            ).resolve()
+                            ).resolve(strict=True)
                         else:
                             raise ParameterError(
                                 "Cannot do relative includes when loading from"
