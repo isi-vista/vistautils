@@ -114,6 +114,23 @@ class Parameters:
         ret.mkdir(parents=True, exist_ok=True)
         return ret
 
+    def optional_creatable_directory(self, param: str) -> Optional[Path]:
+        """
+        Get a directory which can be written to, if possible.
+
+        If *param* is not present, returns *None*.
+
+        Interprets the string-valued parameter `param` as a directory path and creates it if
+        it does not exist.  This allows writing files within this directory without needing to
+        remember to create it or its parent directories.
+
+        Throws a `ParameterError` if `param` is not a known parameter.
+        """
+        if param in self:
+            return self.creatable_directory(param)
+        else:
+            return None
+
     def creatable_empty_directory(self, param: str, *, delete=False) -> Path:
         """
         Get an empty directory which can be written to.
@@ -147,6 +164,29 @@ class Parameters:
             )
         else:
             return self.creatable_directory(param)
+
+    def optional_creatable_empty_directory(
+        self, param: str, *, delete: bool = False
+    ) -> Optional[Path]:
+        """
+        Get an empty directory which can be written to, if possible.
+
+        If *param* is absent, returns *None*.
+
+        Interprets the string-valued parameter `param` as a directory path and creates it if
+        it does not exist.  If the directory already exists and is non-empty, behavior depends
+        on the value of the `delete` argument.  If False (the default), an exception will be
+        raised.  If True, the directory and its contents will be deleted.
+
+        This allows writing files within this directory without needing to remember to create it
+        or its parent directories.
+
+        Throws a `ParameterError` if `param` is not a known parameter.
+        """
+        if param in self:
+            return self.creatable_empty_directory(param, delete=delete)
+        else:
+            return None
 
     def creatable_file(self, param: str) -> Path:
         """
@@ -271,6 +311,20 @@ class Parameters:
             )
         return ret
 
+    def optional_string(
+        self, param_name: str, valid_options: Optional[Iterable[str]] = None
+    ) -> Optional[str]:
+        """
+        Gets a string-valued parameter, if possible.
+
+        Returns *None* if the parameter is absent.
+        Throws a `ParameterError` if `param` is not a known parameter.
+        """
+        if param_name in self:
+            return self.string(param_name, valid_options)
+        else:
+            return None
+
     def __contains__(self, param_name: str) -> bool:
         return self._private_get(param_name, optional=True) is not None
 
@@ -282,13 +336,26 @@ class Parameters:
 
     def integer(self, name: str) -> int:
         """
-        Gets an integer parameters.
+        Gets an integer parameter.
         """
         return self.get(name, int)
+
+    def optional_integer(self, name: str) -> Optional[int]:
+        """
+        Gets an integer parameter, if possible.
+
+        Returns *None* if the parameter is not present.
+        """
+        if name in self:
+            return self.integer(name)
+        else:
+            return None
 
     def positive_integer(self, name: str) -> int:
         """
         Gets an parameter with a positive integer value.
+
+        Throws an exception if the parameter is present but is not a positive integer.
         """
         ret = self.integer(name)
         if ret > 0:
@@ -300,6 +367,18 @@ class Parameters:
                 )
             )
 
+    def optional_positive_integer(self, name: str) -> Optional[int]:
+        """
+        Gets a positive integer parameter, if possible.
+
+        Returns *None* if the parameter is not present.
+        Throws an exception if the parameter is present but is not a positive integer.
+        """
+        if name in self:
+            return self.positive_integer(name)
+        else:
+            return None
+
     def floating_point(
         self, name: str, valid_range: Optional[Range[float]] = None
     ) -> float:
@@ -307,6 +386,8 @@ class Parameters:
         Gets a float parameter.
 
         Throws a `ParameterError` if `param` is not within the given range.
+
+        This method isn't called `float` to avoid a clash with the Python type.
         """
         ret = self.get(name, float)
         if valid_range is not None and ret not in valid_range:
@@ -316,6 +397,28 @@ class Parameters:
                 )
             )
         return ret
+
+    def optional_floating_point(
+        self, name: str, valid_range: Optional[Range[float]] = None
+    ) -> Optional[float]:
+        """
+        Gets a float parameter if present.
+
+        Consider the idiom `params.optional_float('foo') or default_value`
+        Throws a `ParameterError` if `param` is not within the given range.
+        """
+        if name in self:
+            return self.floating_point(name, valid_range)
+        else:
+            return None
+
+    def optional_float(
+        self, name: str, valid_range: Optional[Range[float]] = None
+    ) -> Optional[float]:
+        """
+        Deprecated, prefer `optional_floating_point` for more consistent naming.
+        """
+        return self.optional_floating_point(name, valid_range)
 
     def boolean(self, name: str) -> bool:
         """
@@ -355,14 +458,6 @@ class Parameters:
             return ret
         else:
             return None
-
-    def optional_float(self, name: str) -> Optional[float]:
-        """
-        Gets a float parameter if present.
-
-        Consider the idiom `params.optional_float('foo') or default_value`
-        """
-        return self.get_optional(name, float)
 
     def arbitrary_list(self, name: str) -> List:
         """
@@ -585,7 +680,7 @@ class Parameters:
         <number> <log_name> from <file>"
         """
         file_list_file = self.existing_file(param)
-        with open(file_list_file, "r") as inp:
+        with open(str(file_list_file), "r", encoding="utf-8") as inp:
             ret = [
                 Path(line.strip())
                 for line in inp
