@@ -1,3 +1,19 @@
+Vistautils 0.13.0 (2019-09-30)
+==============================
+
+Bugfixes
+--------
+
+- Eliminates double-logging when logging is configured from parameters. (`#79 <https://github.com/isi-vista/vistautils/issues/79>`_)
+- Fixed incorrect loading of second-level included files for parameters (`#81 <https://github.com/isi-vista/vistautils/issues/81>`_)
+
+
+New Features
+------------
+
+- Added `optional_integer`, `optional_creatable_directory`, `optional_creatable_empty_directory`, `optional_string,` `optional_positive_integer`, `optional_floating_point`, and `optional_float` (`#80 <https://github.com/isi-vista/vistautils/issues/80>`_)
+
+
 Vistautils 0.12.0 (2019-06-04)
 ==============================
 
