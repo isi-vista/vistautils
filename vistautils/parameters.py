@@ -680,7 +680,7 @@ class Parameters:
         <number> <log_name> from <file>"
         """
         file_list_file = self.existing_file(param)
-        with open(str(file_list_file), "r") as inp:
+        with open(str(file_list_file), "r", encoding="utf-8") as inp:
             ret = [
                 Path(line.strip())
                 for line in inp
