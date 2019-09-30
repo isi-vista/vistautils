@@ -332,12 +332,12 @@ class Range(Container[T], Generic[T], Hashable):
     ========        ==========            ==============
     `(a..b)`	    `{x | a < x < b}`	      open
     `[a..b]`	    `{x | a <= x <= b}`	      closed
-    `(a..b]`	    `{x | a < x <= b}`	      openClosed
-    `[a..b)`	    `{x | a <= x < b}`	      closedOpen
-    `(a..+∞)`	    `{x | x > a}`	          greaterThan
-    `[a..+∞)`	    `{x | x >= a}`	          atLeast
-    `(-∞..b)`	    `{x | x < b}`	          lessThan
-    `(-∞..b]`	    `{x | x <= b}`	          atMost
+    `(a..b]`	    `{x | a < x <= b}`	      open_closed
+    `[a..b)`	    `{x | a <= x < b}`	      closed_open
+    `(a..+∞)`	    `{x | x > a}`	          greater_than
+    `[a..+∞)`	    `{x | x >= a}`	          at_least
+    `(-∞..b)`	    `{x | x < b}`	          less_than
+    `(-∞..b]`	    `{x | x <= b}`	          at_most
     `(-∞..+∞)`	    `{x}`	                  all
     =========       ===========           ==============
 
