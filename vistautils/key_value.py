@@ -828,7 +828,7 @@ def char_key_value_linear_source_from_params(
     params: Parameters,
     *,
     input_namespace: str = "input",
-    eval_context: Optional[Dict] = None,
+    eval_context: Optional[Mapping[Any, Any]] = None,
 ) -> KeyValueLinearSource[str, str]:
     """
     Get a key-value source based on parameters.
