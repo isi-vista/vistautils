@@ -634,7 +634,7 @@ class _ZipBytesFileKeyValuesSource(_ZipFileKeyValueSource[bytes]):
         The "path" parameter should be the zip file to be opened.
 
         Currently we assume the zipfile contains a file with the IDs, which it will if it
-        were created by the default `ByteSink.zip_bytes_sink()`. Support for custom key
+        were created by the default `KeyValueSink.zip_bytes_sink()`. Support for custom key
         functions will be added in the future.
         """
         return KeyValueSource.zip_bytes_source(params.existing_file("path"))
