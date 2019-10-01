@@ -1,11 +1,14 @@
 import os
 import shutil
 import tempfile
+from typing import Type
+
 import yaml
 from textwrap import dedent
 from pathlib import Path
 from unittest import TestCase
 
+from attr import attrs, attrib, validators
 from immutablecollections import immutabledict
 from vistautils.parameters import (
     Parameters,
@@ -309,6 +312,57 @@ class TestParameters(TestCase):
         assert params.optional_namespace("namespace").as_mapping() == {"fred": "meep"}
         assert params.optional_string("string") == "foo"
 
+    def test_object_from_parameters(self):
+        @attrs
+        class TestObj:
+            val: int = attrib(
+                default=None, validator=validators.optional(validators.instance_of(int))
+            )
+
+            @staticmethod
+            def from_parameters(params: Parameters) -> "TestObj":
+                return TestObj(params.integer("my_int"))
+
+        simple_params = Parameters.from_mapping(
+            {"test": {"value": "TestObj", "my_int": 5}}
+        )
+
+        self.assertEqual(
+            TestObj(5),
+            simple_params.object_from_parameters("test", TestObj, context=locals()),
+        )
+
+        # test when object needs no further parameters for instantiation
+        @attrs
+        class ArglessTestObj:
+            pass
+
+        argless_params = Parameters.from_mapping({"test": "ArglessTestObj"})
+        self.assertEqual(
+            ArglessTestObj(),
+            argless_params.object_from_parameters(
+                "test", ArglessTestObj, context=locals()
+            ),
+        )
+
+        # test default_creator creator
+        def default_creator(params: Parameters) -> int:
+            return 42
+
+        # test falling back to default creator
+        self.assertEqual(42, Parameters.empty().object_from_parameters("missing_param",
+                                                                     expected_type=int,
+                                                  default_creator=default_creator))
+
+        # test no specified or default creator
+        with self.assertRaises(ParameterError):
+            Parameters.empty().object_from_parameters("missing_param", expected_type=int)
+
+        # test default creator being invalid
+        bad_default_creator = "foo"
+        with self.assertRaises(ParameterError):
+            Parameters.empty().object_from_parameters("missing_param", expected_type=int,
+                                                      default_creator=bad_default_creator)
 
 # Used by test_environmental_variable_interpolation.
 # Here we test:

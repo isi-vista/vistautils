@@ -880,6 +880,7 @@ def byte_key_value_linear_source_from_params(
         special_creator_values=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
         default_creator=_doc_id_binary_source_from_params,
         context=effective_context,
+        creator_namepace_param_name="type"
     )
 
 
