@@ -844,7 +844,7 @@ def char_key_value_linear_source_from_params(
 
     If additional imports are needed to resolve 'type', they can be specified as a Python
     list in
-    the `imports` field.
+    the `import` field.
 
     If no type is specified, a source will be constructed from the doc-id-to-file map specified
     by the `docIdToFileMap` parameter.
@@ -887,7 +887,7 @@ def byte_key_value_linear_source_from_params(
 
     If additional imports are needed to resolve 'type', they can be specified as a Python
     list in
-    the `imports` field.
+    the `import` field.
 
     If no type is specified, a source will be constructed from the doc-id-to-file map specified
     by the `docIdToFileMap` parameter.
@@ -929,7 +929,7 @@ def char_key_value_source_from_params(
 
     If additional imports are needed to resolve 'type', they can be specified as a Python
     list in
-    the `imports` field.
+    the `import` field.
 
     If no type is specified, a source will be constructed from the doc-id-to-file map specified
     by the `docIdToFileMap` parameter.
@@ -968,7 +968,7 @@ def byte_key_value_source_from_params(
 
     If additional imports are needed to resolve 'type', they can be specified as a Python
     list in
-    the `imports` field.
+    the `import` field.
 
     If no type is specified, a source will be constructed from the doc-id-to-file map specified
     by the `docIdToFileMap` parameter.
@@ -1017,7 +1017,7 @@ def char_key_value_sink_from_params(
     writing the output files to the specified directory.
 
     If additional imports are needed to resolve 'type', they can be specified as a Python list in
-    the `imports` field.
+    the `import` field.
 
     If no type is specified, a 'directory' sink will be created.
     """
@@ -1054,7 +1054,7 @@ def byte_key_value_sink_from_params(
     writing the output files to the specified directory.
 
     If additional imports are needed to resolve 'type', they can be specified as a Python list in
-    the `imports` field.
+    the `import` field.
 
     If no type is specified, a 'directory' sink will be created.
     """
