@@ -350,9 +350,12 @@ class TestParameters(TestCase):
             return 42
 
         # test falling back to default creator
-        self.assertEqual(42, Parameters.empty().object_from_parameters("missing_param",
-                                                                     expected_type=int,
-                                                  default_creator=default_creator))
+        self.assertEqual(
+            42,
+            Parameters.empty().object_from_parameters(
+                "missing_param", expected_type=int, default_creator=default_creator
+            ),
+        )
 
         # test no specified or default creator
         with self.assertRaises(ParameterError):
@@ -361,8 +364,10 @@ class TestParameters(TestCase):
         # test default creator being invalid
         bad_default_creator = "foo"
         with self.assertRaises(ParameterError):
-            Parameters.empty().object_from_parameters("missing_param", expected_type=int,
-                                                      default_creator=bad_default_creator)
+            Parameters.empty().object_from_parameters(
+                "missing_param", expected_type=int, default_creator=bad_default_creator
+            )
+
 
 # Used by test_environmental_variable_interpolation.
 # Here we test:

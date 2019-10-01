@@ -507,6 +507,16 @@ class _ZipBytesFileKeyValueSink(_ZipKeyValueSink[bytes]):
     def _to_bytes(self, val: bytes) -> bytes:
         return val
 
+    @staticmethod
+    def from_parameters(params: Parameters) -> KeyValueSink[str, bytes]:
+        """
+        Create a key-value sink writing to a zip file.
+
+        Right now, these uses all the defaults for `KeyValueSink.zip_bytes_sink`. In the
+        future, we might examine other parameters to allow greater customization.
+        """
+        return KeyValueSink.zip_bytes_sink(params.creatable_file("path"))
+
 
 @attrs(frozen=True)
 class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
@@ -615,6 +625,19 @@ class _ZipBytesFileKeyValuesSource(_ZipFileKeyValueSource[bytes]):
 
     def _process_bytes(self, _bytes: bytes) -> bytes:
         return _bytes
+
+    @staticmethod
+    def from_parameters(params: Parameters) -> KeyValueSource[str, bytes]:
+        """
+        Construct a zip file key-value source from parameters.
+
+        The "path" parameter should be the zip file to be opened.
+
+        Currently we assume the zipfile contains a file with the IDs, which it will if it
+        were created by the default `ByteSink.zip_bytes_sink()`. Support for custom key
+        functions will be added in the future.
+        """
+        return KeyValueSource.zip_bytes_source(params.existing_file("path"))
 
 
 class _ZipCharFileKeyValuesSource(_ZipFileKeyValueSource[str]):
@@ -788,7 +811,7 @@ _CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES = {
 }
 
 _BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES = {
-    "zip": "_ZipBytesFileKeyValueSink",
+    "zip": "_ZipBytesFileKeyValuesSource",
     "file-map": "_PathMappingBytesKeyValueSource",
 }
 
@@ -802,9 +825,10 @@ def _doc_id_binary_source_from_params(params: Parameters) -> KeyValueSource[str,
 
 
 def char_key_value_linear_source_from_params(
-    params: Parameters, *,
-input_namespace: str = "input",
-        eval_context: Optional[Dict] = None
+    params: Parameters,
+    *,
+    input_namespace: str = "input",
+    eval_context: Optional[Dict] = None,
 ) -> KeyValueLinearSource[str, str]:
     """
     Get a key-value source based on parameters.
@@ -839,13 +863,15 @@ input_namespace: str = "input",
         special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
         default_creator=_doc_id_source_from_params,
         context=effective_context,
+        creator_namepace_param_name="type",
     )
 
 
 def byte_key_value_linear_source_from_params(
-    params: Parameters, *,
-        input_namespace: str= "input",
-        eval_context: Optional[Dict] = None
+    params: Parameters,
+    *,
+    input_namespace: str = "input",
+    eval_context: Optional[Dict] = None,
 ) -> KeyValueLinearSource[str, bytes]:
     """
     Get a key-value source based on parameters.
@@ -880,14 +906,15 @@ def byte_key_value_linear_source_from_params(
         special_creator_values=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
         default_creator=_doc_id_binary_source_from_params,
         context=effective_context,
-        creator_namepace_param_name="type"
+        creator_namepace_param_name="type",
     )
 
 
 def char_key_value_source_from_params(
-    params: Parameters, *,
-        input_namespace: str = "input",
-        eval_context: Optional[Dict] = None
+    params: Parameters,
+    *,
+    input_namespace: str = "input",
+    eval_context: Optional[Dict] = None,
 ) -> KeyValueSource[str, str]:
     """
     Get a random-access key-value source based on parameters.
@@ -918,6 +945,46 @@ def char_key_value_source_from_params(
         special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
         default_creator=_doc_id_source_from_params,
         context=effective_context,
+        creator_namepace_param_name="type",
+    )
+
+
+def byte_key_value_source_from_params(
+    params: Parameters,
+    *,
+    input_namespace: str = "input",
+    eval_context: Optional[Dict] = None,
+) -> KeyValueSource[str, bytes]:
+    """
+    Get a random-access key-value source based on parameters.
+
+    This should be passed a parameter namespace.  If the "type" field is present, it should
+    be the name of a class or method.  If a class, its static `from_parameters` method will be
+    called with these parameters and should return a `KeyValueSource[str, bytes]`. If a callable,
+    it will be called with these parameters (and should also return a KeyValueSource[str, bytes].
+
+    The type 'zip' is a shortcut for a key-value zip file.  'file-map' is a shortcut for a
+    docID to file map.
+
+    If additional imports are needed to resolve 'type', they can be specified as a Python
+    list in
+    the `imports` field.
+
+    If no type is specified, a source will be constructed from the doc-id-to-file map specified
+    by the `docIdToFileMap` parameter.
+    """
+    # to be sure the default special values can be evaluated, we want to include this module
+    # itself in the evaluation context. We combine it with eval_context, giving priority to
+    # the context specified by the user
+    effective_context = dict(globals())
+    effective_context.update(eval_context or {})
+    return params.object_from_parameters(
+        input_namespace,
+        KeyValueSource,
+        special_creator_values=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_creator=_doc_id_source_from_params,
+        context=effective_context,
+        creator_namepace_param_name="type",
     )
 
 
@@ -933,9 +1000,10 @@ _BYTE_KEY_VALUE_SINK_SPECIAL_VALUES = {
 
 
 def char_key_value_sink_from_params(
-    params: Parameters, *,
-output_namespace: str = "output",
-        eval_context: Optional[Dict] = None
+    params: Parameters,
+    *,
+    output_namespace: str = "output",
+    eval_context: Optional[Dict] = None,
 ) -> KeyValueSink[str, str]:
     """
     Get a key-value sink based on parameters.
@@ -964,13 +1032,15 @@ output_namespace: str = "output",
         special_creator_values=_CHAR_KEY_VALUE_SINK_SPECIAL_VALUES,
         default_creator=_DirectoryCharKeyValueSink,
         context=effective_context,
+        creator_namepace_param_name="type",
     )
 
 
 def byte_key_value_sink_from_params(
-    params: Parameters, *,
-output_namespace: str = "output",
-        eval_context: Optional[Dict] = None
+    params: Parameters,
+    *,
+    output_namespace: str = "output",
+    eval_context: Optional[Dict] = None,
 ) -> KeyValueSink[str, bytes]:
     """
     Get a binary key-value sink based on parameters.
@@ -999,4 +1069,5 @@ output_namespace: str = "output",
         special_creator_values=_BYTE_KEY_VALUE_SINK_SPECIAL_VALUES,
         default_creator=_DirectoryBytesKeyValueSink,
         context=effective_context,
+        creator_namepace_param_name="type",
     )
