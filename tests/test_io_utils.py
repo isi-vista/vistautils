@@ -14,6 +14,7 @@ from vistautils.io_utils import (
     CharSource,
     read_doc_id_to_file_map,
     write_doc_id_to_file_map,
+    ByteSource,
 )
 from vistautils.parameters import Parameters
 
@@ -148,35 +149,9 @@ class TestIOUtils(TestCase):
 
         self.assertEqual(map, reloaded_map)
 
-    def test_object_from_parameters(self):
-        @attrs
-        class TestObj:
-            val: int = attrib(
-                default=None, validator=validators.optional(validators.instance_of(int))
-            )
 
-            @staticmethod
-            def from_parameters(params: Parameters) -> "TestObj":
-                return TestObj(params.integer("my_int"))
-
-        simple_params = Parameters.from_mapping(
-            {"test": {"value": "TestObj", "my_int": 5}}
-        )
-
-        self.assertEqual(
-            TestObj(5),
-            simple_params.object_from_parameters("test", TestObj, context=locals()),
-        )
-
-        # test when object needs no further parameters for instantiation
-        @attrs
-        class ArglessTestObj:
-            pass
-
-        argless_params = Parameters.from_mapping({"test": "ArglessTestObj"})
-        self.assertEqual(
-            ArglessTestObj(),
-            argless_params.object_from_parameters(
-                "test", ArglessTestObj, context=locals()
-            ),
-        )
+def test_to_file_byte(tmp_path: Path):
+    file_path = tmp_path / "test.txt"
+    byte_sink = ByteSink.to_file(file_path)
+    byte_sink.write("hello\n\nworld".encode("utf-8"))
+    assert "hello\n\nworld" == ByteSource.from_file(file_path).read().decode("utf-8")

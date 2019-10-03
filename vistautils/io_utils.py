@@ -410,7 +410,7 @@ class ByteSink(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def open(self) -> BytesIO:
+    def open(self) -> BinaryIO:
         raise NotImplementedError()
 
     @staticmethod
@@ -429,13 +429,19 @@ class ByteSink(metaclass=ABCMeta):
         """
         return BufferByteSink()
 
+    @staticmethod
+    def to_file(path: Union[str, Path]) -> "ByteSink":
+        """
+        Get a sink which writes to the given file.
+        """
+        return _FileByteSink(path)
+
     def write(self, data: bytes) -> None:
         """
         Write the given data to the sink.
 
-        Note that if you `write` twice, the second `write` will overwrite the first.  If you
-        wish
-        to write incrementally, use `open`.
+        Note that if you `write` twice, the second `write` will overwrite the first.
+        If you wish to write incrementally, use `open`.
         """
         with self.open() as out:
             out.write(data)
@@ -568,6 +574,14 @@ class _FileCharSink(CharSink):
 
     def open(self) -> TextIO:
         return open(self._path, "w")
+
+
+@attrs(slots=True, frozen=True)
+class _FileByteSink(ByteSink):
+    _path: Union[Path, str] = attrib(validator=validators.instance_of(tuple((Path, str))))
+
+    def open(self) -> BinaryIO:
+        return open(self._path, "wb")
 
 
 @attrs(slots=True, frozen=True)

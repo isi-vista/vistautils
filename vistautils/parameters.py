@@ -518,6 +518,8 @@ class Parameters:
 
         If `context` is specified, evaluation will happen in the context given. If you want
         evaluation to happen in the calling context, pass `locals()`.
+        If the namespace contains the parameter *import*, it will be interpreted
+        as a list of modules to import into the context before evaluation.
 
         Sometimes is it convenient to provide shortcuts for common cases. These can be specified
         in a `special_values` map whose keys are the special case values and whose values are the
@@ -577,10 +579,12 @@ class Parameters:
         You can specify a different field within a namespace to be evaluated besides 'value' by
         specifying `creator_namespace_param_name`.
 
-        You can specify a default cretor to be used if none is specified with `default_creator`.
+        You can specify a default creator to be used if none is specified with `default_creator`.
 
         You may specify additional context within which evaluation should happen with `context`.
         If you want evaluation to happen in the calling context, set this to `locals()`.
+        If the namespace contains the parameter *import*, it will be interpreted
+        as a list of modules to import into the context before evaluation.
 
         For the user's convenience, you may include a map of special values to expression strings.
         If the expression to be evaluated exactly matches any key of this map, the value from the

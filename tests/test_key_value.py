@@ -1,15 +1,23 @@
 import shutil
 import tarfile
 import tempfile
+from io import BytesIO
 from pathlib import Path
+from typing import Optional
 from unittest import TestCase
 
-from io import BytesIO
-
-from typing import Optional
-
 from immutablecollections import ImmutableSet
-from vistautils.key_value import KeyValueSink, KeyValueSource, KeyValueLinearSource
+
+from vistautils.key_value import (
+    KeyValueLinearSource,
+    KeyValueSink,
+    KeyValueSource,
+    byte_key_value_sink_from_params,
+    byte_key_value_source_from_params,
+    char_key_value_sink_from_params,
+    char_key_value_source_from_params,
+)
+from vistautils.parameters import YAMLParametersLoader
 
 
 class TestKeyValue(TestCase):
@@ -123,3 +131,79 @@ class TestKeyValue(TestCase):
             self.assertEqual({("foo", "hello"), ("bar", "world")}, vals)
 
         shutil.rmtree(str(tmp_dir))
+
+
+# all newer tests are in pytest format
+
+
+def test_char_source_sink_from_params(tmp_path: Path) -> None:
+    sink_params_text = f"""
+output:
+   type: zip
+   path: {tmp_path / "output.zip"}
+    """
+    sink_params = YAMLParametersLoader().load_string(sink_params_text)
+    with char_key_value_sink_from_params(sink_params) as sink:
+        sink.put("hello", "world")
+        sink.put("goodbye", "fred")
+    source_params_text = f"""
+    altinput:
+       type: zip
+       path: {tmp_path / "output.zip"}
+        """
+    source_params = YAMLParametersLoader().load_string(source_params_text)
+
+    # we test specifying an alternate namespace
+    with char_key_value_source_from_params(
+        source_params, input_namespace="altinput"
+    ) as source:
+        assert "world" == source["hello"]
+        assert "fred" == source["goodbye"]
+
+
+def test_binary_source_sink_from_params(tmp_path: Path) -> None:
+    sink_params_text = f"""
+output:
+   type: zip
+   path: {tmp_path / "output.zip"}
+    """
+    sink_params = YAMLParametersLoader().load_string(sink_params_text)
+    with byte_key_value_sink_from_params(sink_params) as sink:
+        sink.put("hello", "world".encode("utf-8"))
+        sink.put("goodbye", "fred".encode("utf-8"))
+    source_params_text = f"""
+    altinput:
+       type: zip
+       path: {tmp_path / "output.zip"}
+        """
+    source_params = YAMLParametersLoader().load_string(source_params_text)
+
+    # we test specifying an alternate namespace
+    with byte_key_value_source_from_params(
+        source_params, input_namespace="altinput"
+    ) as source:
+        assert "world" == source["hello"].decode("utf-8")
+        assert "fred" == source["goodbye"].decode("utf-8")
+
+
+def test_doc_id_from_file(tmp_path: Path) -> None:
+    doc_id_text = f"""world\t{tmp_path / "world.txt"}\nping\t{tmp_path / "ping.zip"}"""
+
+    with open(str(tmp_path / "example.tab"), "w") as tmp_file:
+        tmp_file.write(doc_id_text)
+
+    with open(str(tmp_path / "world.txt"), "w", encoding="utf-8") as tmp_file:
+        tmp_file.write("hello")
+
+    with open(str(tmp_path / "ping.zip"), "w", encoding="utf-8") as tmp_file:
+        tmp_file.write("pong")
+
+    with KeyValueSource.binary_from_doc_id_to_file_map(tmp_path / "example.tab") as sink:
+        assert "hello" == sink["world"].decode("utf-8")
+        assert "pong" == sink["ping"].decode("utf-8")
+
+    with KeyValueSource.binary_from_doc_id_to_file_map(
+        str(tmp_path / "example.tab")
+    ) as sink:
+        assert "hello" == sink["world"].decode("utf-8")
+        assert "pong" == sink["ping"].decode("utf-8")
