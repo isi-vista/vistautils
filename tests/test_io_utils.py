@@ -14,6 +14,7 @@ from vistautils.io_utils import (
     CharSource,
     read_doc_id_to_file_map,
     write_doc_id_to_file_map,
+    ByteSource,
 )
 from vistautils.parameters import Parameters
 
@@ -148,9 +149,9 @@ class TestIOUtils(TestCase):
 
         self.assertEqual(map, reloaded_map)
 
-    def test_to_file_byte(self):
-        tmp_dir = Path(tempfile.mkdtemp())
-        file_path = tmp_dir / "test.txt"
-        byte_sink = ByteSink.to_file(file_path).to_buffer()
-        byte_sink.write("hello\n\nworld".encode("utf-8"))
-        self.assertEqual("hello\n\nworld", byte_sink.last_bytes_written.decode("utf-8"))
+
+def test_to_file_byte(tmp_path: Path):
+    file_path = tmp_path / "test.txt"
+    byte_sink = ByteSink.to_file(file_path)
+    byte_sink.write("hello\n\nworld".encode("utf-8"))
+    assert "hello\n\nworld" == ByteSource.from_file(file_path).read().decode("utf-8")
