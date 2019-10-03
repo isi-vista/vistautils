@@ -202,15 +202,10 @@ def test_doc_id_from_file(tmp_path: Path) -> None:
     with open(str(tmp_path / "example.tab"), "w") as tmp_file:
         tmp_file.write(doc_id_text)
 
-    # MyPy doesn't like the return type of binary_from_doc_id_to_file_map as being indexable
-    # When in fact the return type is a KeyValuePair of [str, byte]
-
     with KeyValueSource.binary_from_doc_id_to_file_map(tmp_path / "example.tab") as sink:
-        assert "world" == sink["test"]["hello"].decode("utf-8")  # type: ignore
-        assert "fred" == sink["test"]["goodbye"].decode("utf-8")  # type: ignore
+        assert tmp_path / "test.zip" == sink["test"]
 
     with KeyValueSource.binary_from_doc_id_to_file_map(
         str(tmp_path / "example.tab")
     ) as sink:
-        assert "world" == sink["test"]["hello"].decode("utf-8")  # type: ignore
-        assert "fred" == sink["test"]["goodbye"].decode("utf-8")  # type: ignore
+        assert tmp_path / "test.zip" == sink["test"]
