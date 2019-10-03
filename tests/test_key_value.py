@@ -203,9 +203,9 @@ def test_doc_id_from_file(tmp_path: Path) -> None:
         tmp_file.write(doc_id_text)
 
     with KeyValueSource.binary_from_doc_id_to_file_map(tmp_path / "example.tab") as sink:
-        assert tmp_path / "test.zip" == sink["test"]
+        assert tmp_path / "test.zip" == sink["test"]  # type: ignore
 
     with KeyValueSource.binary_from_doc_id_to_file_map(
         str(tmp_path / "example.tab")
     ) as sink:
-        assert tmp_path / "test.zip" == sink["test"]
+        assert tmp_path / "test.zip" == sink["test"]  # type: ignore
