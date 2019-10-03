@@ -197,17 +197,20 @@ def test_doc_id_from_file(tmp_path: Path) -> None:
         sink.put("hello", "world".encode("utf-8"))
         sink.put("goodbye", "fred".encode("utf-8"))
 
-    doc_id_text = f"""john\t{tmp_path / "john.zip"}\ntest\t{tmp_path / "test.txt"}
-"""
+    doc_id_text = f"""john\t{tmp_path / "john.zip"}\ntest\t{tmp_path / "test.zip"}"""
+
     with open(str(tmp_path / "example.tab"), "w") as tmp_file:
         tmp_file.write(doc_id_text)
 
+    # MyPy doesn't like the return type of binary_from_doc_id_to_file_map as being indexable
+    # When in fact the return type is a KeyValuePair of [str, byte]
+
     with KeyValueSource.binary_from_doc_id_to_file_map(tmp_path / "example.tab") as sink:
-        assert "world" == sink["hello"].decode("utf-8")
-        assert "fred" == sink["goodbye"].decode("utf-8")
+        assert "world" == sink["test"]["hello"].decode("utf-8")  # type: ignore
+        assert "fred" == sink["test"]["goodbye"].decode("utf-8")  # type: ignore
 
     with KeyValueSource.binary_from_doc_id_to_file_map(
         str(tmp_path / "example.tab")
     ) as sink:
-        assert "world" == sink["hello"].decode("utf-8")
-        assert "fred" == sink["goodbye"].decode("utf-8")
+        assert "world" == sink["test"]["hello"].decode("utf-8")  # type: ignore
+        assert "fred" == sink["test"]["goodbye"].decode("utf-8")  # type: ignore
