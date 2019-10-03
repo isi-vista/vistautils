@@ -1,3 +1,14 @@
+Vistautils 0.14.0 (2019-10-03)
+==============================
+
+New Features
+------------
+
+- * added binary key-value sources for doc-id-to-file maps
+  * added directory-backed binary sinks
+  * supported creating binary sources and sinks from parameters (`#84 <https://github.com/isi-vista/vistautils/issues/84>`_)
+
+
 Vistautils 0.13.0 (2019-09-30)
 ==============================
 
