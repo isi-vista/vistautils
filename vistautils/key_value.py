@@ -15,6 +15,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    Any,
 )
 from zipfile import ZipFile
 
@@ -939,7 +940,7 @@ def char_key_value_source_from_params(
     # the context specified by the user
     effective_context = dict(globals())
     effective_context.update(eval_context or {})
-    return params.object_from_parameters(
+    return params.object_from_parameters(  # type: ignore
         input_namespace,
         KeyValueSource,
         special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
@@ -978,7 +979,7 @@ def byte_key_value_source_from_params(
     # the context specified by the user
     effective_context = dict(globals())
     effective_context.update(eval_context or {})
-    return params.object_from_parameters(
+    return params.object_from_parameters(  # type: ignore
         input_namespace,
         KeyValueSource,
         special_creator_values=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
@@ -1026,7 +1027,7 @@ def char_key_value_sink_from_params(
     # the context specified by the user
     effective_context = dict(globals())
     effective_context.update(eval_context or {})
-    return params.object_from_parameters(
+    return params.object_from_parameters(  # type: ignore
         output_namespace,
         KeyValueSink,
         special_creator_values=_CHAR_KEY_VALUE_SINK_SPECIAL_VALUES,
@@ -1063,7 +1064,7 @@ def byte_key_value_sink_from_params(
     # the context specified by the user
     effective_context = dict(globals())
     effective_context.update(eval_context or {})
-    return params.object_from_parameters(
+    return params.object_from_parameters(  # type: ignore
         output_namespace,
         KeyValueSink,
         special_creator_values=_BYTE_KEY_VALUE_SINK_SPECIAL_VALUES,

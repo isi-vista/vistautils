@@ -147,3 +147,10 @@ class TestIOUtils(TestCase):
         )
 
         self.assertEqual(map, reloaded_map)
+
+    def test_to_file_byte(self):
+        tmp_dir = Path(tempfile.mkdtemp())
+        file_path = tmp_dir / "test.txt"
+        byte_sink = ByteSink.to_file(file_path).to_buffer()
+        byte_sink.write("hello\n\nworld".encode("utf-8"))
+        self.assertEqual("hello\n\nworld", byte_sink.last_bytes_written.decode("utf-8"))

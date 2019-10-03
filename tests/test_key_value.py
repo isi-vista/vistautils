@@ -184,3 +184,30 @@ output:
     ) as source:
         assert "world" == source["hello"].decode("utf-8")
         assert "fred" == source["goodbye"].decode("utf-8")
+
+
+def test_doc_id_from_file(tmp_path: Path) -> None:
+    sink_params_text = f"""
+    output:
+       type: zip
+       path: {tmp_path / "test.zip"}
+        """
+    sink_params = YAMLParametersLoader().load_string(sink_params_text)
+    with byte_key_value_sink_from_params(sink_params) as sink:
+        sink.put("hello", "world".encode("utf-8"))
+        sink.put("goodbye", "fred".encode("utf-8"))
+
+    doc_id_text = f"""john\t{tmp_path / "john.zip"}\ntest\t{tmp_path / "test.txt"}
+"""
+    with open(str(tmp_path / "example.tab"), "w") as tmp_file:
+        tmp_file.write(doc_id_text)
+
+    with KeyValueSource.binary_from_doc_id_to_file_map(tmp_path / "example.tab") as sink:
+        assert "world" == sink["hello"].decode("utf-8")
+        assert "fred" == sink["goodbye"].decode("utf-8")
+
+    with KeyValueSource.binary_from_doc_id_to_file_map(
+        str(tmp_path / "example.tab")
+    ) as sink:
+        assert "world" == sink["hello"].decode("utf-8")
+        assert "fred" == sink["goodbye"].decode("utf-8")
