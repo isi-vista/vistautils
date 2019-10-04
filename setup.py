@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
-from setuptools import find_packages
-
 from os.path import abspath, dirname, join
+
+from setuptools import find_packages
 
 with open(join(dirname(abspath(__file__)), 'vistautils', 'version.py')) as version_file:
     exec(compile(version_file.read(), "version.py", 'exec'))
@@ -18,8 +18,8 @@ setup(name='vistautils',
       # 3.6 and up, but not Python 4
       python_requires='~=3.6',
       install_requires=[
-          'immutablecollections>=0.7.0',
-          'attrs>=19.1.0',
+          'immutablecollections>=0.9.0',
+          'attrs>=19.2.0',
           'pyyaml>=5.1',
           'typing_extensions',
           'sortedcontainers>=2.1.0',
