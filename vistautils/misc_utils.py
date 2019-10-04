@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Generic, Iterable, List, Mapping, Sequence, Type, TypeVar, Union
 
 from attr import attrib, attrs, validators
+
 from vistautils import preconditions
 
 

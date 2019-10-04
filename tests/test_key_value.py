@@ -7,7 +7,6 @@ from typing import Optional
 from unittest import TestCase
 
 from immutablecollections import ImmutableSet
-
 from vistautils.key_value import (
     KeyValueLinearSource,
     KeyValueSink,
@@ -38,6 +37,7 @@ class TestKeyValue(TestCase):
                 "moo".encode("utf-8"), zip_source.get("not-there", "moo".encode("utf-8"))
             )
             with self.assertRaises(KeyError):
+                # pylint: disable=pointless-statement
                 zip_source["not-there"]
 
         # test adding to an existing zip
@@ -57,6 +57,7 @@ class TestKeyValue(TestCase):
                 "moo".encode("utf-8"), zip_source.get("not-there", "moo".encode("utf-8"))
             )
             with self.assertRaises(KeyError):
+                # pylint: disable=pointless-statement
                 zip_source["not-there"]
 
         shutil.rmtree(str(tmp_dir))
@@ -76,6 +77,7 @@ class TestKeyValue(TestCase):
             self.assertIsNone(zip_source.get("not-there", None))
             self.assertEqual("moo", zip_source.get("not-there", "moo"))
             with self.assertRaises(KeyError):
+                # pylint: disable=pointless-statement
                 zip_source["not-there"]
 
         # test adding to an existing zip
@@ -93,6 +95,7 @@ class TestKeyValue(TestCase):
             self.assertIsNone(zip_source.get("not-there", None))
             self.assertEqual("moo", zip_source.get("not-there", "moo"))
             with self.assertRaises(KeyError):
+                # pylint: disable=pointless-statement
                 zip_source["not-there"]
 
         shutil.rmtree(str(tmp_dir))
@@ -157,8 +160,8 @@ output:
     with char_key_value_source_from_params(
         source_params, input_namespace="altinput"
     ) as source:
-        assert "world" == source["hello"]
-        assert "fred" == source["goodbye"]
+        assert source["hello"] == "world"
+        assert source["goodbye"] == "fred"
 
 
 def test_binary_source_sink_from_params(tmp_path: Path) -> None:
@@ -182,8 +185,8 @@ output:
     with byte_key_value_source_from_params(
         source_params, input_namespace="altinput"
     ) as source:
-        assert "world" == source["hello"].decode("utf-8")
-        assert "fred" == source["goodbye"].decode("utf-8")
+        assert source["hello"].decode("utf-8") == "world"
+        assert source["goodbye"].decode("utf-8") == "fred"
 
 
 def test_doc_id_from_file(tmp_path: Path) -> None:
@@ -199,11 +202,11 @@ def test_doc_id_from_file(tmp_path: Path) -> None:
         tmp_file.write("pong")
 
     with KeyValueSource.binary_from_doc_id_to_file_map(tmp_path / "example.tab") as sink:
-        assert "hello" == sink["world"].decode("utf-8")
-        assert "pong" == sink["ping"].decode("utf-8")
+        assert sink["world"].decode("utf-8") == "hello"
+        assert sink["ping"].decode("utf-8") == "pong"
 
     with KeyValueSource.binary_from_doc_id_to_file_map(
         str(tmp_path / "example.tab")
     ) as sink:
-        assert "hello" == sink["world"].decode("utf-8")
-        assert "pong" == sink["ping"].decode("utf-8")
+        assert sink["world"].decode("utf-8") == "hello"
+        assert sink["ping"].decode("utf-8") == "pong"

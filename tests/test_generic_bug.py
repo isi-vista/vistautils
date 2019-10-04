@@ -1,4 +1,5 @@
-from typing import TypeVar, Generic, Container
+# pylint: disable=unused-variable
+from typing import Container, Generic, TypeVar
 from unittest import TestCase, skip
 
 from attr import attrs

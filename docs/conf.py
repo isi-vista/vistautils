@@ -19,6 +19,7 @@
 #
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('..'))
 
 
@@ -174,6 +175,3 @@ texinfo_documents = [
      author, 'vistautils', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-

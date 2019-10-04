@@ -4,6 +4,7 @@ from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import (
     AbstractSet,
+    Any,
     Callable,
     Dict,
     Generic,
@@ -15,22 +16,21 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
-    Any,
 )
 from zipfile import ZipFile
 
-from attr import attrs, attrib
-from immutablecollections import ImmutableDict, ImmutableSet, immutabledict
+from attr import attrib, attrs
 
-from vistautils.parameters import Parameters
+from immutablecollections import ImmutableDict, ImmutableSet, immutabledict
 from vistautils.io_utils import (
+    ByteSink,
+    ByteSource,
     CharSink,
     CharSource,
     read_doc_id_to_file_map,
     write_doc_id_to_file_map,
-    ByteSource,
-    ByteSink,
 )
+from vistautils.parameters import Parameters
 from vistautils.preconditions import check_arg, check_not_none, check_state
 
 K = TypeVar("K")

@@ -1,9 +1,9 @@
 import shutil
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
-from typing import Container, Any, Union
+from typing import Any, Container, Union
 
-from attr import attrs, attrib
+from attr import attrib, attrs
 
 from vistautils.preconditions import check_isinstance
 

@@ -1,24 +1,23 @@
 import os
 import shutil
 import tempfile
-from typing import Type
-
-import yaml
-from textwrap import dedent
 from pathlib import Path
+from textwrap import dedent
 from unittest import TestCase
 
-from attr import attrs, attrib, validators
+import yaml
+from attr import attrib, attrs, validators
+
 from immutablecollections import immutabledict
-from vistautils.parameters import (
-    Parameters,
-    YAMLParametersWriter,
-    ParameterError,
-    YAMLParametersLoader,
-)
-from vistautils.io_utils import CharSink
-from vistautils.range import Range
 from vistautils._graph import ParameterInterpolationError
+from vistautils.io_utils import CharSink
+from vistautils.parameters import (
+    ParameterError,
+    Parameters,
+    YAMLParametersLoader,
+    YAMLParametersWriter,
+)
+from vistautils.range import Range
 
 
 class TestParameters(TestCase):
@@ -172,6 +171,7 @@ class TestParameters(TestCase):
             key3: "%moo.nested_dict%"
             """
 
+    # pylint: disable=protected-access
     def test_interpolation(self):
         context = Parameters.from_mapping(yaml.safe_load(self.WRITING_REFERENCE))
         loader = YAMLParametersLoader()
@@ -306,7 +306,7 @@ class TestParameters(TestCase):
         )
 
         assert params.optional_arbitrary_list("list") == [1, 2, 3, ["a", "b", "c"]]
-        assert params.optional_boolean("boolean") == True
+        assert params.optional_boolean("boolean")
         assert params.optional_floating_point("float") == 0.5
         assert params.optional_integer("integer") == 42
         assert params.optional_namespace("namespace").as_mapping() == {"fred": "meep"}
@@ -346,6 +346,7 @@ class TestParameters(TestCase):
         )
 
         # test default_creator creator
+        # pylint: disable=unused-argument
         def default_creator(params: Parameters) -> int:
             return 42
 

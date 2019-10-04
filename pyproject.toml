@@ -25,3 +25,6 @@
 
 [tool.black]
 line-length = 90
+
+[tool.isort]
+multi_line_output = 3

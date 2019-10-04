@@ -1,4 +1,4 @@
-from typing import TypeVar, Iterable, Tuple
+from typing import Iterable, Tuple, TypeVar
 
 import vistautils.iter_utils
 

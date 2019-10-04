@@ -4,19 +4,15 @@ from pathlib import Path
 from unittest import TestCase
 from zipfile import ZipFile
 
-from attr import attrs, validators
 from immutablecollections import ImmutableDict
-
-from attr import attrib
 from vistautils.io_utils import (
     ByteSink,
+    ByteSource,
     CharSink,
     CharSource,
     read_doc_id_to_file_map,
     write_doc_id_to_file_map,
-    ByteSource,
 )
-from vistautils.parameters import Parameters
 
 
 class TestIOUtils(TestCase):
@@ -135,9 +131,11 @@ class TestIOUtils(TestCase):
         self.assertEqual("hello world", byte_sink.last_bytes_written.decode("utf-8"))
 
     def test_read_write_doc_id_to_file_map(self):
-        map = ImmutableDict.of([("foo", Path("/home/foo")), ("bar", Path("/home/bar"))])
+        mapping = ImmutableDict.of(
+            [("foo", Path("/home/foo")), ("bar", Path("/home/bar"))]
+        )
         string_sink = CharSink.to_string()
-        write_doc_id_to_file_map(map, string_sink)
+        write_doc_id_to_file_map(mapping, string_sink)
         # note the reordering because it alphabetizes the docids
         self.assertEqual(
             "bar\t/home/bar\nfoo\t/home/foo\n", string_sink.last_string_written
@@ -147,11 +145,11 @@ class TestIOUtils(TestCase):
             CharSource.from_string(string_sink.last_string_written)
         )
 
-        self.assertEqual(map, reloaded_map)
+        self.assertEqual(mapping, reloaded_map)
 
 
-def test_to_file_byte(tmp_path: Path):
+def test_to_file_byte(tmp_path: Path) -> None:
     file_path = tmp_path / "test.txt"
     byte_sink = ByteSink.to_file(file_path)
     byte_sink.write("hello\n\nworld".encode("utf-8"))
-    assert "hello\n\nworld" == ByteSource.from_file(file_path).read().decode("utf-8")
+    assert ByteSource.from_file(file_path).read().decode("utf-8") == "hello\n\nworld"

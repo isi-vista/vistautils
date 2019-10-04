@@ -4,7 +4,7 @@
 import itertools
 from collections import deque
 from itertools import islice
-from typing import Iterable, TypeVar, Tuple, overload, Iterator, Union, Generic, Optional
+from typing import Generic, Iterable, Iterator, Optional, Tuple, TypeVar, Union, overload
 
 from attr import attrs
 
