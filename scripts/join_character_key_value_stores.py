@@ -22,11 +22,11 @@ from vistautils.parameters_only_entrypoint import parameters_only_entry_point
 
 
 def main(params: Parameters):
-    input_paths = params.path_list_from_file('input_store_list_file',
-                                             log_name="input key-value stores")
+    input_paths = params.path_list_from_file(
+        "input_store_list_file", log_name="input key-value stores"
+    )
     keys_written: Set[str] = set()
-    with char_key_value_sink_from_params('output', params,
-                                         eval_context=locals()) as out:
+    with char_key_value_sink_from_params(params, eval_context=locals()) as out:
         for input_path in input_paths:
             with KeyValueSource.zip_character_source(input_path) as inp:
                 for key in inp.keys():
@@ -36,5 +36,5 @@ def main(params: Parameters):
                     out[key] = inp[key]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parameters_only_entry_point(main)

@@ -3,7 +3,7 @@ default:
 
 SOURCE_DIR_NAME=vistautils
 
-MYPY:=mypy $(SOURCE_DIR_NAME) tests
+MYPY:=mypy $(SOURCE_DIR_NAME) tests scripts
 
 # Suppressed warnings:
 # Too many arguments, Unexpected keyword arguments: can't do static analysis on attrs __init__
@@ -26,20 +26,20 @@ coverage:
 	python -m pytest --cov=$(SOURCE_DIR_NAME) tests
 
 lint:
-	pylint $(SOURCE_DIR_NAME) tests
+	pylint $(SOURCE_DIR_NAME) tests scripts
 
 mypy:
 	$(FILTERED_MYPY)
 
 flake8:
-	flake8 $(SOURCE_DIR_NAME) tests
+	flake8 $(SOURCE_DIR_NAME) tests scripts
 
 black-fix:
 	isort -rc .
-	black $(SOURCE_DIR_NAME) tests
+	black $(SOURCE_DIR_NAME) tests scripts
 
 black-check:
-	black --check $(SOURCE_DIR_NAME) tests
+	black --check $(SOURCE_DIR_NAME) tests scripts
 
 check: black-check flake8 mypy lint
 
