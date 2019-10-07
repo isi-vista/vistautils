@@ -4,7 +4,7 @@
 import itertools
 from collections import deque
 from itertools import islice
-from typing import Iterable, TypeVar, Tuple, overload, Iterator, Union, Generic
+from typing import Iterable, TypeVar, Tuple, overload, Iterator, Union, Generic, Optional
 
 from attr import attrs
 
@@ -203,3 +203,10 @@ def _possibly_incomplete_windows(
             # if the window size exceeds the sequence size, we need to stop popping early
             # or we will have a bunch of empty tuples at the end
             break
+
+
+def non_none(iterable: Iterable[Optional[_T]]) -> Iterable[_T]:
+    """
+    Make an iterator which contains all elements from *iterable* which are not *None*.
+    """
+    return (x for x in iterable if x is not None)

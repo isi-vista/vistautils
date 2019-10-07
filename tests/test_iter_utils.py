@@ -1,7 +1,7 @@
 from typing import Iterator, Iterable, TypeVar
 from unittest import TestCase
 
-from vistautils.iter_utils import windowed, drop, only
+from vistautils.iter_utils import windowed, drop, only, non_none
 
 # convenience methods for testing tools on both iterators and iterables
 _T = TypeVar("_T")
@@ -108,3 +108,8 @@ class TestIterUtils(TestCase):
                 [(0, 1, 2), (1, 2), (2,)],
                 list(windowed(to_it(data), 4, partial_windows=True)),
             )
+
+
+def test_non_none():
+    # "" checks falsey values are preserved
+    assert tuple(non_none(["foo", None, ""])) == ("foo", "")
