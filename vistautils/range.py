@@ -17,12 +17,13 @@ from typing import (
 )
 
 from attr import attrib, attrs, validators
-from sortedcontainers import SortedDict
 
 from immutablecollections import ImmutableDict, ImmutableSet, immutabledict, immutableset
 
 # Port of Guava's Range data type and associated classes
 from vistautils.preconditions import check_arg, check_not_none
+
+from sortedcontainers import SortedDict
 
 # will be initialized after bound type declarations
 # noinspection PyTypeHints

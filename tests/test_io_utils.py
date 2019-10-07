@@ -5,6 +5,7 @@ from unittest import TestCase
 from zipfile import ZipFile
 
 from immutablecollections import ImmutableDict
+
 from vistautils.io_utils import (
     ByteSink,
     ByteSource,

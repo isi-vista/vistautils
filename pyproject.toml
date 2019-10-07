@@ -28,3 +28,9 @@ line-length = 90
 
 [tool.isort]
 multi_line_output = 3
+include_trailing_comma = true
+# default is FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER
+# Placing third-party imports at the end makes their inclusion more obvious
+sections = ["FUTURE", "STDLIB", "ATTRS", "ISIVISTA", "FIRSTPARTY", "THIRDPARTY", "LOCALFOLDER"]
+known_attrs = ["attr"]
+known_isivista = ["immutablecollections"]

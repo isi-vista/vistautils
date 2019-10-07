@@ -1,7 +1,6 @@
 from typing import Iterable, Optional, Sized, Tuple, TypeVar, Union
 
 from attr import attrib, attrs, validators
-from typing_extensions import Protocol
 
 from immutablecollections import (
     ImmutableSet,
@@ -9,8 +8,11 @@ from immutablecollections import (
     immutableset,
     immutablesetmultidict,
 )
+
 from vistautils.preconditions import check_arg
 from vistautils.range import ImmutableRangeMap, Range, immutablerangemap
+
+from typing_extensions import Protocol
 
 
 @attrs(frozen=True, slots=True, repr=False)  # pylint:disable=inherit-non-class

@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from immutablecollections import immutableset, immutablesetmultidict
+
 from vistautils._graph import Digraph, ParameterInterpolationError
 
 

@@ -7,6 +7,7 @@ from typing import Optional
 from unittest import TestCase
 
 from immutablecollections import ImmutableSet
+
 from vistautils.key_value import (
     KeyValueLinearSource,
     KeyValueSink,

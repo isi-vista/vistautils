@@ -2,6 +2,7 @@ import sys
 from unittest import TestCase
 
 from immutablecollections import ImmutableSet
+
 from vistautils.range import (
     _BELOW_ALL,
     BoundType,

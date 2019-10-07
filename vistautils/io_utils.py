@@ -27,6 +27,7 @@ from zipfile import ZipFile
 from attr import attrib, attrs, validators
 
 from immutablecollections import ImmutableDict
+
 from vistautils.misc_utils import pathify
 
 

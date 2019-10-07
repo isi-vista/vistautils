@@ -3,6 +3,7 @@ from unittest import TestCase
 from attr import attrs
 
 from immutablecollections import immutableset
+
 from vistautils.span import HasSpanIndex, Span
 
 

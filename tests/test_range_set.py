@@ -2,9 +2,8 @@ import pickle
 from typing import List, Sequence
 from unittest import TestCase
 
-from sortedcontainers import SortedDict
-
 from immutablecollections import ImmutableSet, immutableset
+
 from vistautils.iterutils import tile_with_pairs
 
 # noinspection PyProtectedMember
@@ -18,6 +17,8 @@ from vistautils.range import (
     _value_at_or_below,
     _value_below,
 )
+
+from sortedcontainers import SortedDict
 
 
 class TestRangeSet(TestCase):

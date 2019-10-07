@@ -5,10 +5,10 @@ from pathlib import Path
 from textwrap import dedent
 from unittest import TestCase
 
-import yaml
 from attr import attrib, attrs, validators
 
 from immutablecollections import immutabledict
+
 from vistautils._graph import ParameterInterpolationError
 from vistautils.io_utils import CharSink
 from vistautils.parameters import (
@@ -18,6 +18,8 @@ from vistautils.parameters import (
     YAMLParametersWriter,
 )
 from vistautils.range import Range
+
+import yaml
 
 
 class TestParameters(TestCase):
