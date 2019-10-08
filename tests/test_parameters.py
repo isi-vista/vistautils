@@ -281,7 +281,7 @@ class TestParameters(TestCase):
         self.assertEqual(INCLUSION_REFERENCE, dict(params.as_mapping()))
 
     def test_absents(self):
-        empty_params = Parameters.from_mapping({})
+        empty_params = Parameters.empty()
         assert empty_params.optional_arbitrary_list("foo") is None
         assert empty_params.optional_boolean("foo") is None
         assert empty_params.optional_creatable_directory("foo") is None
@@ -370,6 +370,31 @@ class TestParameters(TestCase):
             Parameters.empty().object_from_parameters(
                 "missing_param", expected_type=int, default_creator=bad_default_creator
             )
+
+    def test_optional_defaults(self):
+        empty_params = Parameters.empty()
+        default_list = [False]
+        assert (
+            empty_params.optional_arbitrary_list(  # pylint: disable=unexpected-keyword-arg
+                "foo", default=default_list
+            )
+            == default_list
+        )
+        assert empty_params.optional_boolean(  # pylint: disable=unexpected-keyword-arg
+            "foo", default=True
+        )
+        assert (  # pylint: disable=unexpected-keyword-arg
+            empty_params.optional_floating_point("foo", default=-1.5) == -1.5
+        )
+        assert (  # pylint: disable=unexpected-keyword-arg
+            empty_params.optional_integer("foo", default=-5) == -5
+        )
+        assert (  # pylint: disable=unexpected-keyword-arg
+            empty_params.optional_positive_integer("foo", default=5) == 5
+        )
+        assert (  # pylint: disable=unexpected-keyword-arg
+            empty_params.optional_string("foo", default="test") == "test"
+        )
 
 
 # Used by test_environmental_variable_interpolation.

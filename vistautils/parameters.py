@@ -1,3 +1,4 @@
+# pylint: skip-file
 import inspect
 import logging
 import os
@@ -16,6 +17,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    overload,
 )
 
 from attr import attrib, attrs
@@ -37,7 +39,8 @@ class ParameterError(Exception):
     pass
 
 
-ParamType = TypeVar("ParamType")  # pylint:disable=invalid-name
+_ParamType = TypeVar("_ParamType")  # pylint:disable=invalid-name
+_U = TypeVar("_U")  # pylint:disable=invalid-name
 
 
 @attrs(frozen=True, slots=True)
@@ -313,19 +316,40 @@ class Parameters:
             )
         return ret
 
+    @overload
     def optional_string(
         self, param_name: str, valid_options: Optional[Iterable[str]] = None
     ) -> Optional[str]:
+        ...
+
+    @overload
+    def optional_string(
+        self,
+        param_name: str,
+        valid_options: Optional[Iterable[str]] = None,
+        *,
+        default: str,
+    ) -> str:
+        ...
+
+    def optional_string(
+        self,
+        param_name: str,
+        valid_options: Optional[Iterable[str]] = None,
+        *,
+        default: Optional[str] = None,
+    ):
         """
         Gets a string-valued parameter, if possible.
+        If a default is provided, return the default
+        else returns *None* if the parameter is absent.
 
-        Returns *None* if the parameter is absent.
         Throws a `ParameterError` if `param` is not a known parameter.
         """
         if param_name in self:
             return self.string(param_name, valid_options)
         else:
-            return None
+            return default  # type: ignore
 
     def __contains__(self, param_name: str) -> bool:
         return self._private_get(param_name, optional=True) is not None
@@ -342,7 +366,15 @@ class Parameters:
         """
         return self.get(name, int)
 
+    @overload
     def optional_integer(self, name: str) -> Optional[int]:
+        ...
+
+    @overload
+    def optional_integer(self, name, *, default: int) -> int:
+        ...
+
+    def optional_integer(self, name: str, *, default: Optional[int] = None):
         """
         Gets an integer parameter, if possible.
 
@@ -351,7 +383,7 @@ class Parameters:
         if name in self:
             return self.integer(name)
         else:
-            return None
+            return default  # type: ignore
 
     def positive_integer(self, name: str) -> int:
         """
@@ -369,7 +401,15 @@ class Parameters:
                 )
             )
 
+    @overload
     def optional_positive_integer(self, name: str) -> Optional[int]:
+        ...
+
+    @overload
+    def optional_positive_integer(self, name: str, *, default: int) -> int:
+        ...
+
+    def optional_positive_integer(self, name: str, *, default: Optional[int] = None):
         """
         Gets a positive integer parameter, if possible.
 
@@ -378,8 +418,12 @@ class Parameters:
         """
         if name in self:
             return self.positive_integer(name)
-        else:
-            return None
+        if default:
+            if isinstance(default, int) and default > 0:
+                return default  # type: ignore
+            else:
+                raise ParameterError(f"Default value: {default} is not a positive value")
+        return None
 
     def floating_point(
         self, name: str, valid_range: Optional[Range[float]] = None
@@ -400,17 +444,42 @@ class Parameters:
             )
         return ret
 
+    @overload
     def optional_floating_point(
         self, name: str, valid_range: Optional[Range[float]] = None
     ) -> Optional[float]:
+        ...
+
+    @overload
+    def optional_floating_point(
+        self, name: str, valid_range: Optional[Range[float]] = None, *, default: float
+    ) -> float:
+        ...
+
+    def optional_floating_point(
+        self,
+        name: str,
+        valid_range: Optional[Range[float]] = None,
+        *,
+        default: Optional[float] = None,
+    ):
         """
         Gets a float parameter if present.
 
-        Consider the idiom `params.optional_float('foo') or default_value`
         Throws a `ParameterError` if `param` is not within the given range.
         """
         if name in self:
             return self.floating_point(name, valid_range)
+        if default:
+            if (
+                valid_range is not None
+                and isinstance(default, float)
+                and default not in valid_range
+            ):
+                raise ParameterError(
+                    f"Default value of {default} not in the range of {valid_range}."
+                )
+            return default  # type: ignore
         else:
             return None
 
@@ -428,20 +497,29 @@ class Parameters:
         """
         return self.get(name, bool)
 
+    @overload
     def optional_boolean(self, name: str) -> Optional[bool]:
+        ...
+
+    @overload
+    def optional_boolean(self, name: str, *, default: bool) -> bool:
+        ...
+
+    def optional_boolean(self, name: str, *, default: Optional[bool] = None):
         """
         Gets a boolean parameter if present.
 
-        Avoid the temptation to do `params.optional_boolean('foo') or default_value`. If there is
-        a default, prefer `optional_boolean_with_default`
+        Avoid the temptation to do `params.optional_boolean('foo') or default_value`.
         """
-        return self.get_optional(name, bool)
+        return self.get_optional(name, bool, default=default)
 
     def optional_boolean_with_default(self, name: str, default_value: bool) -> bool:
         """
+        Deprecated. Prefer `optional_boolean` with default as a parameter.
+
         Gets a boolean parameter if present; otherwise returns the provided default.
         """
-        ret = self.optional_boolean(name)
+        ret = self.optional_boolean(name, default=default_value)
         if ret is not None:
             return ret
         else:
@@ -467,20 +545,35 @@ class Parameters:
         """
         return self.get(name, List)
 
+    @overload
     def optional_arbitrary_list(self, name: str) -> Optional[List]:
+        ...
+
+    @overload
+    def optional_arbitrary_list(self, name: str, *, default: List) -> List:
+        ...
+
+    def optional_arbitrary_list(self, name: str, *, default: Optional[List] = None):
         """
         Get a list with arbitrary structure, if available
         """
-        return self.get_optional(name, List)
+        if not default:
+            return self.get_optional(name, List)
+        elif isinstance(default, List):
+            return self.get_optional(name, List, default=default)
+
+        raise ParameterError(
+            f"Provided default to optional arbitrary list isn't a list. {default}"
+        )
 
     def optional_evaluate(
         self,
         name: str,
-        expected_type: Type[ParamType],
+        expected_type: Type[_ParamType],
         *,
         namespace_param_name: str = "value",
         special_values: Mapping[str, str] = ImmutableDict.empty(),
-    ) -> Optional[ParamType]:
+    ) -> Optional[_ParamType]:
         """
         Get a parameter, if present, interpreting its value as Python code.
 
@@ -500,12 +593,12 @@ class Parameters:
     def evaluate(
         self,
         name: str,
-        expected_type: Type[ParamType],
+        expected_type: Type[_ParamType],
         *,
         context: Optional[Mapping] = None,
         namespace_param_name: str = "value",
         special_values: Mapping[str, str] = ImmutableDict.empty(),
-    ) -> ParamType:
+    ) -> _ParamType:
         """
         Get a parameter, interpreting its value as Python code.
 
@@ -556,13 +649,13 @@ class Parameters:
     def object_from_parameters(
         self,
         name: str,
-        expected_type: Type[ParamType],
+        expected_type: Type[_ParamType],
         *,
         context: Optional[Mapping] = None,
         creator_namepace_param_name: str = "value",
         special_creator_values: Mapping[str, str] = ImmutableDict.empty(),
         default_creator: Optional[Any] = None,
-    ) -> ParamType:
+    ) -> _ParamType:
         """
         Get an object of `expected_type`, initialized by the parameters in `name`.
 
@@ -615,7 +708,7 @@ class Parameters:
         params_to_pass = self.optional_namespace(name) or Parameters.empty()
         if inspect.isclass(creator):
             if hasattr(creator, "from_parameters"):
-                ret: Callable[[Optional[Parameters]], ParamType] = getattr(
+                ret: Callable[[Optional[Parameters]], _ParamType] = getattr(
                     creator, "from_parameters"
                 )(params_to_pass)
             else:
@@ -637,7 +730,7 @@ class Parameters:
                 " got {!s}".format(expected_type, ret)
             )
 
-    def get(self, param_name: str, param_type: Type[ParamType]) -> ParamType:
+    def get(self, param_name: str, param_type: Type[_ParamType]) -> _ParamType:
         """
         Get a parameter with type-safety.
 
@@ -655,25 +748,41 @@ class Parameters:
                 "of type {!s}".format(param_name, param_type, ret, type(ret))
             )
 
+    @overload
     def get_optional(
-        self, param_name: str, param_type: Type[ParamType]
-    ) -> Optional[ParamType]:
+        self, param_name: str, param_type: Type[_ParamType]
+    ) -> Optional[_ParamType]:
+        ...
+
+    @overload
+    def get_optional(
+        self, param_name: str, param_type: Type[_ParamType], *, default: _U
+    ) -> _U:
+        ...
+
+    def get_optional(
+        self, param_name: str, param_type: Type[_ParamType], *, default: _U = None
+    ):
         """
         Get a parameter with type-safety.
 
         Gets the given parameter, throwing a `ParameterError` if it is not of the
         specified type.
 
+        If a default is provided return the default otherwise
         If the parameter is unknown, returns `None`
         """
         ret = self._private_get(param_name, optional=True)
-        if not ret or isinstance(ret, param_type):
-            return ret
+        if ret is not None:
+            if isinstance(ret, param_type):
+                return ret
+            else:
+                raise ParameterError(
+                    "When looking up parameter '{!s}', expected a value of type {!s}, but got {!s} "
+                    "of type {!s}".format(param_name, param_type, ret, type(ret))
+                )
         else:
-            raise ParameterError(
-                "When looking up parameter '{!s}', expected a value of type {!s}, but got {!s} "
-                "of type {!s}".format(param_name, param_type, ret, type(ret))
-            )
+            return default
 
     def path_list_from_file(self, param: str, *, log_name=None) -> Sequence[Path]:
         """
