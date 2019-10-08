@@ -51,7 +51,7 @@ class _Marker(Enum):
     MARKER = object()
 
 
-_marker = _Marker.MARKER
+_marker = _Marker.MARKER  # pylint:disable=invalid-name
 
 
 @attrs(frozen=True, slots=True)
@@ -342,10 +342,8 @@ class Parameters:
         """
         if param_name in self:
             return self.string(param_name, valid_options)
-        elif default:
-            return default
         else:
-            return None
+            return default
 
     def __contains__(self, param_name: str) -> bool:
         return self._private_get(param_name, optional=True) is not None
@@ -370,10 +368,8 @@ class Parameters:
         """
         if name in self:
             return self.integer(name)
-        elif default:
-            return default
         else:
-            return None
+            return default
 
     def positive_integer(self, name: str) -> int:
         """
@@ -402,13 +398,10 @@ class Parameters:
         """
         if name in self:
             return self.positive_integer(name)
-        if default:
-            if isinstance(default, int) and default > 0:
-                return default
-            else:
-                raise ParameterError(f"Default value: {default} is not a positive value")
+        if isinstance(default, int) and default > 0:
+            return default
         else:
-            return None
+            raise ParameterError(f"Default value: {default} is not a positive value")
 
     def floating_point(
         self, name: str, valid_range: Optional[Range[float]] = None
@@ -482,11 +475,7 @@ class Parameters:
 
         Gets a boolean parameter if present; otherwise returns the provided default.
         """
-        ret = self.optional_boolean(name)
-        if ret is not None:
-            return ret
-        else:
-            return default_value
+        return self.optional_boolean(name, default_value)
 
     def optional_namespace(self, name: str) -> Optional["Parameters"]:
         """
