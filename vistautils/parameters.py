@@ -38,20 +38,8 @@ class ParameterError(Exception):
     pass
 
 
-ParamType = TypeVar("ParamType")  # pylint:disable=invalid-name
+_ParamType = TypeVar("_ParamType")  # pylint:disable=invalid-name
 _U = TypeVar("_U")  # pylint:disable=invalid-name
-
-
-class _Marker(Enum):
-    """
-    Singleton type, as described in:
-    https://python.org/dev/peps/pep-0484/#support-for-singleton-types-in-unions
-    """
-
-    MARKER = object()
-
-
-_marker = _Marker.MARKER  # pylint:disable=invalid-name
 
 
 @attrs(frozen=True, slots=True)
@@ -331,8 +319,9 @@ class Parameters:
         self,
         param_name: str,
         valid_options: Optional[Iterable[str]] = None,
+        *,
         default: _U = None,
-    ) -> Union[Optional[str], _U]:
+    ) -> Union[str, _U]:
         """
         Gets a string-valued parameter, if possible.
         If a default is provided, return the default
@@ -360,7 +349,7 @@ class Parameters:
         """
         return self.get(name, int)
 
-    def optional_integer(self, name: str, default: _U = None) -> Union[Optional[int], _U]:
+    def optional_integer(self, name: str, *, default: _U = None) -> Union[int, _U]:
         """
         Gets an integer parameter, if possible.
 
@@ -388,8 +377,8 @@ class Parameters:
             )
 
     def optional_positive_integer(
-        self, name: str, default: _U = None
-    ) -> Union[Optional[int], _U]:
+        self, name: str, *, default: _U = None
+    ) -> Union[int, _U]:
         """
         Gets a positive integer parameter, if possible.
 
@@ -425,8 +414,8 @@ class Parameters:
         return ret
 
     def optional_floating_point(
-        self, name: str, valid_range: Optional[Range[float]] = None, default: _U = None
-    ) -> Union[Optional[float], _U]:
+        self, name: str, valid_range: Optional[Range[float]] = None, *, default: _U = None
+    ) -> Union[float, _U]:
         """
         Gets a float parameter if present.
 
@@ -461,9 +450,7 @@ class Parameters:
         """
         return self.get(name, bool)
 
-    def optional_boolean(
-        self, name: str, default: _U = None
-    ) -> Union[Optional[bool], _U]:
+    def optional_boolean(self, name: str, *, default: _U = None) -> Union[bool, _U]:
         """
         Gets a boolean parameter if present.
 
@@ -477,7 +464,7 @@ class Parameters:
 
         Gets a boolean parameter if present; otherwise returns the provided default.
         """
-        ret = self.optional_boolean(name, default_value)
+        ret = self.optional_boolean(name, default=default_value)
         if ret is not None:
             return ret
         else:
@@ -503,7 +490,7 @@ class Parameters:
         """
         return self.get(name, List)
 
-    def optional_arbitrary_list(self, name: str, default: _U = None) -> Optional[List]:
+    def optional_arbitrary_list(self, name: str, *, default: _U = None) -> Optional[List]:
         """
         Get a list with arbitrary structure, if available
         """
@@ -519,11 +506,11 @@ class Parameters:
     def optional_evaluate(
         self,
         name: str,
-        expected_type: Type[ParamType],
+        expected_type: Type[_ParamType],
         *,
         namespace_param_name: str = "value",
         special_values: Mapping[str, str] = ImmutableDict.empty(),
-    ) -> Optional[ParamType]:
+    ) -> Optional[_ParamType]:
         """
         Get a parameter, if present, interpreting its value as Python code.
 
@@ -543,12 +530,12 @@ class Parameters:
     def evaluate(
         self,
         name: str,
-        expected_type: Type[ParamType],
+        expected_type: Type[_ParamType],
         *,
         context: Optional[Mapping] = None,
         namespace_param_name: str = "value",
         special_values: Mapping[str, str] = ImmutableDict.empty(),
-    ) -> ParamType:
+    ) -> _ParamType:
         """
         Get a parameter, interpreting its value as Python code.
 
@@ -599,13 +586,13 @@ class Parameters:
     def object_from_parameters(
         self,
         name: str,
-        expected_type: Type[ParamType],
+        expected_type: Type[_ParamType],
         *,
         context: Optional[Mapping] = None,
         creator_namepace_param_name: str = "value",
         special_creator_values: Mapping[str, str] = ImmutableDict.empty(),
         default_creator: Optional[Any] = None,
-    ) -> ParamType:
+    ) -> _ParamType:
         """
         Get an object of `expected_type`, initialized by the parameters in `name`.
 
@@ -658,7 +645,7 @@ class Parameters:
         params_to_pass = self.optional_namespace(name) or Parameters.empty()
         if inspect.isclass(creator):
             if hasattr(creator, "from_parameters"):
-                ret: Callable[[Optional[Parameters]], ParamType] = getattr(
+                ret: Callable[[Optional[Parameters]], _ParamType] = getattr(
                     creator, "from_parameters"
                 )(params_to_pass)
             else:
@@ -680,7 +667,7 @@ class Parameters:
                 " got {!s}".format(expected_type, ret)
             )
 
-    def get(self, param_name: str, param_type: Type[ParamType]) -> ParamType:
+    def get(self, param_name: str, param_type: Type[_ParamType]) -> _ParamType:
         """
         Get a parameter with type-safety.
 
@@ -699,8 +686,8 @@ class Parameters:
             )
 
     def get_optional(
-        self, param_name: str, param_type: Type[ParamType], default: _U = None
-    ) -> Union[Optional[ParamType], _U]:
+        self, param_name: str, param_type: Type[_ParamType], default: _U = None
+    ) -> Union[Optional[_ParamType], _U]:
         """
         Get a parameter with type-safety.
 
