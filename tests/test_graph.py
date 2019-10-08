@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from immutablecollections import immutableset, immutablesetmultidict
+
 from vistautils._graph import Digraph, ParameterInterpolationError
 
 
@@ -64,11 +65,13 @@ class TestGraph(TestCase):
 
         with self.assertRaisesRegex(
             ParameterInterpolationError,
-            r"These interpolated parameters form at least one graph cycle that must be fixed: \('b', 'c'\)",
+            r"These interpolated parameters form at least one "
+            r"graph cycle that must be fixed: \('b', 'c'\)",
         ):
             tuple(g1.topological_sort())
         with self.assertRaisesRegex(
             ParameterInterpolationError,
-            r"These interpolated parameters form at least one graph cycle that must be fixed: \('a', 'b', 'c'\)",
+            r"These interpolated parameters form at least one "
+            r"graph cycle that must be fixed: \('a', 'b', 'c'\)",
         ):
             tuple(g2.topological_sort())

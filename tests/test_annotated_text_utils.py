@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from vistautils.span import Span
 from vistautils.annotated_text_utils import AnnotatedSpan, HTMLStyleAnnotationFormatter
+from vistautils.span import Span
 
 
 class TestAnnotatedTextUtils(TestCase):

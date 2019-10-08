@@ -51,8 +51,9 @@ confidence=
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
 # TODO: Enable missing-docstring once it's not overwhelming
-# bad-whitespace and bad-continuation are disabled because we trust black to handle it
-disable=R,fixme,missing-docstring,no-member,unsupported-membership-test,unsubscriptable-object,unsupported-assignment-operation,not-an-iterable,too-many-lines,ungrouped-imports,import-error,bad-continuation,bad-whitespace
+# * bad-whitespace and bad-continuation are disabled because we trust black to handle it
+# * wrong-import-order is disabled because we trust isort to handle it
+disable=R,fixme,missing-docstring,no-member,unsupported-membership-test,unsubscriptable-object,unsupported-assignment-operation,not-an-iterable,too-many-lines,ungrouped-imports,import-error,bad-continuation,bad-whitespace,wrong-import-order
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

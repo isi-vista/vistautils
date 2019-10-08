@@ -15,4 +15,8 @@ ignore =
     E131
     # E203 is often wrong and black is right
     E203
+    # isort handles this now
+    E402
+    # already covered by PyLint and gives false positives for typing.overload
+    F811
 max-line-length = 100

@@ -13,20 +13,19 @@ The "input_store_list_file" parameter points to a file containing the paths of t
 The "output" namespace describes the key-value store to output to. See
 char_key_value_sink_from_params for details.
 """
-import sys
 from typing import Set
 
+from vistautils.key_value import KeyValueSource, char_key_value_sink_from_params
 from vistautils.parameters import Parameters
 from vistautils.parameters_only_entrypoint import parameters_only_entry_point
-from vistautils.key_value import KeyValueSource, char_key_value_sink_from_params
 
 
 def main(params: Parameters):
-    input_paths = params.path_list_from_file('input_store_list_file',
-                                             log_name="input key-value stores")
+    input_paths = params.path_list_from_file(
+        "input_store_list_file", log_name="input key-value stores"
+    )
     keys_written: Set[str] = set()
-    with char_key_value_sink_from_params('output', params,
-                                         eval_context=locals()) as out:
+    with char_key_value_sink_from_params(params, eval_context=locals()) as out:
         for input_path in input_paths:
             with KeyValueSource.zip_bytes_source(input_path) as inp:
                 for key in inp.keys():
@@ -36,5 +35,5 @@ def main(params: Parameters):
                     out[key] = inp[key]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parameters_only_entry_point(main)

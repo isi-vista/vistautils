@@ -1,7 +1,7 @@
 import logging
 import logging.config
 
-from vistautils.parameters import Parameters, ParameterError
+from vistautils.parameters import ParameterError, Parameters
 
 log = logging.getLogger(__name__)  # pylint:disable=invalid-name
 

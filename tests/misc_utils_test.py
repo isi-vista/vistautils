@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from vistautils.misc_utils import str_list_limited, flatten_once_to_list
+from vistautils.misc_utils import flatten_once_to_list, str_list_limited
 
 
 class ExceptionUtilsTest(TestCase):
