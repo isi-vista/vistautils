@@ -475,7 +475,11 @@ class Parameters:
 
         Gets a boolean parameter if present; otherwise returns the provided default.
         """
-        return self.optional_boolean(name, default_value)
+        ret = self.optional_boolean(name, default_value)
+        if ret is not None:
+            return ret
+        else:
+            return default_value
 
     def optional_namespace(self, name: str) -> Optional["Parameters"]:
         """
