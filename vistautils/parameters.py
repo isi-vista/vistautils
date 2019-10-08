@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import shutil
+from enum import Enum
 from pathlib import Path
 from typing import (
     Any,
@@ -38,6 +39,19 @@ class ParameterError(Exception):
 
 
 ParamType = TypeVar("ParamType")  # pylint:disable=invalid-name
+_U = TypeVar("_U")  # pylint:disable=invalid-name
+
+
+class _Marker(Enum):
+    """
+    Singleton type, as described in:
+    https://python.org/dev/peps/pep-0484/#support-for-singleton-types-in-unions
+    """
+
+    MARKER = object()
+
+
+_marker = _Marker.MARKER
 
 
 @attrs(frozen=True, slots=True)
@@ -314,16 +328,22 @@ class Parameters:
         return ret
 
     def optional_string(
-        self, param_name: str, valid_options: Optional[Iterable[str]] = None
-    ) -> Optional[str]:
+        self,
+        param_name: str,
+        valid_options: Optional[Iterable[str]] = None,
+        default: _U = None,
+    ) -> Union[Optional[str], _U]:
         """
         Gets a string-valued parameter, if possible.
+        If a default is provided, return the default
+        else returns *None* if the parameter is absent.
 
-        Returns *None* if the parameter is absent.
         Throws a `ParameterError` if `param` is not a known parameter.
         """
         if param_name in self:
             return self.string(param_name, valid_options)
+        elif default:
+            return default
         else:
             return None
 
@@ -342,7 +362,7 @@ class Parameters:
         """
         return self.get(name, int)
 
-    def optional_integer(self, name: str) -> Optional[int]:
+    def optional_integer(self, name: str, default: _U = None) -> Union[Optional[int], _U]:
         """
         Gets an integer parameter, if possible.
 
@@ -350,6 +370,8 @@ class Parameters:
         """
         if name in self:
             return self.integer(name)
+        elif default:
+            return default
         else:
             return None
 
@@ -369,7 +391,9 @@ class Parameters:
                 )
             )
 
-    def optional_positive_integer(self, name: str) -> Optional[int]:
+    def optional_positive_integer(
+        self, name: str, default: _U = None
+    ) -> Union[Optional[int], _U]:
         """
         Gets a positive integer parameter, if possible.
 
@@ -378,6 +402,11 @@ class Parameters:
         """
         if name in self:
             return self.positive_integer(name)
+        if default:
+            if isinstance(default, int) and default > 0:
+                return default
+            else:
+                raise ParameterError(f"Default value: {default} is not a positive value")
         else:
             return None
 
@@ -401,16 +430,25 @@ class Parameters:
         return ret
 
     def optional_floating_point(
-        self, name: str, valid_range: Optional[Range[float]] = None
-    ) -> Optional[float]:
+        self, name: str, valid_range: Optional[Range[float]] = None, default: _U = None
+    ) -> Union[Optional[float], _U]:
         """
         Gets a float parameter if present.
 
-        Consider the idiom `params.optional_float('foo') or default_value`
         Throws a `ParameterError` if `param` is not within the given range.
         """
         if name in self:
             return self.floating_point(name, valid_range)
+        if default:
+            if (
+                valid_range is not None
+                and isinstance(default, float)
+                and default not in valid_range
+            ):
+                raise ParameterError(
+                    f"Default value of {default} not in the range of {valid_range}."
+                )
+            return default
         else:
             return None
 
@@ -428,17 +466,20 @@ class Parameters:
         """
         return self.get(name, bool)
 
-    def optional_boolean(self, name: str) -> Optional[bool]:
+    def optional_boolean(
+        self, name: str, default: _U = None
+    ) -> Union[Optional[bool], _U]:
         """
         Gets a boolean parameter if present.
 
-        Avoid the temptation to do `params.optional_boolean('foo') or default_value`. If there is
-        a default, prefer `optional_boolean_with_default`
+        Avoid the temptation to do `params.optional_boolean('foo') or default_value`.
         """
-        return self.get_optional(name, bool)
+        return self.get_optional(name, bool, default)
 
     def optional_boolean_with_default(self, name: str, default_value: bool) -> bool:
         """
+        Deprecated. Prefer `optional_boolean` with default as a parameter.
+
         Gets a boolean parameter if present; otherwise returns the provided default.
         """
         ret = self.optional_boolean(name)
@@ -467,11 +508,18 @@ class Parameters:
         """
         return self.get(name, List)
 
-    def optional_arbitrary_list(self, name: str) -> Optional[List]:
+    def optional_arbitrary_list(self, name: str, default: _U = None) -> Optional[List]:
         """
         Get a list with arbitrary structure, if available
         """
-        return self.get_optional(name, List)
+        if not default:
+            return self.get_optional(name, List)
+        elif isinstance(default, List):
+            return self.get_optional(name, List, default)
+
+        raise ParameterError(
+            f"Provided default to optional arbitrary list isn't a list. {default}"
+        )
 
     def optional_evaluate(
         self,
@@ -656,18 +704,23 @@ class Parameters:
             )
 
     def get_optional(
-        self, param_name: str, param_type: Type[ParamType]
-    ) -> Optional[ParamType]:
+        self, param_name: str, param_type: Type[ParamType], default: _U = None
+    ) -> Union[Optional[ParamType], _U]:
         """
         Get a parameter with type-safety.
 
         Gets the given parameter, throwing a `ParameterError` if it is not of the
         specified type.
 
+        If a default is provided return the default otherwise
         If the parameter is unknown, returns `None`
         """
         ret = self._private_get(param_name, optional=True)
-        if not ret or isinstance(ret, param_type):
+        if not ret:
+            if default:
+                return default
+            return ret
+        elif isinstance(ret, param_type):
             return ret
         else:
             raise ParameterError(

@@ -371,6 +371,16 @@ class TestParameters(TestCase):
                 "missing_param", expected_type=int, default_creator=bad_default_creator
             )
 
+    def test_optional_defaults(self):
+        empty_params = Parameters.from_mapping({})
+        default_list = [False]
+        assert empty_params.optional_arbitrary_list("foo", default_list) == default_list
+        assert empty_params.optional_boolean("foo", True)
+        assert empty_params.optional_floating_point("foo", default=-1.5) == -1.5
+        assert empty_params.optional_integer("foo", -5) == -5
+        assert empty_params.optional_positive_integer("foo", 5) == 5
+        assert empty_params.optional_string("foo", default="test") == "test"
+
 
 # Used by test_environmental_variable_interpolation.
 # Here we test:
