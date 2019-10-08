@@ -374,7 +374,10 @@ class TestParameters(TestCase):
     def test_optional_defaults(self):
         empty_params = Parameters.empty()
         default_list = [False]
-        assert empty_params.optional_arbitrary_list("foo", default=default_list) == default_list
+        assert (
+            empty_params.optional_arbitrary_list("foo", default=default_list)
+            == default_list
+        )
         assert empty_params.optional_boolean("foo", default=True)
         assert empty_params.optional_floating_point("foo", default=-1.5) == -1.5
         assert empty_params.optional_integer("foo", default=-5) == -5

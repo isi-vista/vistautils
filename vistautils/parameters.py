@@ -17,6 +17,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    overload,
 )
 
 from attr import attrib, attrs
@@ -315,13 +316,24 @@ class Parameters:
             )
         return ret
 
+    @overload
+    def optional_string(
+        self, param_name: str, valid_options: Optional[Iterable[str]]
+    ) -> Optional[str]:
+        ...
+
+    @overload
+    def optional_string(
+        self, param_name: str, valid_options: Optional[Iterable[str]], *, default: str
+    ) -> str:
+        ...
+
     def optional_string(
         self,
         param_name: str,
         valid_options: Optional[Iterable[str]] = None,
-        *,
         default: _U = None,
-    ) -> Union[str, _U]:
+    ):
         """
         Gets a string-valued parameter, if possible.
         If a default is provided, return the default
@@ -349,7 +361,15 @@ class Parameters:
         """
         return self.get(name, int)
 
-    def optional_integer(self, name: str, *, default: _U = None) -> Union[int, _U]:
+    @overload
+    def optional_integer(self, name: str) -> Optional[int]:
+        ...
+
+    @overload
+    def optional_integer(self, name, *, default: int) -> int:
+        ...
+
+    def optional_integer(self, name: str, default: _U = None):
         """
         Gets an integer parameter, if possible.
 
@@ -376,9 +396,15 @@ class Parameters:
                 )
             )
 
-    def optional_positive_integer(
-        self, name: str, *, default: _U = None
-    ) -> Union[int, _U]:
+    @overload
+    def optional_positive_integer(self, name: str) -> Optional[int]:
+        ...
+
+    @overload
+    def optional_positive_integer(self, name: str, *, default: int) -> int:
+        ...
+
+    def optional_positive_integer(self, name: str, default: _U = None):
         """
         Gets a positive integer parameter, if possible.
 
@@ -413,9 +439,21 @@ class Parameters:
             )
         return ret
 
+    @overload
     def optional_floating_point(
-        self, name: str, valid_range: Optional[Range[float]] = None, *, default: _U = None
-    ) -> Union[float, _U]:
+        self, name: str, valid_range: Optional[Range[float]]
+    ) -> Optional[float]:
+        ...
+
+    @overload
+    def optional_floating_point(
+        self, name: str, valid_range: Optional[Range[float]], *, default: float
+    ) -> float:
+        ...
+
+    def optional_floating_point(
+        self, name: str, valid_range: Optional[Range[float]] = None, default: _U = None
+    ):
         """
         Gets a float parameter if present.
 
@@ -450,13 +488,21 @@ class Parameters:
         """
         return self.get(name, bool)
 
-    def optional_boolean(self, name: str, *, default: _U = None) -> Union[bool, _U]:
+    @overload
+    def optional_boolean(self, name: str) -> Optional[bool]:
+        ...
+
+    @overload
+    def optional_boolean(self, name: str, *, default: bool) -> bool:
+        ...
+
+    def optional_boolean(self, name: str, default: _U = None):
         """
         Gets a boolean parameter if present.
 
         Avoid the temptation to do `params.optional_boolean('foo') or default_value`.
         """
-        return self.get_optional(name, bool, default)
+        return self.get_optional(name, bool, default=default)
 
     def optional_boolean_with_default(self, name: str, default_value: bool) -> bool:
         """
@@ -490,14 +536,22 @@ class Parameters:
         """
         return self.get(name, List)
 
-    def optional_arbitrary_list(self, name: str, *, default: _U = None) -> Optional[List]:
+    @overload
+    def optional_arbitrary_list(self, name: str) -> Optional[List]:
+        ...
+
+    @overload
+    def optional_arbitrary_list(self, name: str, *, default: List) -> List:
+        ...
+
+    def optional_arbitrary_list(self, name: str, default: _U = None):
         """
         Get a list with arbitrary structure, if available
         """
         if not default:
             return self.get_optional(name, List)
         elif isinstance(default, List):
-            return self.get_optional(name, List, default)
+            return self.get_optional(name, List, default=default)
 
         raise ParameterError(
             f"Provided default to optional arbitrary list isn't a list. {default}"
@@ -685,9 +739,21 @@ class Parameters:
                 "of type {!s}".format(param_name, param_type, ret, type(ret))
             )
 
+    @overload
+    def get_optional(
+        self, param_name: str, param_type: Type[_ParamType]
+    ) -> Optional[_ParamType]:
+        ...
+
+    @overload
+    def get_optional(
+        self, param_name: str, param_type: Type[_ParamType], *, default: _U
+    ) -> _U:
+        ...
+
     def get_optional(
         self, param_name: str, param_type: Type[_ParamType], default: _U = None
-    ) -> Union[Optional[_ParamType], _U]:
+    ):
         """
         Get a parameter with type-safety.
 
