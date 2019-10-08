@@ -398,7 +398,7 @@ class Parameters:
         """
         if name in self:
             return self.positive_integer(name)
-        if not default:
+        if default:
             if isinstance(default, int) and default > 0:
                 return default
             else:
