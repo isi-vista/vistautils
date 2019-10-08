@@ -773,17 +773,16 @@ class Parameters:
         If the parameter is unknown, returns `None`
         """
         ret = self._private_get(param_name, optional=True)
-        if not ret and isinstance(ret, param_type):
-            return ret
-        elif not ret:
-            if default:
-                return default
-            return ret
+        if ret is not None:
+            if isinstance(ret, param_type):
+                return ret
+            else:
+                raise ParameterError(
+                    "When looking up parameter '{!s}', expected a value of type {!s}, but got {!s} "
+                    "of type {!s}".format(param_name, param_type, ret, type(ret))
+                )
         else:
-            raise ParameterError(
-                "When looking up parameter '{!s}', expected a value of type {!s}, but got {!s} "
-                "of type {!s}".format(param_name, param_type, ret, type(ret))
-            )
+            return default
 
     def path_list_from_file(self, param: str, *, log_name=None) -> Sequence[Path]:
         """
