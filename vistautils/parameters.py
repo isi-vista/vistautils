@@ -773,11 +773,11 @@ class Parameters:
         If the parameter is unknown, returns `None`
         """
         ret = self._private_get(param_name, optional=True)
-        if not ret:
+        if not ret and isinstance(ret, param_type):
+            return ret
+        elif not ret:
             if default:
                 return default
-            return ret
-        elif isinstance(ret, param_type):
             return ret
         else:
             raise ParameterError(
