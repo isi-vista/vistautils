@@ -398,10 +398,12 @@ class Parameters:
         """
         if name in self:
             return self.positive_integer(name)
-        if isinstance(default, int) and default > 0:
-            return default
-        else:
-            raise ParameterError(f"Default value: {default} is not a positive value")
+        if not default:
+            if isinstance(default, int) and default > 0:
+                return default
+            else:
+                raise ParameterError(f"Default value: {default} is not a positive value")
+        return None
 
     def floating_point(
         self, name: str, valid_range: Optional[Range[float]] = None
