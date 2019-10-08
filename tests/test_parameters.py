@@ -375,14 +375,26 @@ class TestParameters(TestCase):
         empty_params = Parameters.empty()
         default_list = [False]
         assert (
-            empty_params.optional_arbitrary_list("foo", default=default_list)
+            empty_params.optional_arbitrary_list(  # pylint: disable=unexpected-keyword-arg
+                "foo", default=default_list
+            )
             == default_list
         )
-        assert empty_params.optional_boolean("foo", default=True)
-        assert empty_params.optional_floating_point("foo", default=-1.5) == -1.5
-        assert empty_params.optional_integer("foo", default=-5) == -5
-        assert empty_params.optional_positive_integer("foo", default=5) == 5
-        assert empty_params.optional_string("foo", default="test") == "test"
+        assert empty_params.optional_boolean(  # pylint: disable=unexpected-keyword-arg
+            "foo", default=True
+        )
+        assert (  # pylint: disable=unexpected-keyword-arg
+            empty_params.optional_floating_point("foo", default=-1.5) == -1.5
+        )
+        assert (  # pylint: disable=unexpected-keyword-arg
+            empty_params.optional_integer("foo", default=-5) == -5
+        )
+        assert (  # pylint: disable=unexpected-keyword-arg
+            empty_params.optional_positive_integer("foo", default=5) == 5
+        )
+        assert (  # pylint: disable=unexpected-keyword-arg
+            empty_params.optional_string("foo", default="test") == "test"
+        )
 
 
 # Used by test_environmental_variable_interpolation.

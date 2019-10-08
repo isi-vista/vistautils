@@ -1,9 +1,9 @@
+# pylint: skip-file
 import inspect
 import logging
 import os
 import re
 import shutil
-from enum import Enum
 from pathlib import Path
 from typing import (
     Any,
@@ -318,13 +318,17 @@ class Parameters:
 
     @overload
     def optional_string(
-        self, param_name: str, valid_options: Optional[Iterable[str]]
+        self, param_name: str, valid_options: Optional[Iterable[str]] = None
     ) -> Optional[str]:
         ...
 
     @overload
     def optional_string(
-        self, param_name: str, valid_options: Optional[Iterable[str]], *, default: str
+        self,
+        param_name: str,
+        valid_options: Optional[Iterable[str]] = None,
+        *,
+        default: str,
     ) -> str:
         ...
 
@@ -332,7 +336,8 @@ class Parameters:
         self,
         param_name: str,
         valid_options: Optional[Iterable[str]] = None,
-        default: _U = None,
+        *,
+        default: Optional[str] = None,
     ):
         """
         Gets a string-valued parameter, if possible.
@@ -344,7 +349,7 @@ class Parameters:
         if param_name in self:
             return self.string(param_name, valid_options)
         else:
-            return default
+            return default  # type: ignore
 
     def __contains__(self, param_name: str) -> bool:
         return self._private_get(param_name, optional=True) is not None
@@ -369,7 +374,7 @@ class Parameters:
     def optional_integer(self, name, *, default: int) -> int:
         ...
 
-    def optional_integer(self, name: str, default: _U = None):
+    def optional_integer(self, name: str, *, default: Optional[int] = None):
         """
         Gets an integer parameter, if possible.
 
@@ -378,7 +383,7 @@ class Parameters:
         if name in self:
             return self.integer(name)
         else:
-            return default
+            return default  # type: ignore
 
     def positive_integer(self, name: str) -> int:
         """
@@ -404,7 +409,7 @@ class Parameters:
     def optional_positive_integer(self, name: str, *, default: int) -> int:
         ...
 
-    def optional_positive_integer(self, name: str, default: _U = None):
+    def optional_positive_integer(self, name: str, *, default: Optional[int] = None):
         """
         Gets a positive integer parameter, if possible.
 
@@ -415,7 +420,7 @@ class Parameters:
             return self.positive_integer(name)
         if default:
             if isinstance(default, int) and default > 0:
-                return default
+                return default  # type: ignore
             else:
                 raise ParameterError(f"Default value: {default} is not a positive value")
         return None
@@ -441,18 +446,22 @@ class Parameters:
 
     @overload
     def optional_floating_point(
-        self, name: str, valid_range: Optional[Range[float]]
+        self, name: str, valid_range: Optional[Range[float]] = None
     ) -> Optional[float]:
         ...
 
     @overload
     def optional_floating_point(
-        self, name: str, valid_range: Optional[Range[float]], *, default: float
+        self, name: str, valid_range: Optional[Range[float]] = None, *, default: float
     ) -> float:
         ...
 
     def optional_floating_point(
-        self, name: str, valid_range: Optional[Range[float]] = None, default: _U = None
+        self,
+        name: str,
+        valid_range: Optional[Range[float]] = None,
+        *,
+        default: Optional[float] = None,
     ):
         """
         Gets a float parameter if present.
@@ -470,7 +479,7 @@ class Parameters:
                 raise ParameterError(
                     f"Default value of {default} not in the range of {valid_range}."
                 )
-            return default
+            return default  # type: ignore
         else:
             return None
 
@@ -496,7 +505,7 @@ class Parameters:
     def optional_boolean(self, name: str, *, default: bool) -> bool:
         ...
 
-    def optional_boolean(self, name: str, default: _U = None):
+    def optional_boolean(self, name: str, *, default: Optional[bool] = None):
         """
         Gets a boolean parameter if present.
 
@@ -544,7 +553,7 @@ class Parameters:
     def optional_arbitrary_list(self, name: str, *, default: List) -> List:
         ...
 
-    def optional_arbitrary_list(self, name: str, default: _U = None):
+    def optional_arbitrary_list(self, name: str, *, default: Optional[List] = None):
         """
         Get a list with arbitrary structure, if available
         """
@@ -752,7 +761,7 @@ class Parameters:
         ...
 
     def get_optional(
-        self, param_name: str, param_type: Type[_ParamType], default: _U = None
+        self, param_name: str, param_type: Type[_ParamType], *, default: _U = None
     ):
         """
         Get a parameter with type-safety.
