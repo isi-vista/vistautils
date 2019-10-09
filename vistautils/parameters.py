@@ -75,11 +75,13 @@ class Parameters:
             )
 
     @staticmethod
-    def empty() -> "Parameters":
+    def empty(*, namespace_prefix=tuple()) -> "Parameters":
         """
         A `Parameters` with no parameter mappings.
         """
-        return Parameters.from_mapping(ImmutableDict.empty())
+        return Parameters.from_mapping(
+            ImmutableDict.empty(), namespace_prefix=namespace_prefix
+        )
 
     @staticmethod
     def from_mapping(
@@ -475,6 +477,26 @@ class Parameters:
         else:
             return None
 
+    def namespace_or_empty(self, name: str) -> Optional["Parameters"]:
+        """
+        Get the namespace with the given name, or an empty one.
+
+        If the namespace is present, return it.
+        If the parameter is present but is not a namespace, throw an exception.
+        If the namespace is absent, return an empty namespace with the appropriate path prefix.
+        """
+        ret = self.get_optional(name, object)
+        if isinstance(ret, Parameters):
+            return ret
+        elif ret is None:
+            sub_namespace_prefix = list(self.namespace_prefix)
+            sub_namespace_prefix.append(name)
+            return Parameters.empty(namespace_prefix=sub_namespace_prefix)
+        else:
+            raise ParameterError(
+                f"Expected a namespace, but got a regular parameters for {name}"
+            )
+
     def arbitrary_list(self, name: str) -> List:
         """
         Get a list with arbitrary structure.
@@ -626,7 +648,7 @@ class Parameters:
                 )
             )
 
-        params_to_pass = self.optional_namespace(name) or Parameters.empty()
+        params_to_pass = self.namespace_or_empty(name)
         if inspect.isclass(creator):
             if hasattr(creator, "from_parameters"):
                 ret: Callable[[Optional[Parameters]], ParamType] = getattr(
