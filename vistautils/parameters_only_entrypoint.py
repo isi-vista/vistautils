@@ -24,10 +24,16 @@ def parameters_only_entry_point(
     configure logging from the param file itself (see `configure_logging_from`) and log the
     contents of the parameter file. In the future, other such conveniences may be added.
 
+    The user may specify *parameters* explicitly,
+    in which case the argument passed to the program is ignored.
+
     This is primarily for ISI VISTA-internal use.
     """
     if len(sys.argv) == 2:
-        params = YAMLParametersLoader().load(sys.argv[1])
+        if parameters:
+            params = parameters
+        else:
+            params = YAMLParametersLoader().load(sys.argv[1])
         configure_logging_from(params)
         log.info("Ran with parameters:\n%s", params)
         main_method(params)
