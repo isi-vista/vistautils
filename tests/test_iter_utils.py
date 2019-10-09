@@ -1,7 +1,7 @@
-from typing import Iterator, Iterable, TypeVar
+from typing import Iterable, Iterator, TypeVar
 from unittest import TestCase
 
-from vistautils.iter_utils import windowed, drop, only, non_none
+from vistautils.iter_utils import drop, non_none, only, windowed
 
 # convenience methods for testing tools on both iterators and iterables
 _T = TypeVar("_T")
@@ -15,6 +15,7 @@ def _as_iterator(it: Iterable[_T]) -> Iterator[_T]:
     return iter(it)
 
 
+# pylint: disable=invalid-name
 _iterator_or_iterable = (_as_iterable, _as_iterator)
 
 

@@ -1,12 +1,10 @@
 import logging
+import os
+import sys
 from typing import Callable, Optional
 
-import sys
-
-import os
-
-from vistautils.parameters import YAMLParametersLoader, Parameters
 from vistautils.logging_utils import configure_logging_from
+from vistautils.parameters import Parameters, YAMLParametersLoader
 
 log = logging.getLogger(__name__)  # pylint:disable=invalid-name
 

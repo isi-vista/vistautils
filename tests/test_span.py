@@ -1,9 +1,10 @@
 from unittest import TestCase
 
 from attr import attrs
+
 from immutablecollections import immutableset
 
-from vistautils.span import Span, HasSpanIndex
+from vistautils.span import HasSpanIndex, Span
 
 
 @attrs(auto_attribs=True, frozen=True, slots=True)

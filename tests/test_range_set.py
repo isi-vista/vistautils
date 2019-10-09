@@ -2,22 +2,23 @@ import pickle
 from typing import List, Sequence
 from unittest import TestCase
 
-from sortedcontainers import SortedDict
+from immutablecollections import ImmutableSet, immutableset
 
 from vistautils.iterutils import tile_with_pairs
-from immutablecollections import ImmutableSet, immutableset
 
 # noinspection PyProtectedMember
 from vistautils.range import (
-    Range,
     BoundType,
-    RangeSet,
-    _value_below,
-    _value_at_or_below,
-    _value_at_or_above,
-    MutableRangeSet,
     ImmutableRangeSet,
+    MutableRangeSet,
+    Range,
+    RangeSet,
+    _value_at_or_above,
+    _value_at_or_below,
+    _value_below,
 )
+
+from sortedcontainers import SortedDict
 
 
 class TestRangeSet(TestCase):
@@ -376,8 +377,8 @@ class TestRangeSet(TestCase):
         range_set.add(a)
         range_set.add(b)
         if a.is_empty() and b.is_empty():
-            range_set.is_empty()
-            self.assertTrue(len(range_set.as_ranges()) == 0)
+            self.assertTrue(range_set.is_empty())
+            self.assertFalse(range_set.as_ranges())
         elif a.is_empty():
             self.assertTrue(b in range_set.as_ranges())
         elif b.is_empty():
@@ -425,6 +426,7 @@ class TestRangeSet(TestCase):
             self.assertEqual(Range.create_spanning(range_set.as_ranges()), range_set.span)
         else:
             with self.assertRaises(ValueError):
+                # pylint: disable=pointless-statement
                 # noinspection PyStatementEffect
                 range_set.span
 

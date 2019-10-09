@@ -1,6 +1,5 @@
-from unittest import TestCase
-
 from typing import List
+from unittest import TestCase
 
 from vistautils.collection_utils import get_only
 

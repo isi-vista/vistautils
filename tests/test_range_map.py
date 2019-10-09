@@ -2,6 +2,7 @@ import pickle
 from unittest import TestCase
 
 from immutablecollections import ImmutableSet
+
 from vistautils.range import ImmutableRangeMap, Range, immutablerangemap
 
 

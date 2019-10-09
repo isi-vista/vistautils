@@ -1,8 +1,7 @@
 from unittest import TestCase
 
+from vistautils.class_utils import fully_qualified_name, fully_qualified_name_of_type
 from vistautils.range import ImmutableRangeSet
-
-from vistautils.class_utils import fully_qualified_name_of_type, fully_qualified_name
 
 
 class TestClassUtils(TestCase):

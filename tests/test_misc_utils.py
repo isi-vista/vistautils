@@ -1,4 +1,3 @@
-from typing import Any
 from unittest import TestCase
 
 from vistautils.misc_utils import eval_in_context_of_modules

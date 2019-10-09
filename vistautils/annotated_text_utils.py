@@ -7,15 +7,16 @@ Adapted from ``edu.isi.nlp.strings.formatting`` from https://github.com/isi-vist
 is itself derived from code from BBN Technologies.
 """
 import io
-
 import itertools
-from typing import Optional, List, Mapping, Collection, Iterable
+from typing import Collection, Iterable, List, Mapping, Optional
 
-from attr import attrs, evolve, attrib
+from attr import attrib, attrs, evolve
 from attr.validators import instance_of
+
 from immutablecollections import immutabledict
-from vistautils.span import Span
+
 from vistautils.preconditions import check_arg
+from vistautils.span import Span
 
 DIV = "div"
 SPAN = "span"

@@ -5,6 +5,7 @@ from typing import Any, Callable, Sized, Tuple, Type, Union
 from attr import Factory, attrib, validators
 
 import immutablecollections
+
 import vistautils.preconditions
 
 

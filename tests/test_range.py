@@ -2,14 +2,15 @@ import sys
 from unittest import TestCase
 
 from immutablecollections import ImmutableSet
+
 from vistautils.range import (
+    _BELOW_ALL,
+    BoundType,
+    ImmutableRangeMap,
+    ImmutableRangeSet,
+    MutableRangeSet,
     Range,
     RangeSet,
-    BoundType,
-    _BELOW_ALL,
-    ImmutableRangeSet,
-    ImmutableRangeMap,
-    MutableRangeSet,
 )
 
 
@@ -236,6 +237,7 @@ class TestRange(TestCase):
         self.assertFalse(rng.has_lower_bound())
         with self.assertRaises(ValueError):
             rng.lower_endpoint()
+        # pylint: disable=pointless-statement
         with self.assertRaises(AssertionError):
             rng.lower_bound_type
 
@@ -243,6 +245,7 @@ class TestRange(TestCase):
         self.assertFalse(rng.has_upper_bound())
         with self.assertRaises(ValueError):
             rng.upper_endpoint()
+        # pylint: disable=pointless-statement
         with self.assertRaises(AssertionError):
             rng.upper_bound_type
 
