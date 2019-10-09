@@ -1,3 +1,12 @@
+Vistautils 0.15.0 (2019-10-09)
+==============================
+
+New Features
+------------
+
+- Added `non_none`, which will filter `None` values out of an iterable (`#90 <https://github.com/isi-vista/vistautils/issues/90>`_)
+
+
 Vistautils 0.14.0 (2019-10-03)
 ==============================
 
