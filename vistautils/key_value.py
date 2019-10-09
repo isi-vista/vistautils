@@ -20,7 +20,6 @@ from typing import (
 from zipfile import ZipFile
 
 from attr import attrib, attrs
-
 from immutablecollections import ImmutableDict, ImmutableSet, immutabledict
 
 from vistautils.io_utils import (

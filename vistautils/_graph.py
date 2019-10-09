@@ -5,7 +5,6 @@
 from typing import Any, Iterator, Tuple
 
 from attr import attrib, attrs
-
 from immutablecollections import (
     ImmutableSet,
     ImmutableSetMultiDict,

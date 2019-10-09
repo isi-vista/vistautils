@@ -5,8 +5,21 @@ import os
 import re
 import shutil
 from pathlib import Path
-from typing import (Any, Callable, Iterable, List, Mapping, Optional, Pattern, Sequence, Tuple,
-                    Type, TypeVar, Union, overload)
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Pattern,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import yaml
 from attr import attrib, attrs
