@@ -1,5 +1,5 @@
 import logging
-from typing import Callable
+from typing import Callable, Optional
 
 import sys
 
@@ -12,7 +12,10 @@ log = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
 
 def parameters_only_entry_point(
-    main_method: Callable[[Parameters], None], usage_message: str = None
+    main_method: Callable[[Parameters], None],
+    usage_message: str = None,
+    *,
+    parameters: Optional[Parameters] = None
 ) -> None:
     """
     Convenience wrapper for entry points which take a single parameter file as an argument.

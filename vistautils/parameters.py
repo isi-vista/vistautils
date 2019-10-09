@@ -16,11 +16,13 @@ from typing import (
     TypeVar,
     Union,
     Iterable,
+    Tuple,
 )
 
 import yaml
 from attr import attrs, attrib
 from immutablecollections import ImmutableDict, immutabledict
+from immutablecollections.converter_utils import _to_tuple
 
 from vistautils.io_utils import CharSink, is_empty_directory
 from vistautils.misc_utils import eval_in_context_of_modules
@@ -62,6 +64,9 @@ class Parameters:
     _data: ImmutableDict[str, Any] = attrib(
         default=immutabledict(), converter=immutabledict
     )
+    namespace_prefix: List[str] = attrib(
+        default=tuple(), converter=_to_tuple, kw_only=True
+    )
 
     def __attrs_post_init__(self) -> None:
         for key in self._data:
@@ -77,7 +82,9 @@ class Parameters:
         return Parameters.from_mapping(ImmutableDict.empty())
 
     @staticmethod
-    def from_mapping(mapping: Mapping) -> "Parameters":
+    def from_mapping(
+        mapping: Mapping, *, namespace_prefix: Sequence[str] = tuple()
+    ) -> "Parameters":
         """
         Convert a dictionary of dictionaries into a `Parameter`s
 
@@ -85,14 +92,23 @@ class Parameters:
         becomes a namespace.
         """
         check_isinstance(mapping, Mapping)
-        ret: ImmutableDict.Builder[str, Any] = ImmutableDict.builder()
+        ret: List[Tuple[str, Any]] = []
         for (key, val) in mapping.items():
             if isinstance(val, Mapping):
-                ret.put(key, Parameters.from_mapping(val))
+                sub_namespace_prefix = list(namespace_prefix)
+                sub_namespace_prefix.append(key)
+                ret.append(
+                    (
+                        key,
+                        Parameters.from_mapping(
+                            val, namespace_prefix=sub_namespace_prefix
+                        ),
+                    )
+                )
             else:
                 # this case will also be triggered if the value is already a parameters object
-                ret.put(key, val)
-        return Parameters(ret.build())
+                ret.append((key, val))
+        return Parameters(ret, namespace_prefix=namespace_prefix)
 
     def as_mapping(self) -> Mapping[str, Any]:
         """
@@ -649,8 +665,9 @@ class Parameters:
             return ret
         else:
             raise ParameterError(
-                "When looking up parameter '{!s}', expected a value of type {!s}, but got {!s} "
-                "of type {!s}".format(param_name, param_type, ret, type(ret))
+                f"{self._namespace_message()}When looking up parameter '{param_name}', "
+                f"expected a value of type {param_type}, but got {ret} "
+                "of type {type(ret)}"
             )
 
     def get_optional(
@@ -669,8 +686,10 @@ class Parameters:
             return ret
         else:
             raise ParameterError(
-                "When looking up parameter '{!s}', expected a value of type {!s}, but got {!s} "
-                "of type {!s}".format(param_name, param_type, ret, type(ret))
+                "{!s}When looking up parameter '{!s}', expected a value of type {!s}, but got {!s} "
+                "of type {!s}".format(
+                    self._namespace_message(), param_name, param_type, ret, type(ret)
+                )
             )
 
     def path_list_from_file(self, param: str, *, log_name=None) -> Sequence[Path]:
@@ -729,7 +748,8 @@ class Parameters:
                 _logger.info("Loaded %s %s from %s", len(ret), log_name, file_map_file)
             return ret
 
-    def _private_get(self, param_name: str, optional=False) -> Any:
+    def _private_get(self, param_name: str, optional: bool = False) -> Any:
+        check_arg(isinstance(param_name, str))
         # pylint:disable=protected-access
         param_components = param_name.split(".")
         check_arg(param_components, "Parameter name cannot be empty")
@@ -742,7 +762,8 @@ class Parameters:
                     return None
                 else:
                     raise ParameterError(
-                        "When getting parameter "
+                        self._namespace_message()
+                        + "When getting parameter "
                         + param_name
                         + " expected "
                         + ".".join(namespaces_processed)
@@ -774,7 +795,8 @@ class Parameters:
                     ]
                 )
                 raise ParameterError(
-                    "Parameter "
+                    self._namespace_message()
+                    + "Parameter "
                     + param_name
                     + " not found. In "
                     + context_string
@@ -793,6 +815,13 @@ class Parameters:
         str_sink = CharSink.to_string()
         YAMLParametersWriter().write(self, str_sink)
         return str_sink.last_string_written
+
+    def _namespace_message(self) -> str:
+        if self.namespace_prefix:
+            namespace_str = ".".join(self.namespace_prefix)
+            return f"In namespace {namespace_str}: "
+        else:
+            return ""
 
 
 @attrs(auto_attribs=True)
@@ -831,6 +860,7 @@ class YAMLParametersLoader:
         context: Optional[Parameters] = None,
         *,
         included_context: Optional[Parameters] = None,
+        namespace_path: Sequence[str] = tuple(),
     ):
         """
         Loads parameters from a YAML file.
@@ -863,6 +893,7 @@ class YAMLParametersLoader:
             error_string=str(f),
             includes_are_relative_to=f.parent,
             included_context=non_none_included_context,
+            namespace_path=namespace_path,
         )
 
     def load_string(
@@ -870,6 +901,7 @@ class YAMLParametersLoader:
         param_file_content: str,
         *,
         included_context: Parameters = Parameters.empty(),
+        namespace_path: Sequence[str] = tuple(),
     ) -> Parameters:
         """
         Loads parameters from a string.
@@ -881,6 +913,7 @@ class YAMLParametersLoader:
             error_string=f"String param file:\n{param_file_content}",
             includes_are_relative_to=None,
             included_context=included_context,
+            namespace_path=namespace_path,
         )
 
     def _inner_load_from_string(
@@ -890,6 +923,7 @@ class YAMLParametersLoader:
         *,
         included_context: Parameters = Parameters.empty(),
         includes_are_relative_to: Optional[Path] = None,
+        namespace_path: Sequence[str] = tuple(),
     ):
         """
         Loads parameters from a YAML file.
@@ -942,6 +976,7 @@ class YAMLParametersLoader:
                     Parameters.from_mapping(raw_yaml),
                     Parameters.from_mapping(interpolation_context),
                 ),
+                namespace_prefix=namespace_path,
             )
         except Exception as e:
             raise IOError(f"Failure while loading parameter file {error_string}") from e
@@ -1029,24 +1064,40 @@ class YAMLParametersLoader:
         return Parameters.from_mapping(
             immutabledict(
                 (key, interpolation_mapping[key]) for key in to_interpolate._data.keys()
-            )
+            ),
+            namespace_prefix=to_interpolate.namespace_prefix,
         )
 
-    def _unify(self, old: Parameters, new: Parameters, namespace="") -> Parameters:
+    def _unify(
+        self,
+        old: Parameters,
+        new: Parameters,
+        *,
+        namespace_prefix: Sequence[str] = tuple(),
+    ) -> Parameters:
         # pylint:disable=protected-access
         ret = dict()
         for (key, old_val) in old._data.items():
             if key in new:
                 new_val = new._data[key]
                 if isinstance(old_val, Parameters) != isinstance(new_val, Parameters):
+                    if namespace_prefix:
+                        namespace_prefix_str = ".".join(namespace_prefix)
+                        param_str = f"{namespace_prefix_str}.{key}"
+                    else:
+                        param_str = key
+
                     raise IOError(
-                        "When unifying parameters, "
-                        + namespace
-                        + key
-                        + "is a parameter on one side and a namespace on the other"
+                        f"When unifying parameters, {param_str} is a parameter on one side and a "
+                        f"namespace "
+                        "on the other"
                     )
                 elif isinstance(old_val, Parameters):
-                    ret[key] = self._unify(old_val, new_val, namespace + key + ".")
+                    new_namespace_prefix = list(namespace_prefix)
+                    new_namespace_prefix.append(key)
+                    ret[key] = self._unify(
+                        old_val, new_val, namespace_prefix=new_namespace_prefix
+                    )
                 else:
                     ret[key] = new_val
             else:
@@ -1056,7 +1107,7 @@ class YAMLParametersLoader:
             if key not in old:
                 ret[key] = new_val
 
-        return Parameters.from_mapping(ret)
+        return Parameters.from_mapping(ret, namespace_prefix=namespace_prefix)
 
 
 @attrs(frozen=True)
