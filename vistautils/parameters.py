@@ -14,23 +14,23 @@ from typing import (
     Optional,
     Pattern,
     Sequence,
+    Tuple,
     Type,
     TypeVar,
     Union,
     overload,
 )
 
-from attr import attrib, attrs
-
+import yaml
+from attr import attrib, attrs, evolve
 from immutablecollections import ImmutableDict, immutabledict
+from immutablecollections.converter_utils import _to_tuple
 
 from vistautils._graph import Digraph
 from vistautils.io_utils import CharSink, is_empty_directory
 from vistautils.misc_utils import eval_in_context_of_modules
 from vistautils.preconditions import check_arg, check_isinstance
 from vistautils.range import Range
-
-import yaml
 
 _logger = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
@@ -67,6 +67,9 @@ class Parameters:
     _data: ImmutableDict[str, Any] = attrib(
         default=immutabledict(), converter=immutabledict
     )
+    namespace_prefix: Tuple[str, ...] = attrib(
+        default=tuple(), converter=_to_tuple, kw_only=True
+    )
 
     def __attrs_post_init__(self) -> None:
         for key in self._data:
@@ -75,14 +78,18 @@ class Parameters:
             )
 
     @staticmethod
-    def empty() -> "Parameters":
+    def empty(*, namespace_prefix: Iterable[str] = tuple()) -> "Parameters":
         """
         A `Parameters` with no parameter mappings.
         """
-        return Parameters.from_mapping(ImmutableDict.empty())
+        return Parameters.from_mapping(
+            ImmutableDict.empty(), namespace_prefix=namespace_prefix
+        )
 
     @staticmethod
-    def from_mapping(mapping: Mapping) -> "Parameters":
+    def from_mapping(
+        mapping: Mapping, *, namespace_prefix: Iterable[str] = tuple()
+    ) -> "Parameters":
         """
         Convert a dictionary of dictionaries into a `Parameter`s
 
@@ -90,14 +97,23 @@ class Parameters:
         becomes a namespace.
         """
         check_isinstance(mapping, Mapping)
-        ret: ImmutableDict.Builder[str, Any] = ImmutableDict.builder()
+        ret: List[Tuple[str, Any]] = []
         for (key, val) in mapping.items():
             if isinstance(val, Mapping):
-                ret.put(key, Parameters.from_mapping(val))
+                sub_namespace_prefix = list(namespace_prefix)
+                sub_namespace_prefix.append(key)
+                ret.append(
+                    (
+                        key,
+                        Parameters.from_mapping(
+                            val, namespace_prefix=sub_namespace_prefix
+                        ),
+                    )
+                )
             else:
                 # this case will also be triggered if the value is already a parameters object
-                ret.put(key, val)
-        return Parameters(ret.build())
+                ret.append((key, val))
+        return Parameters(ret, namespace_prefix=namespace_prefix)
 
     def as_mapping(self) -> Mapping[str, Any]:
         """
@@ -360,6 +376,14 @@ class Parameters:
         """
         return self.get(name, Parameters)
 
+    def has_namespace(self, name: str) -> bool:
+        """
+        Returns whether the parameter of the specified *name* has a value
+        which is a nested `Parameters`.
+        """
+        maybe_namespace = self._private_get(name, optional=True)
+        return maybe_namespace is not None and isinstance(maybe_namespace, Parameters)
+
     def integer(self, name: str) -> int:
         """
         Gets an integer parameter.
@@ -539,6 +563,26 @@ class Parameters:
         else:
             return None
 
+    def namespace_or_empty(self, name: str) -> Optional["Parameters"]:
+        """
+        Get the namespace with the given name, or an empty one.
+
+        If the namespace is present, return it.
+        If the parameter is present but is not a namespace, throw an exception.
+        If the namespace is absent, return an empty namespace with the appropriate path prefix.
+        """
+        ret = self.get_optional(name, object)
+        if isinstance(ret, Parameters):
+            return ret
+        elif ret is None:
+            sub_namespace_prefix = list(self.namespace_prefix)
+            sub_namespace_prefix.append(name)
+            return Parameters.empty(namespace_prefix=sub_namespace_prefix)
+        else:
+            raise ParameterError(
+                f"Expected a namespace, but got a regular parameters for {name}"
+            )
+
     def arbitrary_list(self, name: str) -> List:
         """
         Get a list with arbitrary structure.
@@ -696,8 +740,17 @@ class Parameters:
                 namespace_param_name=creator_namepace_param_name,
                 special_values=special_creator_values,
             )
+            if self.has_namespace(name):
+                params_to_pass = self.namespace(name)
+            else:
+                params_to_pass = Parameters.empty(
+                    namespace_prefix=_extend_prefix(self.namespace_prefix, name)
+                )
         elif default_creator:
             creator = default_creator
+            params_to_pass = Parameters.empty(
+                namespace_prefix=_extend_prefix(self.namespace_prefix, name)
+            )
         else:
             raise ParameterError(
                 "No creator class specified when creating an object from {!s}".format(
@@ -705,7 +758,6 @@ class Parameters:
                 )
             )
 
-        params_to_pass = self.optional_namespace(name) or Parameters.empty()
         if inspect.isclass(creator):
             if hasattr(creator, "from_parameters"):
                 ret: Callable[[Optional[Parameters]], _ParamType] = getattr(
@@ -744,8 +796,9 @@ class Parameters:
             return ret
         else:
             raise ParameterError(
-                "When looking up parameter '{!s}', expected a value of type {!s}, but got {!s} "
-                "of type {!s}".format(param_name, param_type, ret, type(ret))
+                f"{self._namespace_message()}When looking up parameter '{param_name}', "
+                f"expected a value of type {param_type}, but got {ret} "
+                "of type {type(ret)}"
             )
 
     @overload
@@ -840,7 +893,8 @@ class Parameters:
                 _logger.info("Loaded %s %s from %s", len(ret), log_name, file_map_file)
             return ret
 
-    def _private_get(self, param_name: str, optional=False) -> Any:
+    def _private_get(self, param_name: str, optional: bool = False) -> Any:
+        check_arg(isinstance(param_name, str))
         # pylint:disable=protected-access
         param_components = param_name.split(".")
         check_arg(param_components, "Parameter name cannot be empty")
@@ -853,7 +907,8 @@ class Parameters:
                     return None
                 else:
                     raise ParameterError(
-                        "When getting parameter "
+                        self._namespace_message()
+                        + "When getting parameter "
                         + param_name
                         + " expected "
                         + ".".join(namespaces_processed)
@@ -885,7 +940,8 @@ class Parameters:
                     ]
                 )
                 raise ParameterError(
-                    "Parameter "
+                    self._namespace_message()
+                    + "Parameter "
                     + param_name
                     + " not found. In "
                     + context_string
@@ -904,6 +960,21 @@ class Parameters:
         str_sink = CharSink.to_string()
         YAMLParametersWriter().write(self, str_sink)
         return str_sink.last_string_written
+
+    def _namespace_message(self) -> str:
+        if self.namespace_prefix:
+            namespace_str = ".".join(self.namespace_prefix)
+            return f"In namespace {namespace_str}: "
+        else:
+            return ""
+
+
+def _extend_prefix(
+    namespace_prefix: Tuple[str, ...], new_element: str
+) -> Tuple[str, ...]:
+    ret = list(namespace_prefix)
+    ret.append(new_element)
+    return tuple(new_element)
 
 
 @attrs(auto_attribs=True)
@@ -942,6 +1013,7 @@ class YAMLParametersLoader:
         context: Optional[Parameters] = None,
         *,
         included_context: Optional[Parameters] = None,
+        namespace_path: Sequence[str] = tuple(),
     ):
         """
         Loads parameters from a YAML file.
@@ -974,6 +1046,7 @@ class YAMLParametersLoader:
             error_string=str(f),
             includes_are_relative_to=f.parent,
             included_context=non_none_included_context,
+            namespace_path=namespace_path,
         )
 
     def load_string(
@@ -981,6 +1054,7 @@ class YAMLParametersLoader:
         param_file_content: str,
         *,
         included_context: Parameters = Parameters.empty(),
+        namespace_path: Sequence[str] = tuple(),
     ) -> Parameters:
         """
         Loads parameters from a string.
@@ -992,6 +1066,7 @@ class YAMLParametersLoader:
             error_string=f"String param file:\n{param_file_content}",
             includes_are_relative_to=None,
             included_context=included_context,
+            namespace_path=namespace_path,
         )
 
     def _inner_load_from_string(
@@ -1001,6 +1076,7 @@ class YAMLParametersLoader:
         *,
         included_context: Parameters = Parameters.empty(),
         includes_are_relative_to: Optional[Path] = None,
+        namespace_path: Sequence[str] = tuple(),
     ):
         """
         Loads parameters from a YAML file.
@@ -1053,6 +1129,7 @@ class YAMLParametersLoader:
                     Parameters.from_mapping(raw_yaml),
                     Parameters.from_mapping(interpolation_context),
                 ),
+                namespace_prefix=namespace_path,
             )
         except Exception as e:
             raise IOError(f"Failure while loading parameter file {error_string}") from e
@@ -1114,50 +1191,83 @@ class YAMLParametersLoader:
         interpolation_ordering = tuple(reversed(tuple(g.topological_sort())))
 
         # Perform the interpolation in-place.
-        interpolation_mapping = dict(to_interpolate._data)
+        interpolated_mapping = dict(to_interpolate._data)
 
-        for start_node in interpolation_ordering:
-            if start_node in interpolation_mapping:
-                end_node = interpolation_mapping[start_node]
+        for param_to_interpolate in interpolation_ordering:
+            # first, we need to get the *uninterpolated* parameters value
+            # (i.e. with %foo%s still present)
+            if param_to_interpolate in interpolated_mapping:
+                param_value_prior_to_interpolation = interpolated_mapping[
+                    param_to_interpolate
+                ]
             else:
+                # if the parameter is not present in the parameters we are interpolating directly,
+                # we look it up in the context.
                 try:
-                    end_node = context._private_get(start_node)
+                    param_value_prior_to_interpolation = context._private_get(
+                        param_to_interpolate
+                    )
                 except ParameterError:
                     raise ParameterError(
-                        f"The key '{start_node}' doesn't exist in the parameters."
+                        f"The key '{param_to_interpolate}' doesn't exist in the parameters."
                     )
-            if isinstance(end_node, str):
-                replaced_end_node = _recursively_replace_matches(
-                    end_node,
+
+            # next, we need to actually interpolate the values
+            if isinstance(param_value_prior_to_interpolation, str):
+                # if this is interpolated to be a Parameters, what should its namespace prefix be?
+                sub_params_namespace_prefix = list(to_interpolate.namespace_prefix)
+                sub_params_namespace_prefix.append(param_to_interpolate)
+
+                param_value_after_interpolation = _recursively_replace_matches(
+                    param_value_prior_to_interpolation,
                     YAMLParametersLoader._INTERPOLATION_REGEX,
-                    interpolation_mapping,
+                    interpolated_mapping,
+                    namespace_prefix=sub_params_namespace_prefix,
                 )
-            elif isinstance(end_node, Parameters):
-                replaced_end_node = YAMLParametersLoader._interpolate(end_node, context)
+            elif isinstance(param_value_prior_to_interpolation, Parameters):
+                param_value_after_interpolation = YAMLParametersLoader._interpolate(
+                    param_value_prior_to_interpolation, context
+                )
             else:
-                replaced_end_node = end_node
-            interpolation_mapping[start_node] = replaced_end_node
+                # we don't know how to do any interpolation for non-strings
+                param_value_after_interpolation = param_value_prior_to_interpolation
+            interpolated_mapping[param_to_interpolate] = param_value_after_interpolation
         return Parameters.from_mapping(
             immutabledict(
-                (key, interpolation_mapping[key]) for key in to_interpolate._data.keys()
-            )
+                (key, interpolated_mapping[key]) for key in to_interpolate._data.keys()
+            ),
+            namespace_prefix=to_interpolate.namespace_prefix,
         )
 
-    def _unify(self, old: Parameters, new: Parameters, namespace="") -> Parameters:
+    def _unify(
+        self,
+        old: Parameters,
+        new: Parameters,
+        *,
+        namespace_prefix: Sequence[str] = tuple(),
+    ) -> Parameters:
         # pylint:disable=protected-access
         ret = dict()
         for (key, old_val) in old._data.items():
             if key in new:
                 new_val = new._data[key]
                 if isinstance(old_val, Parameters) != isinstance(new_val, Parameters):
+                    if namespace_prefix:
+                        namespace_prefix_str = ".".join(namespace_prefix)
+                        param_str = f"{namespace_prefix_str}.{key}"
+                    else:
+                        param_str = key
+
                     raise IOError(
-                        "When unifying parameters, "
-                        + namespace
-                        + key
-                        + "is a parameter on one side and a namespace on the other"
+                        f"When unifying parameters, {param_str} is a parameter on one side and a "
+                        f"namespace on the other"
                     )
                 elif isinstance(old_val, Parameters):
-                    ret[key] = self._unify(old_val, new_val, namespace + key + ".")
+                    new_namespace_prefix = list(namespace_prefix)
+                    new_namespace_prefix.append(key)
+                    ret[key] = self._unify(
+                        old_val, new_val, namespace_prefix=new_namespace_prefix
+                    )
                 else:
                     ret[key] = new_val
             else:
@@ -1167,7 +1277,7 @@ class YAMLParametersLoader:
             if key not in old:
                 ret[key] = new_val
 
-        return Parameters.from_mapping(ret)
+        return Parameters.from_mapping(ret, namespace_prefix=namespace_prefix)
 
 
 @attrs(frozen=True)
@@ -1198,7 +1308,11 @@ class YAMLParametersWriter:
 
 
 def _recursively_replace_matches(
-    candidate: Any, pattern: Pattern[str], mapping: Mapping[str, Any]
+    candidate: Any,
+    pattern: Pattern[str],
+    mapping: Mapping[str, Any],
+    *,
+    namespace_prefix: Sequence[str],
 ) -> Any:
     """Replace as many groups for interpolation in a string as possible.
 
@@ -1211,9 +1325,28 @@ def _recursively_replace_matches(
     match = pattern.search(candidate)
     if not match:
         return candidate
-    interp_match = match.group()[1:-1]
-    if not isinstance(mapping[interp_match], str):
-        return mapping[interp_match]
-    return _recursively_replace_matches(
-        candidate.replace(f"%{interp_match}%", mapping[interp_match]), pattern, mapping
-    )
+    variable_to_interpolate = match.group()[1:-1]
+    value_to_interpolate = mapping[variable_to_interpolate]
+    if isinstance(value_to_interpolate, str):
+        # we call ourselves again because there may be more variables to interpolate
+        return _recursively_replace_matches(
+            candidate.replace(f"%{variable_to_interpolate}%", value_to_interpolate),
+            pattern,
+            mapping,
+            namespace_prefix=namespace_prefix,
+        )
+    else:
+        if match.span(0) == (0, len(candidate)):
+            if isinstance(value_to_interpolate, Parameters):
+                # These parameters probably had their own namespace prefix for where they
+                # originated but they need to have the namespace prefix for
+                # their interpolated location.
+                return evolve(value_to_interpolate, namespace_prefix=namespace_prefix)
+            else:
+                return value_to_interpolate
+        else:
+            raise ParameterError(
+                f"Can only replace an interpolation variable with a non-string "
+                f"value if the variable is the entire non-interpolated "
+                f"parameter value: {namespace_prefix}"
+            )

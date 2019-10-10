@@ -20,7 +20,6 @@ from typing import (
 from zipfile import ZipFile
 
 from attr import attrib, attrs
-
 from immutablecollections import ImmutableDict, ImmutableSet, immutabledict
 
 from vistautils.io_utils import (
@@ -593,10 +592,12 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
         try:
             # safe by check_state above
             zip_bytes = self._zip_file.read(filename)  # type: ignore
-        except KeyError:
+        except KeyError as e:
             if has_default_val:
                 return default_val
-            raise
+            raise KeyError(
+                f"Key '{key}' not found in zip key-value source backed by " f"{self.path}"
+            ) from e
         return self._process_bytes(zip_bytes)
 
     @abstractmethod

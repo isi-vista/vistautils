@@ -5,8 +5,8 @@ from pathlib import Path
 from textwrap import dedent
 from unittest import TestCase
 
+import yaml
 from attr import attrib, attrs, validators
-
 from immutablecollections import immutabledict
 
 from vistautils._graph import ParameterInterpolationError
@@ -18,8 +18,6 @@ from vistautils.parameters import (
     YAMLParametersWriter,
 )
 from vistautils.range import Range
-
-import yaml
 
 
 class TestParameters(TestCase):
@@ -222,7 +220,8 @@ class TestParameters(TestCase):
                     (
                         "key3",
                         Parameters.from_mapping(
-                            {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]}
+                            {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]},
+                            namespace_prefix=("key3",),
                         ),
                     ),
                 ]
@@ -395,6 +394,16 @@ class TestParameters(TestCase):
         assert (  # pylint: disable=unexpected-keyword-arg
             empty_params.optional_string("foo", default="test") == "test"
         )
+
+    def test_namespace_prefix(self):
+        assert Parameters.from_mapping({"hello": {"world": {"foo": "bar"}}}).namespace(
+            "hello"
+        ).namespace("world").namespace_prefix == ("hello", "world")
+        assert Parameters.empty(namespace_prefix=("foo",)).namespace_prefix == ("foo",)
+        # test it works even for empty parameters
+        assert Parameters.empty().namespace_or_empty("foo").namespace_or_empty(
+            "bar"
+        ).namespace_prefix == ("foo", "bar")
 
 
 # Used by test_environmental_variable_interpolation.
