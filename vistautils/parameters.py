@@ -1191,32 +1191,50 @@ class YAMLParametersLoader:
         interpolation_ordering = tuple(reversed(tuple(g.topological_sort())))
 
         # Perform the interpolation in-place.
-        interpolation_mapping = dict(to_interpolate._data)
+        interpolated_mapping = dict(to_interpolate._data)
 
-        for start_node in interpolation_ordering:
-            if start_node in interpolation_mapping:
-                end_node = interpolation_mapping[start_node]
+        for param_to_interpolate in interpolation_ordering:
+            # first, we need to get the *uninterpolated* parameters value
+            # (i.e. with %foo%s still present)
+            if param_to_interpolate in interpolated_mapping:
+                param_value_prior_to_interpolation = interpolated_mapping[
+                    param_to_interpolate
+                ]
             else:
+                # if the parameter is not present in the parameters we are interpolating directly,
+                # we look it up in the context.
                 try:
-                    end_node = context._private_get(start_node)
+                    param_value_prior_to_interpolation = context._private_get(
+                        param_to_interpolate
+                    )
                 except ParameterError:
                     raise ParameterError(
-                        f"The key '{start_node}' doesn't exist in the parameters."
+                        f"The key '{param_to_interpolate}' doesn't exist in the parameters."
                     )
-            if isinstance(end_node, str):
-                replaced_end_node = _recursively_replace_matches(
-                    end_node,
+
+            # next, we need to actually interpolate the values
+            if isinstance(param_value_prior_to_interpolation, str):
+                # if this is interpolated to be a Parameters, what should its namespace prefix be?
+                sub_params_namespace_prefix = list(to_interpolate.namespace_prefix)
+                sub_params_namespace_prefix.append(param_to_interpolate)
+
+                param_value_after_interpolation = _recursively_replace_matches(
+                    param_value_prior_to_interpolation,
                     YAMLParametersLoader._INTERPOLATION_REGEX,
-                    interpolation_mapping,
+                    interpolated_mapping,
+                    namespace_prefix=sub_params_namespace_prefix,
                 )
-            elif isinstance(end_node, Parameters):
-                replaced_end_node = YAMLParametersLoader._interpolate(end_node, context)
+            elif isinstance(param_value_prior_to_interpolation, Parameters):
+                param_value_after_interpolation = YAMLParametersLoader._interpolate(
+                    param_value_prior_to_interpolation, context
+                )
             else:
-                replaced_end_node = end_node
-            interpolation_mapping[start_node] = replaced_end_node
+                # we don't know how to do any interpolation for non-strings
+                param_value_after_interpolation = param_value_prior_to_interpolation
+            interpolated_mapping[param_to_interpolate] = param_value_after_interpolation
         return Parameters.from_mapping(
             immutabledict(
-                (key, interpolation_mapping[key]) for key in to_interpolate._data.keys()
+                (key, interpolated_mapping[key]) for key in to_interpolate._data.keys()
             ),
             namespace_prefix=to_interpolate.namespace_prefix,
         )
@@ -1290,7 +1308,11 @@ class YAMLParametersWriter:
 
 
 def _recursively_replace_matches(
-    candidate: Any, pattern: Pattern[str], mapping: Mapping[str, Any]
+    candidate: Any,
+    pattern: Pattern[str],
+    mapping: Mapping[str, Any],
+    *,
+    namespace_prefix: Sequence[str],
 ) -> Any:
     """Replace as many groups for interpolation in a string as possible.
 
@@ -1303,9 +1325,28 @@ def _recursively_replace_matches(
     match = pattern.search(candidate)
     if not match:
         return candidate
-    interp_match = match.group()[1:-1]
-    if not isinstance(mapping[interp_match], str):
-        return mapping[interp_match]
-    return _recursively_replace_matches(
-        candidate.replace(f"%{interp_match}%", mapping[interp_match]), pattern, mapping
-    )
+    variable_to_interpolate = match.group()[1:-1]
+    value_to_interpolate = mapping[variable_to_interpolate]
+    if isinstance(value_to_interpolate, str):
+        # we call ourselves again because there may be more variables to interpolate
+        return _recursively_replace_matches(
+            candidate.replace(f"%{variable_to_interpolate}%", value_to_interpolate),
+            pattern,
+            mapping,
+            namespace_prefix=namespace_prefix,
+        )
+    else:
+        if match.span(0) == (0, len(candidate)):
+            if isinstance(value_to_interpolate, Parameters):
+                # These parameters probably had their own namespace prefix for where they
+                # originated but they need to have the namespace prefix for
+                # their interpolated location.
+                return evolve(value_to_interpolate, namespace_prefix=namespace_prefix)
+            else:
+                return value_to_interpolate
+        else:
+            raise ParameterError(
+                f"Can only replace an interpolation variable with a non-string "
+                f"value if the variable is the entire non-interpolated "
+                f"parameter value: {namespace_prefix}"
+            )
