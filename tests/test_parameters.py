@@ -220,7 +220,8 @@ class TestParameters(TestCase):
                     (
                         "key3",
                         Parameters.from_mapping(
-                            {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]}
+                            {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]},
+                            namespace_prefix=("key3",),
                         ),
                     ),
                 ]
