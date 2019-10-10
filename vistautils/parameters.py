@@ -22,7 +22,7 @@ from typing import (
 )
 
 import yaml
-from attr import attrib, attrs
+from attr import attrib, attrs, evolve
 from immutablecollections import ImmutableDict, immutabledict
 from immutablecollections.converter_utils import _to_tuple
 
@@ -375,6 +375,14 @@ class Parameters:
         Get the namespace with the given name.
         """
         return self.get(name, Parameters)
+
+    def has_namespace(self, name: str) -> bool:
+        """
+        Returns whether the parameter of the specified *name* has a value
+        which is a nested `Parameters`.
+        """
+        maybe_namespace = self._private_get(name, optional=True)
+        return maybe_namespace is not None and isinstance(maybe_namespace, Parameters)
 
     def integer(self, name: str) -> int:
         """
