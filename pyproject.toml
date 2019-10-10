@@ -29,6 +29,9 @@ line-length = 90
 [tool.isort]
 multi_line_output = 3
 include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 90
 # default is FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER
 # Placing third-party imports at the end makes their inclusion more obvious
 sections = ["FUTURE", "STDLIB", "ATTRS", "ISIVISTA", "FIRSTPARTY", "THIRDPARTY", "LOCALFOLDER"]
