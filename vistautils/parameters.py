@@ -67,7 +67,7 @@ class Parameters:
     _data: ImmutableDict[str, Any] = attrib(
         default=immutabledict(), converter=immutabledict
     )
-    namespace_prefix: List[str] = attrib(
+    namespace_prefix: Tuple[str, ...] = attrib(
         default=tuple(), converter=_to_tuple, kw_only=True
     )
 
