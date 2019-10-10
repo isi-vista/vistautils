@@ -394,6 +394,16 @@ class TestParameters(TestCase):
             empty_params.optional_string("foo", default="test") == "test"
         )
 
+    def test_namespace_prefix(self):
+        assert Parameters.from_mapping({"hello": {"world": {"foo": "bar"}}}).namespace(
+            "hello"
+        ).namespace("world").namespace_prefix == ("hello", "world")
+        assert Parameters.empty(namespace_prefix=("foo",)).namespace_prefix == ("foo",)
+        # test it works even for empty parameters
+        assert Parameters.empty().namespace_or_empty("foo").namespace_or_empty(
+            "bar"
+        ).namespace_prefix == ("foo", "bar")
+
 
 # Used by test_environmental_variable_interpolation.
 # Here we test:

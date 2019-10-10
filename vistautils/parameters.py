@@ -78,7 +78,7 @@ class Parameters:
             )
 
     @staticmethod
-    def empty(*, namespace_prefix=tuple()) -> "Parameters":
+    def empty(*, namespace_prefix: Iterable[str] = tuple()) -> "Parameters":
         """
         A `Parameters` with no parameter mappings.
         """
@@ -88,7 +88,7 @@ class Parameters:
 
     @staticmethod
     def from_mapping(
-        mapping: Mapping, *, namespace_prefix: Sequence[str] = tuple()
+        mapping: Mapping, *, namespace_prefix: Iterable[str] = tuple()
     ) -> "Parameters":
         """
         Convert a dictionary of dictionaries into a `Parameter`s
@@ -1218,8 +1218,7 @@ class YAMLParametersLoader:
 
                     raise IOError(
                         f"When unifying parameters, {param_str} is a parameter on one side and a "
-                        f"namespace "
-                        "on the other"
+                        f"namespace on the other"
                     )
                 elif isinstance(old_val, Parameters):
                     new_namespace_prefix = list(namespace_prefix)

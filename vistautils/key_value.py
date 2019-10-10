@@ -595,8 +595,9 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
         except KeyError as e:
             if has_default_val:
                 return default_val
-            raise KeyError(f"Key '{key}' not found in zip key-value source backed by "
-                           f"{self.path}") from e
+            raise KeyError(
+                f"Key '{key}' not found in zip key-value source backed by " f"{self.path}"
+            ) from e
         return self._process_bytes(zip_bytes)
 
     @abstractmethod
