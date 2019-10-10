@@ -740,8 +740,17 @@ class Parameters:
                 namespace_param_name=creator_namepace_param_name,
                 special_values=special_creator_values,
             )
+            if self.has_namespace(name):
+                params_to_pass = self.namespace(name)
+            else:
+                params_to_pass = Parameters.empty(
+                    namespace_prefix=_extend_prefix(self.namespace_prefix, name)
+                )
         elif default_creator:
             creator = default_creator
+            params_to_pass = Parameters.empty(
+                namespace_prefix=_extend_prefix(self.namespace_prefix, name)
+            )
         else:
             raise ParameterError(
                 "No creator class specified when creating an object from {!s}".format(
@@ -749,7 +758,6 @@ class Parameters:
                 )
             )
 
-        params_to_pass = self.namespace_or_empty(name)
         if inspect.isclass(creator):
             if hasattr(creator, "from_parameters"):
                 ret: Callable[[Optional[Parameters]], _ParamType] = getattr(
@@ -959,6 +967,14 @@ class Parameters:
             return f"In namespace {namespace_str}: "
         else:
             return ""
+
+
+def _extend_prefix(
+    namespace_prefix: Tuple[str, ...], new_element: str
+) -> Tuple[str, ...]:
+    ret = list(namespace_prefix)
+    ret.append(new_element)
+    return tuple(new_element)
 
 
 @attrs(auto_attribs=True)
