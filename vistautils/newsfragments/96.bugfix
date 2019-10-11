@@ -1,0 +1,1 @@
+Fixes a bug where parameters_only_entry_point with user-supplied parameters would fail if sys.argv did not have length 2
