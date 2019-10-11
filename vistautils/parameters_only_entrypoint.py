@@ -27,7 +27,8 @@ def parameters_only_entry_point(
 
     This is primarily for ISI VISTA-internal use.
     """
-    if len(sys.argv) == 2:
+
+    if len(sys.argv) == 2 or parameters is not None:
         if parameters:
             params = parameters
         else:
