@@ -3,7 +3,6 @@ from typing import List, Sequence
 from unittest import TestCase
 
 from immutablecollections import ImmutableSet, immutableset
-from sortedcontainers import SortedDict
 
 from vistautils.iterutils import tile_with_pairs
 
@@ -18,6 +17,8 @@ from vistautils.range import (
     _value_at_or_below,
     _value_below,
 )
+
+from sortedcontainers import SortedDict
 
 
 class TestRangeSet(TestCase):

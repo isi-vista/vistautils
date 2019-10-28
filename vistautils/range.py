@@ -17,11 +17,13 @@ from typing import (
 )
 
 from attr import attrib, attrs, validators
+
 from immutablecollections import ImmutableDict, ImmutableSet, immutabledict, immutableset
-from sortedcontainers import SortedDict
 
 # Port of Guava's Range data type and associated classes
 from vistautils.preconditions import check_arg, check_not_none
+
+from sortedcontainers import SortedDict
 
 # will be initialized after bound type declarations
 # noinspection PyTypeHints
@@ -309,9 +311,7 @@ RANGE_ALL: "Range" = None  # type: ignore
 # this should have slots=True but cannot for the moment due to
 # https://github.com/python-attrs/attrs/issues/313
 # Pylint disable due to https://github.com/PyCQA/pylint/issues/2472
-@attrs(
-    frozen=True, repr=False, eq=False, hash=False
-)  # pylint: disable=inherit-non-class
+@attrs(frozen=True, repr=False, eq=False, hash=False)  # pylint: disable=inherit-non-class
 class Range(Container[T], Generic[T], Hashable):
     """
     The boundaries of a contiguous span of values.
