@@ -17,11 +17,13 @@ from typing import (
 )
 
 from attr import attrib, attrs, validators
+
 from immutablecollections import ImmutableDict, ImmutableSet, immutabledict, immutableset
-from sortedcontainers import SortedDict
 
 # Port of Guava's Range data type and associated classes
 from vistautils.preconditions import check_arg, check_not_none
+
+from sortedcontainers import SortedDict
 
 # will be initialized after bound type declarations
 # noinspection PyTypeHints
@@ -156,7 +158,7 @@ class _Cut(Generic[T], metaclass=ABCMeta):
         return self.compare_to(other) == 0
 
 
-@attrs(frozen=True, slots=True, hash=False, cmp=False)
+@attrs(frozen=True, slots=True, hash=False, eq=False)
 class _BelowAll(_Cut[T]):
     # pylint:disable=protected-access
     @property
@@ -189,7 +191,7 @@ class _BelowAll(_Cut[T]):
         return 233904909
 
 
-@attrs(frozen=True, slots=True, hash=False, cmp=False)
+@attrs(frozen=True, slots=True, hash=False, eq=False)
 class _AboveAll(_Cut[T]):
     # pylint:disable=protected-access
     @property
@@ -228,7 +230,7 @@ _BELOW_ALL = _BelowAll()
 _ABOVE_ALL = _AboveAll()
 
 
-@attrs(frozen=True, slots=True, repr=False, hash=False, cmp=False)
+@attrs(frozen=True, slots=True, repr=False, hash=False, eq=False)
 class _BelowValue(_Cut[T]):
     # pylint:disable=protected-access
     _endpoint = attrib()
@@ -264,7 +266,7 @@ class _BelowValue(_Cut[T]):
         return "\\\\%s/" % self._endpoint
 
 
-@attrs(frozen=True, slots=True, repr=False, hash=False, cmp=False)
+@attrs(frozen=True, slots=True, repr=False, hash=False, eq=False)
 class _AboveValue(_Cut[T]):
     # pylint:disable=protected-access
     _endpoint = attrib()
@@ -309,9 +311,7 @@ RANGE_ALL: "Range" = None  # type: ignore
 # this should have slots=True but cannot for the moment due to
 # https://github.com/python-attrs/attrs/issues/313
 # Pylint disable due to https://github.com/PyCQA/pylint/issues/2472
-@attrs(
-    frozen=True, repr=False, cmp=False, hash=False
-)  # pylint: disable=inherit-non-class
+@attrs(frozen=True, repr=False, eq=False, hash=False)  # pylint: disable=inherit-non-class
 class Range(Container[T], Generic[T], Hashable):
     """
     The boundaries of a contiguous span of values.

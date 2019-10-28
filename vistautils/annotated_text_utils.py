@@ -12,6 +12,7 @@ from typing import Collection, Iterable, List, Mapping, Optional
 
 from attr import attrib, attrs, evolve
 from attr.validators import instance_of
+
 from immutablecollections import immutabledict
 
 from vistautils.preconditions import check_arg
