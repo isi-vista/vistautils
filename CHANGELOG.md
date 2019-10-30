@@ -1,3 +1,12 @@
+Vistautils 0.17.0 (2019-10-30)
+==============================
+
+Bugfixes
+--------
+
+- Fixes a bug where parameters_only_entry_point with user-supplied parameters would fail if sys.argv did not have length 2 (`#96 <https://github.com/isi-vista/vistautils/issues/96>`_)
+
+
 Vistautils 0.16.0 (2019-10-11)
 ==============================
 
