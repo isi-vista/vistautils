@@ -870,7 +870,9 @@ class Parameters:
         else:
             return default
 
-    def path_list_from_file(self, param: str, *, log_name=None) -> Sequence[Path]:
+    def path_list_from_file(
+        self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
+    ) -> Sequence[Path]:
         """
         Gets a list of paths from the file pointed to by param
 
@@ -879,11 +881,16 @@ class Parameters:
 
         If log_name is specified, a message will be logged at info level of the form "Loaded
         <number> <log_name> from <file>"
+
+        All the paths in the file
+        will be resolved relative to *resolve_relative_to* if it is specified.
         """
         file_list_file = self.existing_file(param)
         with open(str(file_list_file), "r", encoding="utf-8") as inp:
             ret = [
-                Path(line.strip())
+                resolve_relative_to / line.strip()
+                if resolve_relative_to
+                else Path(line.strip())
                 for line in inp
                 if line.strip() and not line.strip().startswith("#")
             ]
@@ -891,7 +898,9 @@ class Parameters:
                 _logger.info("Loaded %s %s from %s", len(ret), log_name, file_list_file)
             return ret
 
-    def path_map_from_file(self, param: str, *, log_name=None) -> Mapping[str, Path]:
+    def path_map_from_file(
+        self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
+    ) -> Mapping[str, Path]:
         """
         Gets a map of keys to paths from the file pointed to by param
 
@@ -900,6 +909,9 @@ class Parameters:
 
         If log_name is specified, a message will be logged at info level of the form "Loaded
         <number> <log_name> from <file>"
+
+        All the paths in the file
+        will be resolved relative to *resolve_relative_to* if it is specified.
         """
         file_map_file = self.existing_file(param)
         with open(str(file_map_file), encoding="utf-8") as inp:
@@ -913,7 +925,13 @@ class Parameters:
                                 len(parts)
                             )
                         )
-                    ret_b.put(parts[0].strip(), Path(parts[1].strip()))
+                    path_part = parts[1].strip()
+                    path = (
+                        resolve_relative_to / path_part
+                        if resolve_relative_to
+                        else Path(path_part)
+                    )
+                    ret_b.put(parts[0].strip(), path)
                 except Exception as e:
                     raise IOError(
                         "Error parsing line {!s} of {!s}:\n{!s}".format(

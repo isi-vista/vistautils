@@ -447,6 +447,24 @@ def test_namespaced_items():
     }
 
 
+def test_relative_path_list(tmp_path):
+    file_list = tmp_path / "list.txt"
+    CharSink.to_file(file_list).write("\n".join(["fred/bob.txt", "foo.txt"]))
+    params = Parameters.from_mapping({"file_list": str(file_list)})
+    assert list(
+        params.path_list_from_file("file_list", resolve_relative_to=Path("/hello/world"))
+    ) == [Path("/hello/world/fred/bob.txt"), Path("/hello/world/foo.txt")]
+
+
+def test_relative_path_map(tmp_path):
+    file_map = tmp_path / "map.txt"
+    CharSink.to_file(file_map).write("\n".join(["one\tfred/bob.txt", "two\tfoo.txt"]))
+    params = Parameters.from_mapping({"file_map": str(file_map)})
+    assert dict(
+        params.path_map_from_file("file_map", resolve_relative_to=Path("/hello/world"))
+    ) == {"one": Path("/hello/world/fred/bob.txt"), "two": Path("/hello/world/foo.txt")}
+
+
 # Used by test_environmental_variable_interpolation.
 # Here we test:
 # (a) one uninterpolated parameter
