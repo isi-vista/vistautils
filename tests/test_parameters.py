@@ -214,20 +214,12 @@ class TestParameters(TestCase):
             loader._interpolate(
                 Parameters.from_mapping(yaml.safe_load(self.NESTED_INTERPOLATION)),
                 context,
-            )._data,
-            immutabledict(
-                [
-                    ("key", 2),
-                    ("key2", "fooo"),
-                    (
-                        "key3",
-                        Parameters.from_mapping(
-                            {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]},
-                            namespace_prefix=("key3",),
-                        ),
-                    ),
-                ]
-            ),
+            ).as_nested_dicts(),
+            {
+                "key": 2,
+                "key2": "fooo",
+                "key3": {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]},
+            },
         )
 
         with self.assertRaisesRegex(
@@ -279,7 +271,7 @@ class TestParameters(TestCase):
         params = loader.load(input_file)
         shutil.rmtree(test_root_dir)
 
-        self.assertEqual(INCLUSION_REFERENCE, dict(params.as_mapping()))
+        self.assertEqual(INCLUSION_REFERENCE, dict(params.as_nested_dicts()))
 
     def test_absents(self):
         empty_params = Parameters.empty()
@@ -312,7 +304,9 @@ class TestParameters(TestCase):
         assert params.optional_boolean("boolean")
         assert params.optional_floating_point("float") == 0.5
         assert params.optional_integer("integer") == 42
-        assert params.optional_namespace("namespace").as_mapping() == {"fred": "meep"}
+        assert params.optional_namespace("namespace").as_nested_dicts() == {
+            "fred": "meep"
+        }
         assert params.optional_string("string") == "foo"
 
     def test_object_from_parameters(self):
@@ -406,6 +400,51 @@ class TestParameters(TestCase):
         assert Parameters.empty().namespace_or_empty("foo").namespace_or_empty(
             "bar"
         ).namespace_prefix == ("foo", "bar")
+
+
+def test_interpolating_nested_parameters(tmp_path):
+    included_params = {
+        "hello": {"world": {"foo": "meep"}},
+        "same_file": "moo %hello.world.foo% moo",
+        "nested": {"interpolate_me_nested": "%hello.world.foo% nested"},
+    }
+    included_params_path = tmp_path / "included.params"
+    with open(included_params_path, "w") as included_params_out:
+        yaml.dump(included_params, included_params_out)
+
+    reloaded_included_params = YAMLParametersLoader().load(included_params_path)
+
+    # check nested interpolation works within the same file
+    assert reloaded_included_params.string("same_file") == "moo meep moo"
+    # check interpolation works when the parameter being interpolate is not top-level
+    assert (
+        reloaded_included_params.string("nested.interpolate_me_nested") == "meep nested"
+    )
+
+    including_params = {
+        "_includes": ["included.params"],
+        "interpolate_me": "lala %hello.world.foo% lala",
+    }
+
+    including_params_path = tmp_path / "including.params"
+    with open(including_params_path, "w") as including_params_out:
+        yaml.dump(including_params, including_params_out)
+
+    loaded_params = YAMLParametersLoader().load(including_params_path)
+
+    # check nested interpolation works across files
+    assert loaded_params.string("interpolate_me") == "lala meep lala"
+
+
+def test_namespaced_items():
+    params = Parameters.from_mapping(
+        {"hello": "world", "foo": {"bar": "meep", "inner": {"not_a_string": 42}}}
+    )
+    assert set(params.namespaced_items()) == {
+        ("hello", "world"),
+        ("foo.bar", "meep"),
+        ("foo.inner.not_a_string", 42),
+    }
 
 
 # Used by test_environmental_variable_interpolation.
