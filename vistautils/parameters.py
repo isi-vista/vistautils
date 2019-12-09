@@ -8,9 +8,11 @@ from pathlib import Path
 from typing import (
     Any,
     Callable,
+    Dict,
     Iterable,
     List,
     Mapping,
+    Match,
     Optional,
     Pattern,
     Sequence,
@@ -117,11 +119,40 @@ class Parameters:
                 ret.append((key, val))
         return Parameters(ret, namespace_prefix=namespace_prefix)
 
-    def as_mapping(self) -> Mapping[str, Any]:
+    def as_nested_dicts(self) -> Dict[str, Any]:
         """
-        Get these parameter values as a ``Mapping``.
+        A nested dictionary representing this `Parameters`.
         """
-        return self._data
+
+        def dictify(data):
+            if isinstance(data, Dict):
+                return data
+            elif isinstance(data, Parameters):
+                return dictify(data._data)
+            elif isinstance(data, Mapping):
+                return {k: dictify(v) for (k, v) in data.items()}
+            else:
+                # an atomic key value
+                return data
+
+        return dictify(self._data)
+
+    def namespaced_items(self) -> Iterable[Tuple[str, Any]]:
+        """
+        Get all entries in this `Parameters`, both top-level and nested
+        as *(param_name, value)* pairs
+        where the param names are "fully-qualified"
+        (that is, they are prefixed with their namespaces)
+        """
+        for (key, value) in self._data.items():
+            if isinstance(value, Parameters):
+                for (param_name, value) in value.namespaced_items():
+                    yield param_name, value
+            else:
+                prefix = ".".join(self.namespace_prefix) + (
+                    "." if self.namespace_prefix else ""
+                )
+                yield f"{prefix}{key}", value
 
     def creatable_directory(self, param: str) -> Path:
         """
@@ -839,7 +870,9 @@ class Parameters:
         else:
             return default
 
-    def path_list_from_file(self, param: str, *, log_name=None) -> Sequence[Path]:
+    def path_list_from_file(
+        self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
+    ) -> Sequence[Path]:
         """
         Gets a list of paths from the file pointed to by param
 
@@ -848,11 +881,16 @@ class Parameters:
 
         If log_name is specified, a message will be logged at info level of the form "Loaded
         <number> <log_name> from <file>"
+
+        All the paths in the file
+        will be resolved relative to *resolve_relative_to* if it is specified.
         """
         file_list_file = self.existing_file(param)
         with open(str(file_list_file), "r", encoding="utf-8") as inp:
             ret = [
-                Path(line.strip())
+                resolve_relative_to / line.strip()
+                if resolve_relative_to
+                else Path(line.strip())
                 for line in inp
                 if line.strip() and not line.strip().startswith("#")
             ]
@@ -860,7 +898,9 @@ class Parameters:
                 _logger.info("Loaded %s %s from %s", len(ret), log_name, file_list_file)
             return ret
 
-    def path_map_from_file(self, param: str, *, log_name=None) -> Mapping[str, Path]:
+    def path_map_from_file(
+        self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
+    ) -> Mapping[str, Path]:
         """
         Gets a map of keys to paths from the file pointed to by param
 
@@ -869,6 +909,9 @@ class Parameters:
 
         If log_name is specified, a message will be logged at info level of the form "Loaded
         <number> <log_name> from <file>"
+
+        All the paths in the file
+        will be resolved relative to *resolve_relative_to* if it is specified.
         """
         file_map_file = self.existing_file(param)
         with open(str(file_map_file), encoding="utf-8") as inp:
@@ -882,7 +925,13 @@ class Parameters:
                                 len(parts)
                             )
                         )
-                    ret_b.put(parts[0].strip(), Path(parts[1].strip()))
+                    path_part = parts[1].strip()
+                    path = (
+                        resolve_relative_to / path_part
+                        if resolve_relative_to
+                        else Path(path_part)
+                    )
+                    ret_b.put(parts[0].strip(), path)
                 except Exception as e:
                     raise IOError(
                         "Error parsing line {!s} of {!s}:\n{!s}".format(
@@ -969,6 +1018,12 @@ class Parameters:
             return f"In namespace {namespace_str}: "
         else:
             return ""
+
+    def as_mapping(self) -> Mapping[str, Any]:
+        """
+        Deprecated and may be removed. Prefer `Parameters.as_nested_dicts`.
+        """
+        return self._data
 
 
 def _extend_prefix(
@@ -1118,7 +1173,7 @@ class YAMLParametersLoader:
                     )
                 del raw_yaml["_includes"]
 
-            interpolation_context = dict(previously_loaded.as_mapping())
+            interpolation_context = dict(previously_loaded.as_nested_dicts())
             if self.interpolate_environmental_variables:
                 for k, v in os.environ.items():
                     # environmental variables are overridden by explicit parameters
@@ -1166,77 +1221,176 @@ class YAMLParametersLoader:
     # noinspection PyProtectedMember
     @staticmethod
     def _interpolate(to_interpolate: Parameters, context: Parameters) -> Parameters:
-        """Perform interpolation within arbitrarily nested Parameters, looking up values
-        in a context if necessary.
+        r"""
+        Perform interpolation within arbitrarily nested `Parameter`\ s,
+        looking up values in a context if necessary.
+
+        Any strings surrounded by *%*s will be replaced by the value
+        of the parameter obtained by looking up the string within the *%*s as a parameter.
+        Example:
+            - name: "Bob"
+            - greeting: "hello %name%"
+        will yield a value of "hello Bob" for the parameter *greeting*.
+        Parameter lookups are first performed relative to *to_interpolate*,
+        falling back to *context* on lookup failures.
+
+        If the entire uninterpolated string is an interpolation placeholder
+        (e.g.  *foo: "%interpolate_me%"*), the parameter will be assigned
+        the value of the parameter referred to by the interpolation placeholder.
+        Note that this value may be a non-string.
+
+        Both the parameter to interpolate and the parameter being interpolated
+        may be nested below the top level.
 
         Limitations:
-        - There cannot be interpolation in keys.
+        - Keys are not interpolated, only values.
+        - Both the key to be interpolated and the value to interpolate must be strings.
         """
+        check_arg(
+            not to_interpolate.namespace_prefix,
+            "Cannot interpolate non-top-level Parameters",
+        )
+        check_arg(
+            not context.namespace_prefix, "Cannot interpolate with non-top-level context"
+        )
+
+        # These will be used when we represent parameters as dicts-of-dicts below.
+        def get_from_nested_dict(
+            nested_dict: Dict[str, Any], param_name: str
+        ) -> Optional[Any]:
+            parts = param_name.split(".")
+            cur_dict = nested_dict
+            for part in parts[:-1]:
+                if part in cur_dict:
+                    cur_dict = cur_dict[part]
+                else:
+                    return None
+            param_name = parts[-1]
+            return cur_dict.get(param_name, None)
+
+        def set_in_nested_dict(
+            nested_dict: Dict[str, Any], fully_qualified_param_name: str, value: Any
+        ) -> None:
+            parts = fully_qualified_param_name.split(".")
+            cur_dict = nested_dict
+            for part in parts[:-1]:
+                if part in cur_dict:
+                    cur_dict = cur_dict[part]
+                else:
+                    return None
+            param_name = parts[-1]
+            cur_dict[param_name] = value
+
+        # We make a mutable representation of the parameters we are interpolating
+        # as nested dictionaries in order to perform the actual interpolation.
+        # We will convert back to immutable Parameters objects at the end.
+        mutable_parameters = to_interpolate.as_nested_dicts()
+
         # In order to perform arbitrary interpolation, we perform topological sort on a graph where
         # the nodes are parameter keys, and edges point from those keys to each interpolation group
         # in that key's value. For example, the parameter entry `foo: %bar%/projects/%meep.baz%`
         # would give the edges (foo, bar) and (foo, meep.baz).
         #
         # pylint:disable=protected-access
-        nodes = list(to_interpolate._data.keys())
+        # Perform the interpolation in-place.
+        nodes = list()
         edges = list()
-        for key, val in to_interpolate._data.items():
-            if isinstance(val, str):
-                for interp_match in YAMLParametersLoader._INTERPOLATION_REGEX.findall(
-                    val
-                ):
-                    nodes.append(interp_match)
-                    edges.append((key, interp_match))
+
+        def gather_interpolation_edges(params: Parameters) -> None:
+            for key, val in params.namespaced_items():
+                if isinstance(val, str):
+                    for interp_match in YAMLParametersLoader._INTERPOLATION_REGEX.findall(
+                        val
+                    ):
+                        nodes.append(key)
+                        if get_from_nested_dict(mutable_parameters, interp_match):
+                            # We don't want to include nodes from the context in the interpolation
+                            # ordering since the context is present
+                            # only to be referred to by for interpolation into other parameters,
+                            # not to include its parameters directly in the interpolation result.
+                            nodes.append(interp_match)
+                            edges.append((key, interp_match))
+                elif isinstance(val, Parameters):
+                    gather_interpolation_edges(val)
+
+        gather_interpolation_edges(to_interpolate)
+
         g = Digraph(nodes=nodes, edges=edges)
         # Since each edge has been created to point from a key to a dependency, this is to make the
         # ordering start from the leaves.
         interpolation_ordering = tuple(reversed(tuple(g.topological_sort())))
 
-        # Perform the interpolation in-place.
-        interpolated_mapping = dict(to_interpolate._data)
+        def get_backing_off_to_context(param_name: str) -> Any:
+            from_these_params = get_from_nested_dict(mutable_parameters, param_name)
+            if from_these_params:
+                return from_these_params
+
+            # if the parameter is not present in the parameters we are interpolating directly,
+            # we look it up in the context.
+            try:
+                return context._private_get(param_name)
+            except ParameterError:
+                raise ParameterError(
+                    f"The key '{param_to_interpolate}' doesn't exist in the parameters."
+                )
 
         for param_to_interpolate in interpolation_ordering:
             # first, we need to get the *uninterpolated* parameters value
-            # (i.e. with %foo%s still present)
-            if param_to_interpolate in interpolated_mapping:
-                param_value_prior_to_interpolation = interpolated_mapping[
-                    param_to_interpolate
-                ]
-            else:
-                # if the parameter is not present in the parameters we are interpolating directly,
-                # we look it up in the context.
-                try:
-                    param_value_prior_to_interpolation = context._private_get(
-                        param_to_interpolate
-                    )
-                except ParameterError:
-                    raise ParameterError(
-                        f"The key '{param_to_interpolate}' doesn't exist in the parameters."
-                    )
+            # (i.e. with %foo%s still present).
+            uninterpolated_param_value = get_from_nested_dict(
+                mutable_parameters, param_to_interpolate
+            )
 
-            # next, we need to actually interpolate the values
-            if isinstance(param_value_prior_to_interpolation, str):
-                # if this is interpolated to be a Parameters, what should its namespace prefix be?
-                sub_params_namespace_prefix = list(to_interpolate.namespace_prefix)
-                sub_params_namespace_prefix.append(param_to_interpolate)
+            if not uninterpolated_param_value:
+                raise RuntimeError(f"This should be impossible: {param_to_interpolate}")
 
-                param_value_after_interpolation = _recursively_replace_matches(
-                    param_value_prior_to_interpolation,
-                    YAMLParametersLoader._INTERPOLATION_REGEX,
-                    interpolated_mapping,
-                    namespace_prefix=sub_params_namespace_prefix,
+            # Next, we need to actually interpolate the values.
+            if isinstance(uninterpolated_param_value, str):
+                # We only known how to interpolate string params.
+
+                # We need to special-case when the value to be interpolated is a non-string.
+                # This allowed only when the only contents of the uninterpolated string
+                # is the interpolation placeholder.
+                # In this case, the value of the parameter is assigned to be
+                # the value of the parameter referred to by the interpolation placeholder.
+                if YAMLParametersLoader._INTERPOLATION_REGEX.fullmatch(
+                    uninterpolated_param_value
+                ):
+                    interpolated_value = get_backing_off_to_context(
+                        uninterpolated_param_value[1:-1]
+                    )
+                else:
+                    # the more usual case of interpolating a string into a string
+                    def replace_param(param_match: Match[str]) -> str:
+                        variable_to_interpolate = param_match.group()[1:-1]
+                        value_to_interpolate = get_backing_off_to_context(
+                            variable_to_interpolate
+                        )
+                        if isinstance(value_to_interpolate, str):
+                            return value_to_interpolate
+                        else:
+                            # Note we already checked for the only allowable case
+                            # for non-string interpolation on the other branch of the else.
+                            raise ParameterError(
+                                f"Can only replace an interpolation variable with a non-string "
+                                f"value if the variable is the entire non-interpolated "
+                                f"parameter value: {param_to_interpolate}"
+                            )
+
+                    interpolated_value = re.sub(
+                        YAMLParametersLoader._INTERPOLATION_REGEX,
+                        replace_param,
+                        uninterpolated_param_value,
+                    )
+                set_in_nested_dict(
+                    mutable_parameters, param_to_interpolate, interpolated_value
                 )
-            elif isinstance(param_value_prior_to_interpolation, Parameters):
-                param_value_after_interpolation = YAMLParametersLoader._interpolate(
-                    param_value_prior_to_interpolation, context
-                )
-            else:
-                # we don't know how to do any interpolation for non-strings
-                param_value_after_interpolation = param_value_prior_to_interpolation
-            interpolated_mapping[param_to_interpolate] = param_value_after_interpolation
+
+        # Re-convert from the mutable dict-of-dict-....-of-dicts format
+        # we have been using back to immutable Parameters.
         return Parameters.from_mapping(
             immutabledict(
-                (key, interpolated_mapping[key]) for key in to_interpolate._data.keys()
+                (key, mutable_parameters[key]) for key in to_interpolate._data.keys()
             ),
             namespace_prefix=to_interpolate.namespace_prefix,
         )
@@ -1287,68 +1441,15 @@ class YAMLParametersWriter:
     def write(self, params: Parameters, sink: Union[Path, str, CharSink]) -> None:
         # pylint:disable=protected-access
 
-        def dictify(data):
-            if isinstance(data, ImmutableDict):
-                return {k: dictify(v) for (k, v) in data.items()}
-            elif isinstance(data, Parameters):
-                return dictify(data._data)
-            else:
-                return data
-
         if isinstance(sink, Path) or isinstance(sink, str):
             sink = CharSink.to_file(sink)
         with sink.open() as out:
             yaml.dump(
-                dictify(params._data),
+                params.as_nested_dicts(),
                 out,
                 # prevents leaf dictionaries from being written in the
                 # human unfriendly compact style
                 default_flow_style=False,
                 indent=4,
                 width=78,
-            )
-
-
-def _recursively_replace_matches(
-    candidate: Any,
-    pattern: Pattern[str],
-    mapping: Mapping[str, Any],
-    *,
-    namespace_prefix: Sequence[str],
-) -> Any:
-    """Replace as many groups for interpolation in a string as possible.
-
-    For a candidate that may need to be interpolated,
-    - If we've reached something that isn't a string, we're done.
-    - If the interpolation pattern doesn't match, we're done.
-    """
-    if not isinstance(candidate, str):
-        return candidate
-    match = pattern.search(candidate)
-    if not match:
-        return candidate
-    variable_to_interpolate = match.group()[1:-1]
-    value_to_interpolate = mapping[variable_to_interpolate]
-    if isinstance(value_to_interpolate, str):
-        # we call ourselves again because there may be more variables to interpolate
-        return _recursively_replace_matches(
-            candidate.replace(f"%{variable_to_interpolate}%", value_to_interpolate),
-            pattern,
-            mapping,
-            namespace_prefix=namespace_prefix,
-        )
-    else:
-        if match.span(0) == (0, len(candidate)):
-            if isinstance(value_to_interpolate, Parameters):
-                # These parameters probably had their own namespace prefix for where they
-                # originated but they need to have the namespace prefix for
-                # their interpolated location.
-                return evolve(value_to_interpolate, namespace_prefix=namespace_prefix)
-            else:
-                return value_to_interpolate
-        else:
-            raise ParameterError(
-                f"Can only replace an interpolation variable with a non-string "
-                f"value if the variable is the entire non-interpolated "
-                f"parameter value: {namespace_prefix}"
             )
