@@ -1329,10 +1329,10 @@ class YAMLParametersLoader:
             # we look it up in the context.
             try:
                 return context._private_get(param_name)
-            except ParameterError:
+            except ParameterError as e:
                 raise ParameterError(
                     f"The key '{param_to_interpolate}' doesn't exist in the parameters."
-                )
+                ) from e
 
         for param_to_interpolate in interpolation_ordering:
             # first, we need to get the *uninterpolated* parameters value

@@ -19,6 +19,7 @@ from vistautils.parameters import (
 )
 from vistautils.range import Range
 
+import pytest
 import yaml
 
 
@@ -434,6 +435,15 @@ def test_interpolating_nested_parameters(tmp_path):
 
     # check nested interpolation works across files
     assert loaded_params.string("interpolate_me") == "lala meep lala"
+
+
+def test_exception_when_interpolating_unknown_param(tmp_path) -> None:
+    parameters = {"hello": "world", "interpolate_me": "%unknown_param%"}
+    params_file = tmp_path / "tmp.params"
+    with open(params_file, "w") as out:
+        yaml.dump(parameters, out)
+    with pytest.raises(Exception):
+        YAMLParametersLoader().load(params_file)
 
 
 def test_namespaced_items():
