@@ -1216,7 +1216,7 @@ class YAMLParametersLoader:
             if isinstance(val, Mapping):
                 YAMLParametersLoader._check_all_keys_strings(val)
 
-    _INTERPOLATION_REGEX = re.compile(r"%([\w.\-_]+)%")
+    _INTERPOLATION_REGEX = re.compile(r"%([\w.\-]+)%")
 
     # noinspection PyProtectedMember
     @staticmethod

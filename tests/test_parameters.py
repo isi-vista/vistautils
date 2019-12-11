@@ -405,9 +405,10 @@ class TestParameters(TestCase):
 
 def test_interpolating_nested_parameters(tmp_path):
     included_params = {
-        "hello": {"world": {"foo": "meep"}},
-        "same_file": "moo %hello.world.foo% moo",
-        "nested": {"interpolate_me_nested": "%hello.world.foo% nested"},
+        # - and _ to test they work when finding params to interpolate.
+        "hello": {"world": {"foo-foo_foo": "meep"}},
+        "same_file": "moo %hello.world.foo-foo_foo% moo",
+        "nested": {"interpolate_me_nested": "%hello.world.foo-foo_foo% nested"},
     }
     included_params_path = tmp_path / "included.params"
     with open(included_params_path, "w") as included_params_out:
@@ -424,7 +425,7 @@ def test_interpolating_nested_parameters(tmp_path):
 
     including_params = {
         "_includes": ["included.params"],
-        "interpolate_me": "lala %hello.world.foo% lala",
+        "interpolate_me": "lala %hello.world.foo-foo_foo% lala",
     }
 
     including_params_path = tmp_path / "including.params"
