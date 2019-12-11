@@ -19,6 +19,7 @@ from vistautils.parameters import (
 )
 from vistautils.range import Range
 
+import pytest
 import yaml
 
 
@@ -404,9 +405,10 @@ class TestParameters(TestCase):
 
 def test_interpolating_nested_parameters(tmp_path):
     included_params = {
-        "hello": {"world": {"foo": "meep"}},
-        "same_file": "moo %hello.world.foo% moo",
-        "nested": {"interpolate_me_nested": "%hello.world.foo% nested"},
+        # - and _ to test they work when finding params to interpolate.
+        "hello": {"world": {"foo-foo_foo": "meep"}},
+        "same_file": "moo %hello.world.foo-foo_foo% moo",
+        "nested": {"interpolate_me_nested": "%hello.world.foo-foo_foo% nested"},
     }
     included_params_path = tmp_path / "included.params"
     with open(included_params_path, "w") as included_params_out:
@@ -423,7 +425,7 @@ def test_interpolating_nested_parameters(tmp_path):
 
     including_params = {
         "_includes": ["included.params"],
-        "interpolate_me": "lala %hello.world.foo% lala",
+        "interpolate_me": "lala %hello.world.foo-foo_foo% lala",
     }
 
     including_params_path = tmp_path / "including.params"
@@ -434,6 +436,15 @@ def test_interpolating_nested_parameters(tmp_path):
 
     # check nested interpolation works across files
     assert loaded_params.string("interpolate_me") == "lala meep lala"
+
+
+def test_exception_when_interpolating_unknown_param(tmp_path) -> None:
+    parameters = {"hello": "world", "interpolate_me": "%unknown_param%"}
+    params_file = tmp_path / "tmp.params"
+    with open(params_file, "w") as out:
+        yaml.dump(parameters, out)
+    with pytest.raises(Exception):
+        YAMLParametersLoader().load(params_file)
 
 
 def test_namespaced_items():

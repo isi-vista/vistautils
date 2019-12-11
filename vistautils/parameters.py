@@ -1216,7 +1216,7 @@ class YAMLParametersLoader:
             if isinstance(val, Mapping):
                 YAMLParametersLoader._check_all_keys_strings(val)
 
-    _INTERPOLATION_REGEX = re.compile(r"%([\w\.]+)%")
+    _INTERPOLATION_REGEX = re.compile(r"%([\w.\-]+)%")
 
     # noinspection PyProtectedMember
     @staticmethod
@@ -1329,10 +1329,10 @@ class YAMLParametersLoader:
             # we look it up in the context.
             try:
                 return context._private_get(param_name)
-            except ParameterError:
+            except ParameterError as e:
                 raise ParameterError(
                     f"The key '{param_to_interpolate}' doesn't exist in the parameters."
-                )
+                ) from e
 
         for param_to_interpolate in interpolation_ordering:
             # first, we need to get the *uninterpolated* parameters value
