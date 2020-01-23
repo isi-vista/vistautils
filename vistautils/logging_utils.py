@@ -59,7 +59,7 @@ def _config_logging_from_params(params):
         )
     logging.getLogger().setLevel(level)
 
-    # configure a console handler with the default formatter. We could make this
+    # configure a console handler with a default formatter. We could make this
     # configurable in the future
     console_handler = logging.StreamHandler()
     console_handler.setLevel(level)
