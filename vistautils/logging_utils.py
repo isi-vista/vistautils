@@ -3,12 +3,6 @@ import logging.config
 
 from vistautils.parameters import ParameterError, Parameters
 
-logging.basicConfig(
-    format='[%(asctime)s] %(levelname)s:%(name)s:%(message)s',
-    level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
 log = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
 # we need to store this mapping here because logging doens't provide a (non-deprecated) way to map
@@ -50,6 +44,8 @@ def _config_logging_from_params(params):
     # Python's default logging level of "warning" is not typically what we want in our programs,
     # so we change the default level to INFO unless overriden below
     set_root_level_to = "INFO"
+    out_format = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
 
     if "logging.root_level" in params:
         set_root_level_to = params.string("logging.root_level")
@@ -67,5 +63,5 @@ def _config_logging_from_params(params):
     # configurable in the future
     console_handler = logging.StreamHandler()
     console_handler.setLevel(level)
-    console_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+    console_handler.setFormatter(logging.Formatter(out_format, date_format))
     logging.getLogger().addHandler(console_handler)
