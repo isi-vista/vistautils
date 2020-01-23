@@ -3,6 +3,12 @@ import logging.config
 
 from vistautils.parameters import ParameterError, Parameters
 
+logging.basicConfig(
+    format='[%(asctime)s] %(levelname)s:%(name)s:%(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 log = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
 # we need to store this mapping here because logging doens't provide a (non-deprecated) way to map
