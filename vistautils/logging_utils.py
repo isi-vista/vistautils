@@ -44,6 +44,8 @@ def _config_logging_from_params(params):
     # Python's default logging level of "warning" is not typically what we want in our programs,
     # so we change the default level to INFO unless overriden below
     set_root_level_to = "INFO"
+    out_format = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
 
     if "logging.root_level" in params:
         set_root_level_to = params.string("logging.root_level")
@@ -57,9 +59,9 @@ def _config_logging_from_params(params):
         )
     logging.getLogger().setLevel(level)
 
-    # configure a console handler with the default formatter. We could make this
+    # configure a console handler with a default formatter. We could make this
     # configurable in the future
     console_handler = logging.StreamHandler()
     console_handler.setLevel(level)
-    console_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+    console_handler.setFormatter(logging.Formatter(out_format, date_format))
     logging.getLogger().addHandler(console_handler)
