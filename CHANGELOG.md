@@ -1,3 +1,12 @@
+Vistautils 0.18.0 (2020-01-24)
+==============================
+
+New Features
+------------
+
+- When configuring logging from parameters, timestamps are now included on logging messages by default. (`#106 <https://github.com/isi-vista/vistautils/issues/106>`_)
+
+
 Vistautils 0.17.0 (2019-10-30)
 ==============================
 
