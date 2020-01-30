@@ -350,14 +350,17 @@ class Parameters:
             return None
 
     def string(
-        self, param_name: str, valid_options: Optional[Iterable[str]] = None
+        self,
+        param_name: str,
+        valid_options: Optional[Iterable[str]] = None,
+        default: Optional[str] = None,
     ) -> str:
         """
         Gets a string-valued parameter.
 
         Throws a `ParameterError` if `param` is not a known parameter.
         """
-        ret = self.get(param_name, str)
+        ret = self.get(param_name, str, default=default)
         if valid_options is not None and ret not in valid_options:
             raise ParameterError(
                 f"The value {ret} for the parameter {param_name} is not one of the valid options "
@@ -395,6 +398,8 @@ class Parameters:
 
         Throws a `ParameterError` if `param` is not a known parameter.
         """
+        if default is not None:
+            self._warn_about_default()
         if param_name in self:
             return self.string(param_name, valid_options)
         else:
@@ -417,11 +422,22 @@ class Parameters:
         maybe_namespace = self._private_get(name, optional=True)
         return maybe_namespace is not None and isinstance(maybe_namespace, Parameters)
 
-    def integer(self, name: str) -> int:
+    def integer(
+        self,
+        name: str,
+        *,
+        default: Optional[int] = None,
+        valid_range: Range[int] = Range.all(),
+    ) -> int:
         """
         Gets an integer parameter.
         """
-        return self.get(name, int)
+        ret = self.get(name, int, default=default)
+        if ret not in valid_range:
+            raise ParameterError(
+                f"Invalid value for integer parameter {name}. Expected a value in {valid_range}."
+            )
+        return ret
 
     @overload
     def optional_integer(self, name: str) -> Optional[int]:
@@ -437,18 +453,21 @@ class Parameters:
 
         Returns *None* if the parameter is not present.
         """
+        if default is not None:
+            self._warn_about_default()
+
         if name in self:
             return self.integer(name)
         else:
             return default  # type: ignore
 
-    def positive_integer(self, name: str) -> int:
+    def positive_integer(self, name: str, *, default: Optional[int] = None) -> int:
         """
         Gets an parameter with a positive integer value.
 
         Throws an exception if the parameter is present but is not a positive integer.
         """
-        ret = self.integer(name)
+        ret = self.integer(name, default=default)
         if ret > 0:
             return ret
         else:
@@ -473,6 +492,9 @@ class Parameters:
         Returns *None* if the parameter is not present.
         Throws an exception if the parameter is present but is not a positive integer.
         """
+        if default is not None:
+            self._warn_about_default()
+
         if name in self:
             return self.positive_integer(name)
         if default:
@@ -483,7 +505,11 @@ class Parameters:
         return None
 
     def floating_point(
-        self, name: str, valid_range: Optional[Range[float]] = None
+        self,
+        name: str,
+        valid_range: Optional[Range[float]] = None,
+        *,
+        default: Optional[float] = None,
     ) -> float:
         """
         Gets a float parameter.
@@ -492,7 +518,7 @@ class Parameters:
 
         This method isn't called `float` to avoid a clash with the Python type.
         """
-        ret = self.get(name, float)
+        ret = self.get(name, float, default=default)
         if valid_range is not None and ret not in valid_range:
             raise ParameterError(
                 "For parameter {!s}, expected a float in the range {!s} but got {!s}".format(
@@ -525,6 +551,9 @@ class Parameters:
 
         Throws a `ParameterError` if `param` is not within the given range.
         """
+        if default is not None:
+            self._warn_about_default()
+
         if name in self:
             return self.floating_point(name, valid_range)
         if default:
@@ -548,11 +577,11 @@ class Parameters:
         """
         return self.optional_floating_point(name, valid_range)
 
-    def boolean(self, name: str) -> bool:
+    def boolean(self, name: str, *, default: Optional[bool] = None) -> bool:
         """
         Gets a boolean parameter.
         """
-        return self.get(name, bool)
+        return self.get(name, bool, default=default)
 
     @overload
     def optional_boolean(self, name: str) -> Optional[bool]:
@@ -568,14 +597,20 @@ class Parameters:
 
         Avoid the temptation to do `params.optional_boolean('foo') or default_value`.
         """
+        if default is not None:
+            self._warn_about_default()
+
         return self.get_optional(name, bool, default=default)
 
     def optional_boolean_with_default(self, name: str, default_value: bool) -> bool:
         """
-        Deprecated. Prefer `optional_boolean` with default as a parameter.
+        Deprecated. Prefer `boolean` with default as a parameter.
 
         Gets a boolean parameter if present; otherwise returns the provided default.
         """
+        if default_value is not None:
+            self._warn_about_default()
+
         ret = self.optional_boolean(name, default=default_value)
         if ret is not None:
             return ret
@@ -616,11 +651,11 @@ class Parameters:
                 f"Expected a namespace, but got a regular parameters for {name}"
             )
 
-    def arbitrary_list(self, name: str) -> List:
+    def arbitrary_list(self, name: str, *, default: Optional[List] = None) -> List:
         """
         Get a list with arbitrary structure.
         """
-        return self.get(name, List)
+        return self.get(name, List, default=default)
 
     @overload
     def optional_arbitrary_list(self, name: str) -> Optional[List]:
@@ -634,6 +669,9 @@ class Parameters:
         """
         Get a list with arbitrary structure, if available
         """
+        if default is not None:
+            self._warn_about_default()
+
         if not default:
             return self.get_optional(name, List)
         elif isinstance(default, List):
@@ -675,6 +713,7 @@ class Parameters:
         context: Optional[Mapping] = None,
         namespace_param_name: str = "value",
         special_values: Mapping[str, str] = ImmutableDict.empty(),
+        default: Optional[_ParamType] = None,
     ) -> _ParamType:
         """
         Get a parameter, interpreting its value as Python code.
@@ -703,20 +742,26 @@ class Parameters:
 
         namespace = self.optional_namespace(name)
         try:
+            to_evaluate = None
+            context_modules: List = []
+
             if namespace:
-                return eval_in_context_of_modules(
-                    handle_special_values(namespace.string(namespace_param_name)),
-                    context or locals(),
-                    context_modules=namespace.optional_arbitrary_list("import") or [],
-                    expected_type=expected_type,
-                )
+                to_evaluate = namespace.string(namespace_param_name)
+                context_modules = namespace.optional_arbitrary_list("import") or []
+            elif name in self:
+                to_evaluate = self.string(name)
+                context_modules = []
+            elif default is not None:
+                return default
             else:
-                return eval_in_context_of_modules(
-                    handle_special_values(self.string(name)),
-                    context or locals(),
-                    context_modules=[],
-                    expected_type=expected_type,
-                )
+                raise ParameterError(f"Cannot evaluate non-existent parameter {name}")
+
+            return eval_in_context_of_modules(
+                handle_special_values(to_evaluate),
+                context or locals(),
+                context_modules=context_modules,
+                expected_type=expected_type,
+            )
         except Exception as e:
             raise ParameterError(
                 "Error while evaluating parameter {!s}".format(name)
@@ -815,7 +860,12 @@ class Parameters:
                 " got {!s}".format(expected_type, ret)
             )
 
-    def get(self, param_name: str, param_type: Type[_ParamType]) -> _ParamType:
+    def get(
+        self,
+        param_name: str,
+        param_type: Type[_ParamType],
+        default: Optional[_ParamType] = None,
+    ) -> _ParamType:
         """
         Get a parameter with type-safety.
 
@@ -824,7 +874,7 @@ class Parameters:
         Throws a `ParameterError` if the parameter is unknown.
         """
 
-        ret = self._private_get(param_name)
+        ret = self._private_get(param_name, default=default)
         if isinstance(ret, param_type):
             return ret
         else:
@@ -858,6 +908,9 @@ class Parameters:
         If a default is provided return the default otherwise
         If the parameter is unknown, returns `None`
         """
+        if default is not None:
+            self._warn_about_default()
+
         ret = self._private_get(param_name, optional=True)
         if ret is not None:
             if isinstance(ret, param_type):
@@ -944,7 +997,9 @@ class Parameters:
                 _logger.info("Loaded %s %s from %s", len(ret), log_name, file_map_file)
             return ret
 
-    def _private_get(self, param_name: str, optional: bool = False) -> Any:
+    def _private_get(
+        self, param_name: str, *, optional: bool = False, default: Optional[Any] = None
+    ) -> Any:
         check_arg(isinstance(param_name, str))
         # pylint:disable=protected-access
         param_components = param_name.split(".")
@@ -954,7 +1009,9 @@ class Parameters:
         namespaces_processed = []
         for param_component in param_components:
             if not isinstance(current, Parameters):
-                if optional:
+                if default:
+                    return default
+                elif optional:
                     return None
                 else:
                     raise ParameterError(
@@ -971,7 +1028,11 @@ class Parameters:
             if param_component in current._data:
                 current = current._data[param_component]
                 namespaces_processed.append(param_component)
-            elif not optional:
+            elif default:
+                return default
+            elif optional:
+                return None
+            else:
                 if namespaces_processed:
                     context_string = "in context " + ".".join(namespaces_processed)
                 else:
@@ -1001,10 +1062,6 @@ class Parameters:
                     + ", available namespaces are "
                     + available_namespaces
                 )
-            else:
-                # absent optional parameter
-                return None
-
         return current
 
     def __str__(self) -> str:
@@ -1024,6 +1081,12 @@ class Parameters:
         Deprecated and may be removed. Prefer `Parameters.as_nested_dicts`.
         """
         return self._data
+
+    def _warn_about_default(self) -> None:
+        logging.warning(
+            "Using default with optional_X methods is deprecated; "
+            "prefer using the non-optional method with a default=... arugment"
+        )
 
 
 def _extend_prefix(

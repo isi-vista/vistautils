@@ -156,6 +156,19 @@ class TestParameters(TestCase):
         ):
             params.floating_point("test_float", valid_range=Range.open(0.0, 1.0))
 
+    def test_integer(self):
+        params = Parameters.from_mapping({"test_int": 5})
+        self.assertEqual(5, params.integer("test_int"))
+        self.assertEqual(2, params.integer("not_appearing", default=2))
+        with self.assertRaisesRegex(
+            ParameterError, "Invalid value for integer parameter"
+        ):
+            params.integer("test_int", valid_range=Range.closed(1, 3))
+        with self.assertRaisesRegex(
+            ParameterError, "Invalid value for integer parameter"
+        ):
+            params.integer("not_appearing", default=2, valid_range=Range.closed(10, 20))
+
     MULTIPLE_INTERPOLATION_REFERENCE = """
             the_ultimate_fruit: "%apple%"
             apple: "%banana%"
