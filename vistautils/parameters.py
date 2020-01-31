@@ -1085,7 +1085,7 @@ class Parameters:
     def _warn_about_default(self) -> None:
         logging.warning(
             "Using default with optional_X methods is deprecated; "
-            "prefer using the non-optional method with a default=... arugment"
+            "prefer using the non-optional method with a default=... argument"
         )
 
 
