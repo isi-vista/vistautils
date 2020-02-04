@@ -453,7 +453,7 @@ class Parameters:
 
         Returns *None* if the parameter is not present.
         """
-        if default is not None:
+        if default is not None:  # pragma: no cover
             self._warn_about_default()
 
         if name in self:
@@ -608,7 +608,7 @@ class Parameters:
 
         Gets a boolean parameter if present; otherwise returns the provided default.
         """
-        if default_value is not None:
+        if default_value is not None:  # pragma: no cover
             self._warn_about_default()
 
         ret = self.optional_boolean(name, default=default_value)
@@ -669,7 +669,7 @@ class Parameters:
         """
         Get a list with arbitrary structure, if available
         """
-        if default is not None:
+        if default is not None:  # pragma: no cover
             self._warn_about_default()
 
         if not default:
