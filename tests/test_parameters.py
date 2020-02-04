@@ -287,6 +287,19 @@ class TestParameters(TestCase):
 
         self.assertEqual(INCLUSION_REFERENCE, dict(params.as_nested_dicts()))
 
+    def test_arbitrary_list(self):
+        params = Parameters.from_mapping({"hello": [1, 2, 3]})
+        self.assertEqual([1, 2, 3], params.arbitrary_list("hello"))
+        self.assertEqual(
+            ["foo", "bar"], params.arbitrary_list("world", default=["foo", "bar"])
+        )
+
+    def test_positive_integer(self):
+        params = Parameters.from_mapping({"hello": 2, "world": -2})
+        self.assertEqual(2, params.positive_integer("hello"))
+        with self.assertRaises(ParameterError):
+            params.positive_integer("world")
+
     def test_absents(self):
         empty_params = Parameters.empty()
         assert empty_params.optional_arbitrary_list("foo") is None
@@ -368,6 +381,15 @@ class TestParameters(TestCase):
                 "missing_param", expected_type=int, default_creator=default_creator
             ),
         )
+
+        # test missing parameter and no default creator
+        with self.assertRaises(ParameterError):
+            self.assertEqual(
+                "fred",
+                Parameters.empty().object_from_parameters(
+                    "missing_param", default_creator=None, expected_type=str
+                ),
+            )
 
         # test no specified or default creator
         with self.assertRaises(ParameterError):
