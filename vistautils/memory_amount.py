@@ -1,5 +1,5 @@
 import re
-from enum import Enum, auto
+from enum import Enum, auto, unique
 from typing import Mapping
 
 from attr import attrib, attrs
@@ -10,6 +10,7 @@ from immutablecollections import immutabledict
 from vistautils.range import Range
 
 
+@unique
 class MemoryUnit(Enum):
     """
     A unit in which memory can be measured.
