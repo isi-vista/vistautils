@@ -1,5 +1,6 @@
 import logging
 import logging.config
+import sys
 
 from vistautils.parameters import ParameterError, Parameters
 
@@ -60,8 +61,13 @@ def _config_logging_from_params(params):
     logging.getLogger().setLevel(level)
 
     # configure a console handler with a default formatter. We could make this
-    # configurable in the future
-    console_handler = logging.StreamHandler()
+    # configurable in the future.
+    console_handler = logging.StreamHandler(
+        # By default, Python will send log messages to stderr,
+        # but since logging is the normal means of output in most of our code,
+        # it makes more sense to route it to stdout.
+        stream=sys.stdout
+    )
     console_handler.setLevel(level)
     console_handler.setFormatter(logging.Formatter(out_format, date_format))
     logging.getLogger().addHandler(console_handler)
