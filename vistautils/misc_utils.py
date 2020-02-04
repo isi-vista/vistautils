@@ -45,7 +45,7 @@ def eval_in_context_of_modules(
     context: Mapping[Any, Any],
     *,
     context_modules: Sequence[str],
-    expected_type: Type[T]
+    expected_type: Type[T],
 ) -> T:
     """
     Evaluate the given expression in the specified context.
