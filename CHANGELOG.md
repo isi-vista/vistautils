@@ -1,3 +1,14 @@
+Vistautils 0.19.0 (2020-02-05)
+==============================
+
+New Features
+------------
+
+- Adds a script to turn directories into key-value stores. (`#108 <https://github.com/isi-vista/vistautils/issues/108>`_)
+- Adds the ability to specify defaults for many parameter accessors. (`#109 <https://github.com/isi-vista/vistautils/issues/109>`_)
+- Added `MemoryAmount` class for representing amounts of memory in user input. (`#110 <https://github.com/isi-vista/vistautils/issues/110>`_)
+
+
 Vistautils 0.18.0 (2020-01-24)
 ==============================
 
