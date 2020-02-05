@@ -124,6 +124,97 @@ class TestParameters(TestCase):
 
         shutil.rmtree(test_dir)
 
+    def test_optional_creatable_directory(self):
+        test_dir = Path(tempfile.mkdtemp()).absolute()
+        existing_dir_path = test_dir / "existing_directory"
+        existing_dir_path.mkdir(parents=True, exist_ok=True)
+        non_existing_dir_path = test_dir / "non_existent_directory"
+        a_file = existing_dir_path / "a_file"
+        a_file.touch()
+        params = Parameters.from_mapping(
+            {
+                "directory_which_exists": str(existing_dir_path.absolute()),
+                "directory_which_does_not_exist": str(non_existing_dir_path.absolute()),
+                "a_file": a_file,
+            }
+        )
+
+        self.assertEqual(
+            os.path.realpath(existing_dir_path),
+            os.path.realpath(
+                params.optional_creatable_directory("directory_which_exists")
+            ),
+        )
+        self.assertEqual(None, params.optional_creatable_directory("missing_param"))
+        self.assertEqual(
+            os.path.realpath(non_existing_dir_path),
+            os.path.realpath(
+                params.optional_creatable_directory("directory_which_does_not_exist")
+            ),
+        )
+        with self.assertRaises(ParameterError):
+            params.optional_existing_directory("a_file")
+
+    def test_optional_creatable_empty_directory(self):
+        test_dir = Path(tempfile.mkdtemp()).absolute()
+        existing_dir_path = test_dir / "existing_directory"
+        existing_dir_path.mkdir(parents=True, exist_ok=True)
+        non_existing_dir_path = test_dir / "non_existent_directory"
+        a_file = existing_dir_path / "a_file"
+        a_file.touch()
+        params = Parameters.from_mapping(
+            {
+                "directory_which_exists": str(existing_dir_path.absolute()),
+                "directory_which_does_not_exist": str(non_existing_dir_path.absolute()),
+                "a_file": a_file,
+            }
+        )
+
+        self.assertEqual(None, params.optional_creatable_empty_directory("missing_param"))
+        self.assertEqual(
+            os.path.realpath(non_existing_dir_path),
+            os.path.realpath(
+                params.optional_creatable_empty_directory(
+                    "directory_which_does_not_exist"
+                )
+            ),
+        )
+        with self.assertRaises(ParameterError):
+            params.optional_creatable_empty_directory("a_file")
+        with self.assertRaises(ParameterError):
+            params.optional_creatable_empty_directory("directory_which_exists")
+        self.assertEqual(
+            os.path.realpath(existing_dir_path),
+            os.path.realpath(
+                params.optional_creatable_empty_directory(
+                    "directory_which_exists", delete=True
+                )
+            ),
+        )
+
+    def test_optional_creatable_file(self):
+        test_dir = Path(tempfile.mkdtemp()).absolute()
+        existing_dir_path = test_dir / "existing_directory"
+        existing_dir_path.mkdir(parents=True, exist_ok=True)
+        non_existing_dir_path = test_dir / "non_existent_directory"
+        a_file = existing_dir_path / "a_file"
+        a_file.touch()
+        non_existing_file = test_dir / "b_file"
+        params = Parameters.from_mapping(
+            {
+                "directory_which_exists": str(existing_dir_path.absolute()),
+                "directory_which_does_not_exist": str(non_existing_dir_path.absolute()),
+                "a_file": str(a_file.absolute()),
+                "non_existing_file": str(non_existing_file.absolute()),
+            }
+        )
+
+        self.assertEqual(None, params.optional_creatable_file("missing_param"))
+        self.assertEqual(
+            os.path.realpath(non_existing_file),
+            os.path.realpath(params.optional_creatable_file("non_existing_file")),
+        )
+
     def test_string(self):
         params = Parameters.from_mapping({"hello": "world"})
         self.assertEqual("world", params.string("hello"))
@@ -322,6 +413,7 @@ class TestParameters(TestCase):
                 "boolean": True,
                 "float": 0.5,
                 "integer": 42,
+                "negative_int": -5,
                 "namespace": {"fred": "meep"},
                 "string": "foo",
             }
@@ -331,6 +423,9 @@ class TestParameters(TestCase):
         assert params.optional_boolean("boolean")
         assert params.optional_floating_point("float") == 0.5
         assert params.optional_integer("integer") == 42
+        assert params.optional_positive_integer("integer") == 42
+        with self.assertRaises(ParameterError):
+            params.optional_positive_integer("negative_int")
         assert params.optional_namespace("namespace").as_nested_dicts() == {
             "fred": "meep"
         }
@@ -426,6 +521,10 @@ class TestParameters(TestCase):
         assert (  # pylint: disable=unexpected-keyword-arg
             empty_params.optional_string("foo", default="test") == "test"
         )
+        with self.assertRaises(ParameterError):
+            empty_params.optional_floating_point(  # pylint: disable=unexpected-keyword-arg
+                "foo", default=-1.5, valid_range=Range.closed(0.0, 10.0)
+            )
 
     def test_namespace_prefix(self):
         assert Parameters.from_mapping({"hello": {"world": {"foo": "bar"}}}).namespace(
