@@ -1,4 +1,3 @@
-import warnings
 from datetime import date
 from functools import partial
 from typing import Any, Callable, Sized, Tuple, Type, Union

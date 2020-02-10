@@ -1,5 +1,4 @@
 # really needs to be totally-ordered
-import warnings
 from abc import ABCMeta, abstractmethod
 from datetime import date
 from typing import (
