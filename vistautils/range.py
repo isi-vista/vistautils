@@ -749,6 +749,7 @@ class RangeSet(
         """
 
     @deprecation.deprecated(
+        deprecated_in="0.19.0",
         removed_in=date(2020, 8, 10),
         details="Deprecated, use rightmost_containing_or_below(upper_limit). "
         "This method may be removed in a future release.",
@@ -757,6 +758,7 @@ class RangeSet(
         return self.rightmost_containing_or_below(upper_limit)
 
     @deprecation.deprecated(
+        deprecated_in="0.19.0",
         removed_in=date(2020, 8, 10),
         details="Deprecated, use leftmost_containing_or_above(upper_limit). "
         "This method may be removed in a future release.",
@@ -1262,6 +1264,7 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         """
 
     @deprecation.deprecated(
+        deprecated_in="0.19.0",
         removed_in=date(2020, 8, 10),
         details="Deprecated, use get_from_rightmost_containing_or_below(upper_limit). "
         "This method may be removed in a future release.",
@@ -1270,6 +1273,7 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
         return self.get_from_rightmost_containing_or_below(key)
 
     @deprecation.deprecated(
+        deprecated_in="0.19.0",
         removed_in=date(2020, 8, 10),
         details="Deprecated, use get_from_leftmost_containing_or_below(key). "
         "This method may be removed in a future release.",
@@ -1323,6 +1327,7 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
 
     @staticmethod
     @deprecation.deprecated(
+        deprecated_in="0.19.0",
         removed_in=date(2020, 8, 10),
         details="Deprecated - prefer the module-level factory ``immutablerangemap`` with no "
         "arguments.",

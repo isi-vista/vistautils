@@ -12,6 +12,7 @@ import deprecation
 
 
 @deprecation.deprecated(
+    deprecated_in="0.19.0",
     removed_in=date(2020, 8, 10),
     details="Deprecated, use attrib(validator=instance_of(type))",
 )
@@ -25,6 +26,7 @@ def attrib_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, **kwargs):
 # TODO cannot currently be used with additional validators:
 # https://github.com/isi-nlp/isi-flexnlp/issues/188
 @deprecation.deprecated(
+    deprecated_in="0.19.0",
     removed_in=date(2020, 8, 10),
     details="Deprecated, use attrib(default=<default>, validator=optional(instance_of(<type>)))",
 )
@@ -38,7 +40,9 @@ def attrib_opt_instance_of(
 
 
 @deprecation.deprecated(
-    removed_in=date(2020, 8, 10), details="Deprecated, use attrib(factory=<factory>"
+    deprecated_in="0.19.0",
+    removed_in=date(2020, 8, 10),
+    details="Deprecated, use attrib(factory=<factory>",
 )
 def attrib_factory(factory: Callable, *args, **kwargs):
     # Mypy does not understand these arguments
@@ -46,6 +50,7 @@ def attrib_factory(factory: Callable, *args, **kwargs):
 
 
 @deprecation.deprecated(
+    deprecated_in="0.19.0",
     removed_in=date(2020, 8, 10),
     details="Deprecated, use attrib(converter=<collection factory>)",
 )
@@ -58,6 +63,7 @@ def attrib_immutable(
 
 
 @deprecation.deprecated(
+    deprecated_in="0.19.0",
     removed_in=date(2020, 8, 10),
     details="Deprecated with no direct replacement as the builders are also deprecated. "
     "Instead, create an empty private list using attrib(factory=list, init=False) "
@@ -81,6 +87,7 @@ def attrib_private_immutable_builder(
 # TODO: The use of Type[ImmutableCollection] causes Mypy warnings
 # Perhaps the solution is to make ImmutableCollection a Protocol?
 @deprecation.deprecated(
+    deprecated_in="0.19.0",
     removed_in=date(2020, 8, 10),
     details="Deprecated, use attrib(converter=<collection factory>, default=<collection factory>)",
 )
@@ -105,7 +112,9 @@ def attrib_opt_immutable(
 
 
 @deprecation.deprecated(
-    removed_in=date(2020, 8, 10), details="Deprecated, use optional(instance_of(<type>))"
+    deprecated_in="0.19.0",
+    removed_in=date(2020, 8, 10),
+    details="Deprecated, use optional(instance_of(<type>))",
 )
 def opt_instance_of(type_: Union[Type, Tuple[Type, ...]]) -> Callable:
     # Mypy does not understand these arguments

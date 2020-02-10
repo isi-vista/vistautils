@@ -572,6 +572,7 @@ class Parameters:
             return None
 
     @deprecation.deprecated(
+        deprecated_in="0.19.0",
         removed_in=date(2020, 8, 10),
         details="Deprecated, prefer `optional_floating_point` for more consistent naming.",
     )
@@ -606,6 +607,7 @@ class Parameters:
         return self.get_optional(name, bool, default=default)
 
     @deprecation.deprecated(
+        deprecated_in="0.19.0",
         removed_in=date(2020, 8, 10),
         details="Deprecated. Prefer `boolean` with default as a parameter.",
     )
@@ -1082,6 +1084,7 @@ class Parameters:
             return ""
 
     @deprecation.deprecated(
+        deprecated_in="0.19.0",
         removed_in=date(2020, 8, 10),
         details="Deprecated and may be removed. Prefer `Parameters.as_nested_dicts`.",
     )
