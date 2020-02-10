@@ -1,17 +1,21 @@
 import warnings
+from datetime import date
 from functools import partial
 from typing import Any, Callable, Sized, Tuple, Type, Union
 
 from attr import Factory, attrib, validators
-from datetime import date
 
 import immutablecollections
 
 import vistautils.preconditions
+
 import deprecation
 
 
-@deprecation.deprecated(removed_in=date(2020, 8, 10), details="Deprecated, use attrib(validator=instance_of(type))")
+@deprecation.deprecated(
+    removed_in=date(2020, 8, 10),
+    details="Deprecated, use attrib(validator=instance_of(type))",
+)
 def attrib_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, **kwargs):
     # Mypy does not understand these arguments
     return attrib(  # type: ignore
@@ -21,7 +25,10 @@ def attrib_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, **kwargs):
 
 # TODO cannot currently be used with additional validators:
 # https://github.com/isi-nlp/isi-flexnlp/issues/188
-@deprecation.deprecated(removed_in=date(2020, 8, 10), details="Deprecated, use attrib(default=<default>, validator=optional(instance_of(<type>)))")
+@deprecation.deprecated(
+    removed_in=date(2020, 8, 10),
+    details="Deprecated, use attrib(default=<default>, validator=optional(instance_of(<type>)))",
+)
 def attrib_opt_instance_of(
     type_: Union[Type, Tuple[Type, ...]], *args, default=None, **kwargs
 ):
@@ -31,13 +38,18 @@ def attrib_opt_instance_of(
     )
 
 
-@deprecation.deprecated(removed_in=date(2020, 8, 10), details="Deprecated, use attrib(factory=<factory>")
+@deprecation.deprecated(
+    removed_in=date(2020, 8, 10), details="Deprecated, use attrib(factory=<factory>"
+)
 def attrib_factory(factory: Callable, *args, **kwargs):
     # Mypy does not understand these arguments
     return attrib(default=Factory(factory), *args, **kwargs)  # type: ignore
 
 
-@deprecation.deprecated(removed_in=date(2020, 8, 10), details="Deprecated, use attrib(converter=<collection factory>)")
+@deprecation.deprecated(
+    removed_in=date(2020, 8, 10),
+    details="Deprecated, use attrib(converter=<collection factory>)",
+)
 def attrib_immutable(
     type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs
 ):
@@ -46,9 +58,12 @@ def attrib_immutable(
     return attrib(converter=type_.of, *args, **kwargs)  # type: ignore
 
 
-@deprecation.deprecated(removed_in=date(2020, 8, 10), details="Deprecated with no direct replacement as the builders are also deprecated. "
-                                                              "Instead, create an empty private list using attrib(factory=list, init=False) "
-                                                              "and append items to be passed to the immutablecollections factory function.")
+@deprecation.deprecated(
+    removed_in=date(2020, 8, 10),
+    details="Deprecated with no direct replacement as the builders are also deprecated. "
+    "Instead, create an empty private list using attrib(factory=list, init=False) "
+    "and append items to be passed to the immutablecollections factory function.",
+)
 def attrib_private_immutable_builder(
     type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs
 ):
@@ -66,7 +81,10 @@ def attrib_private_immutable_builder(
 
 # TODO: The use of Type[ImmutableCollection] causes Mypy warnings
 # Perhaps the solution is to make ImmutableCollection a Protocol?
-@deprecation.deprecated(removed_in=date(2020, 8, 10), details="Deprecated, use attrib(converter=<collection factory>, default=<collection factory>)")
+@deprecation.deprecated(
+    removed_in=date(2020, 8, 10),
+    details="Deprecated, use attrib(converter=<collection factory>, default=<collection factory>)",
+)
 def attrib_opt_immutable(
     type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs
 ):
@@ -87,7 +105,9 @@ def attrib_opt_immutable(
     )
 
 
-@deprecation.deprecated(removed_in=date(2020, 8, 10), details="Deprecated, use optional(instance_of(<type>))")
+@deprecation.deprecated(
+    removed_in=date(2020, 8, 10), details="Deprecated, use optional(instance_of(<type>))"
+)
 def opt_instance_of(type_: Union[Type, Tuple[Type, ...]]) -> Callable:
     # Mypy does not understand these arguments
     return validators.instance_of((type_, type(None)))  # type: ignore

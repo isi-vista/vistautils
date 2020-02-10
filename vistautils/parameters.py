@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import shutil
+from datetime import date
 from pathlib import Path
 from typing import (
     Any,
@@ -24,7 +25,6 @@ from typing import (
 )
 
 from attr import attrib, attrs, evolve
-from datetime import date
 
 from immutablecollections import ImmutableDict, immutabledict
 from immutablecollections.converter_utils import _to_tuple
@@ -35,8 +35,8 @@ from vistautils.misc_utils import eval_in_context_of_modules
 from vistautils.preconditions import check_arg, check_isinstance
 from vistautils.range import Range
 
-import yaml
 import deprecation
+import yaml
 
 _logger = logging.getLogger(__name__)  # pylint:disable=invalid-name
 
@@ -571,8 +571,10 @@ class Parameters:
         else:
             return None
 
-    @deprecation.deprecated(removed_in=date(2020, 8, 10),
-                            details="Deprecated, prefer `optional_floating_point` for more consistent naming.")
+    @deprecation.deprecated(
+        removed_in=date(2020, 8, 10),
+        details="Deprecated, prefer `optional_floating_point` for more consistent naming.",
+    )
     def optional_float(
         self, name: str, valid_range: Optional[Range[float]] = None
     ) -> Optional[float]:
@@ -603,8 +605,10 @@ class Parameters:
 
         return self.get_optional(name, bool, default=default)
 
-    @deprecation.deprecated(removed_in=date(2020, 8, 10),
-                            details="Deprecated. Prefer `boolean` with default as a parameter.")
+    @deprecation.deprecated(
+        removed_in=date(2020, 8, 10),
+        details="Deprecated. Prefer `boolean` with default as a parameter.",
+    )
     def optional_boolean_with_default(self, name: str, default_value: bool) -> bool:
         """
         Gets a boolean parameter if present; otherwise returns the provided default.
@@ -1077,8 +1081,10 @@ class Parameters:
         else:
             return ""
 
-    @deprecation.deprecated(removed_in=date(2020, 8, 10),
-                            details="Deprecated and may be removed. Prefer `Parameters.as_nested_dicts`.")
+    @deprecation.deprecated(
+        removed_in=date(2020, 8, 10),
+        details="Deprecated and may be removed. Prefer `Parameters.as_nested_dicts`.",
+    )
     def as_mapping(self) -> Mapping[str, Any]:
         return self._data
 
