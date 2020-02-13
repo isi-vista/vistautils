@@ -65,6 +65,10 @@ class TestParameters(TestCase):
         with self.assertRaises(ParameterError):
             params.boolean("non_boolean_param")
 
+        self.assertTrue(params.boolean("not-appearing", default=True))
+        # test with a False-y default
+        self.assertFalse(params.boolean("not-appearing", default=False))
+
     def test_optional_existing_file(self):
         test_dir = Path(tempfile.mkdtemp()).absolute()
         existing_file_path = test_dir / "existing_file"
