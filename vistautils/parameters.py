@@ -1028,7 +1028,7 @@ class Parameters:
             if param_component in current._data:
                 current = current._data[param_component]
                 namespaces_processed.append(param_component)
-            elif default:
+            elif default is not None:
                 return default
             elif optional:
                 return None
