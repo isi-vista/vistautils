@@ -166,7 +166,9 @@ class KeyValueSink(Generic[K, V], metaclass=ABCMeta):
         )
 
 
-class KeyValueLinearSource(Generic[K, V], AbstractContextManager, metaclass=ABCMeta):
+class KeyValueLinearSource(
+    Generic[K, V], AbstractContextManager, metaclass=ABCMeta  # type: ignore
+):
     """
     Anything which provide a sequence of key-value pairs.
 
@@ -875,7 +877,7 @@ def byte_key_value_linear_source_from_params(
     params: Parameters,
     *,
     input_namespace: str = "input",
-    eval_context: Optional[Dict] = None,
+    eval_context: Optional[Dict[Any, Any]] = None,
 ) -> KeyValueLinearSource[str, bytes]:
     """
     Get a key-value source based on parameters.
@@ -918,7 +920,7 @@ def char_key_value_source_from_params(
     params: Parameters,
     *,
     input_namespace: str = "input",
-    eval_context: Optional[Dict] = None,
+    eval_context: Optional[Dict[Any, Any]] = None,
 ) -> KeyValueSource[str, str]:
     """
     Get a random-access key-value source based on parameters.
@@ -957,7 +959,7 @@ def byte_key_value_source_from_params(
     params: Parameters,
     *,
     input_namespace: str = "input",
-    eval_context: Optional[Dict] = None,
+    eval_context: Optional[Dict[Any, Any]] = None,
 ) -> KeyValueSource[str, bytes]:
     """
     Get a random-access key-value source based on parameters.
@@ -1007,7 +1009,7 @@ def char_key_value_sink_from_params(
     params: Parameters,
     *,
     output_namespace: str = "output",
-    eval_context: Optional[Dict] = None,
+    eval_context: Optional[Dict[Any, Any]] = None,
 ) -> KeyValueSink[str, str]:
     """
     Get a key-value sink based on parameters.
@@ -1044,7 +1046,7 @@ def byte_key_value_sink_from_params(
     params: Parameters,
     *,
     output_namespace: str = "output",
-    eval_context: Optional[Dict] = None,
+    eval_context: Optional[Dict[Any, Any]] = None,
 ) -> KeyValueSink[str, bytes]:
     """
     Get a binary key-value sink based on parameters.

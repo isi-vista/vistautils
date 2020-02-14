@@ -3,7 +3,7 @@ default:
 
 SOURCE_DIR_NAME=vistautils
 
-MYPY:=mypy $(SOURCE_DIR_NAME) tests
+MYPY:=mypy $(SOURCE_DIR_NAME) tests --disallow-any-generics --disallow-any-unimported
 
 # Suppressed warnings:
 # Too many arguments, Unexpected keyword arguments: can't do static analysis on attrs __init__

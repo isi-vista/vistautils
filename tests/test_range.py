@@ -1,4 +1,5 @@
 import sys
+from typing import Any
 from unittest import TestCase
 
 from immutablecollections import ImmutableSet
@@ -233,7 +234,7 @@ class TestRange(TestCase):
         self.assertTrue(7 in rng)
         self.assertFalse(8 in rng)
 
-    def assert_unbounded_below(self, rng: Range):
+    def assert_unbounded_below(self, rng: Range[Any]):
         self.assertFalse(rng.has_lower_bound())
         with self.assertRaises(ValueError):
             rng.lower_endpoint()
@@ -241,7 +242,7 @@ class TestRange(TestCase):
         with self.assertRaises(AssertionError):
             rng.lower_bound_type
 
-    def assert_unbounded_above(self, rng: Range):
+    def assert_unbounded_above(self, rng: Range[Any]):
         self.assertFalse(rng.has_upper_bound())
         with self.assertRaises(ValueError):
             rng.upper_endpoint()

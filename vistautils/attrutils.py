@@ -9,7 +9,7 @@ import immutablecollections
 import vistautils.preconditions
 
 
-def attrib_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, **kwargs):
+def attrib_instance_of(type_: Union[Type[Any], Tuple[Type[Any], ...]], *args, **kwargs):
     warnings.warn(
         "Deprecated, use attrib(validator=instance_of(type))", DeprecationWarning
     )
@@ -22,7 +22,7 @@ def attrib_instance_of(type_: Union[Type, Tuple[Type, ...]], *args, **kwargs):
 # TODO cannot currently be used with additional validators:
 # https://github.com/isi-nlp/isi-flexnlp/issues/188
 def attrib_opt_instance_of(
-    type_: Union[Type, Tuple[Type, ...]], *args, default=None, **kwargs
+    type_: Union[Type[Any], Tuple[Type[Any], ...]], *args, default=None, **kwargs
 ):
     warnings.warn(
         "Deprecated, use attrib(default=<default>, validator=optional(instance_of(<type>)))",
@@ -34,14 +34,14 @@ def attrib_opt_instance_of(
     )
 
 
-def attrib_factory(factory: Callable, *args, **kwargs):
+def attrib_factory(factory: Callable[[Any], Any], *args, **kwargs):
     warnings.warn("Deprecated, use attrib(factory=<factory>)", DeprecationWarning)
     # Mypy does not understand these arguments
     return attrib(default=Factory(factory), *args, **kwargs)  # type: ignore
 
 
 def attrib_immutable(
-    type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs
+    type_: Type[immutablecollections.ImmutableCollection[Any]], *args, **kwargs
 ):
     warnings.warn(
         "Deprecated, use attrib(converter=<collection factory>)", DeprecationWarning
@@ -52,7 +52,7 @@ def attrib_immutable(
 
 
 def attrib_private_immutable_builder(
-    type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs
+    type_: Type[immutablecollections.ImmutableCollection[Any]], *args, **kwargs
 ):
     """
     Create an immutable collection builder private attribute.
@@ -75,7 +75,7 @@ def attrib_private_immutable_builder(
 # TODO: The use of Type[ImmutableCollection] causes Mypy warnings
 # Perhaps the solution is to make ImmutableCollection a Protocol?
 def attrib_opt_immutable(
-    type_: Type[immutablecollections.ImmutableCollection], *args, **kwargs
+    type_: Type[immutablecollections.ImmutableCollection[Any]], *args, **kwargs
 ):
     """Return a attrib with a converter for optional collections.
 
@@ -98,7 +98,9 @@ def attrib_opt_immutable(
     )
 
 
-def opt_instance_of(type_: Union[Type, Tuple[Type, ...]]) -> Callable:
+def opt_instance_of(
+    type_: Union[Type[Any], Tuple[Type[Any], ...]]
+) -> Callable[[Any], Any]:
     warnings.warn("Deprecated, use optional(instance_of(<type>))", DeprecationWarning)
     # Mypy does not understand these arguments
     return validators.instance_of((type_, type(None)))  # type: ignore
@@ -112,8 +114,8 @@ def _check_immutable_collection(type_):
 
 
 def _empty_immutable_if_none(
-    val: Any, type_: Type[immutablecollections.ImmutableCollection]
-) -> immutablecollections.ImmutableCollection:
+    val: Any, type_: Type[immutablecollections.ImmutableCollection[Any]]
+) -> immutablecollections.ImmutableCollection[Any]:
     if val is None:
         return type_.empty()
     else:

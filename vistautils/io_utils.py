@@ -11,7 +11,6 @@ from typing import (
     Any,
     AnyStr,
     BinaryIO,
-    Callable,
     Iterable,
     Iterator,
     List,
@@ -229,7 +228,7 @@ class _FileWithinTgzCharSource(CharSource):
             ret = CharSource.from_string(tgz_data.read().decode(self._encoding)).open()
             # we need to fiddle with the close method on the returned TextIO so that when it is
             # closed the containing zip file is closed as well
-            old_close: Callable = ret.close
+            old_close = ret.close
         else:
             raise IOError(
                 f"Could not extract path {self._path_within_tgz} from {self._tgz_path}"

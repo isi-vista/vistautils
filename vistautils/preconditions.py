@@ -5,7 +5,7 @@ from typing import Any, Iterable, Tuple, TypeVar, Union
 # pylint: disable=invalid-name
 # Type annotation from TypeShed for classinfo argument  of isinstance and issubclass
 
-_ClassInfo = Union[type, Tuple[Union[type, Tuple], ...]]
+_ClassInfo = Union[type, Tuple[Union[type, Tuple[Any, ...]], ...]]
 
 
 T = TypeVar("T")
@@ -29,7 +29,7 @@ def check_not_none(x: T, msg: str = None) -> T:
         return x
 
 
-def check_arg(result: Any, msg: str = None, msg_args: Tuple = None) -> None:
+def check_arg(result: Any, msg: str = None, msg_args: Tuple[Any] = None) -> None:
     if not result:
         if msg:
             raise ValueError(msg % (msg_args or ()))

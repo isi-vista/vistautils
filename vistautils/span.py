@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Sized, Tuple, TypeVar, Union
+from typing import Any, Iterable, Optional, Sized, Tuple, TypeVar, Union
 
 from attr import attrib, attrs, validators
 
@@ -129,7 +129,7 @@ class Span(Sized):
 
 
 class HasSpan(Protocol):
-    __slots__: tuple = ()
+    __slots__: Tuple[Any, ...] = ()
     span: Span
 
     @property
