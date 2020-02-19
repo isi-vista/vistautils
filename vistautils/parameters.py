@@ -999,6 +999,9 @@ class Parameters:
             return ret
 
     def pickled_object_from_file(self, param_name: str) -> Any:
+        """
+        Returns an unpickled object from file containing a pickled object at param_name
+        """
         pickled_object_path = Path(self.get(param_name, str)).resolve()
         with pickled_object_path.open("rb") as pickled_object_file:
             return pickle.load(pickled_object_file)
