@@ -2,9 +2,9 @@
 import inspect
 import logging
 import os
+import pickle
 import re
 import shutil
-import pickle
 from pathlib import Path
 from typing import (
     Any,
@@ -998,9 +998,10 @@ class Parameters:
                 _logger.info("Loaded %s %s from %s", len(ret), log_name, file_map_file)
             return ret
 
-    def pickled_object_from_file(object_path: Path) -> Any:
-        with Path.open() as pickled_object_file:
-            return load(pickled_object_file)
+    def pickled_object_from_file(self, param_name: str) -> Any:
+        pickled_object_path = Path(self.get(param_name, str)).resolve()
+        with pickled_object_path.open("rb") as pickled_object_file:
+            return pickle.load(pickled_object_file)
 
     def _private_get(
         self, param_name: str, *, optional: bool = False, default: Optional[Any] = None
