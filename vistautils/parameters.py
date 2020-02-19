@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import shutil
+import pickle
 from pathlib import Path
 from typing import (
     Any,
@@ -996,6 +997,10 @@ class Parameters:
             if log_name:
                 _logger.info("Loaded %s %s from %s", len(ret), log_name, file_map_file)
             return ret
+
+    def pickled_object_from_file(object_path: Path) -> Any:
+        with Path.open() as pickled_object_file:
+            return load(pickled_object_file)
 
     def _private_get(
         self, param_name: str, *, optional: bool = False, default: Optional[Any] = None
