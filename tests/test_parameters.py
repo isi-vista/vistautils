@@ -1,4 +1,5 @@
 import os
+import pickle
 import shutil
 import tempfile
 from pathlib import Path
@@ -539,6 +540,20 @@ class TestParameters(TestCase):
         assert Parameters.empty().namespace_or_empty("foo").namespace_or_empty(
             "bar"
         ).namespace_prefix == ("foo", "bar")
+
+    def test_pickled_object_from_file(self):
+        temp_dir = Path(tempfile.mkdtemp()).absolute()
+        pickled_obj_file = temp_dir / "pickle"
+        obj = {"foo": "bar", "thing": "amabob"}
+        with pickled_obj_file.open("wb") as bf:
+            pickle.dump(obj, bf)
+
+        params = Parameters.from_mapping(
+            {"pickled_obj_file": str(pickled_obj_file.absolute())}
+        )
+
+        # noinspection PyTypeChecker
+        self.assertEqual(obj, params.pickled_object_from_file("pickled_obj_file"))
 
 
 def test_interpolating_nested_parameters(tmp_path):

@@ -2,6 +2,7 @@
 import inspect
 import logging
 import os
+import pickle
 import re
 import shutil
 from pathlib import Path
@@ -996,6 +997,14 @@ class Parameters:
             if log_name:
                 _logger.info("Loaded %s %s from %s", len(ret), log_name, file_map_file)
             return ret
+
+    def pickled_object_from_file(self, param_name: str) -> Any:
+        """
+        Returns an unpickled object from file containing a pickled object at param_name
+        """
+        pickled_object_path = self.existing_file(param_name)
+        with pickled_object_path.open("rb") as pickled_object_file:
+            return pickle.load(pickled_object_file)
 
     def _private_get(
         self, param_name: str, *, optional: bool = False, default: Optional[Any] = None
