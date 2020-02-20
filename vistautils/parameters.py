@@ -1002,7 +1002,7 @@ class Parameters:
         """
         Returns an unpickled object from file containing a pickled object at param_name
         """
-        pickled_object_path = Path(self.get(param_name, str)).resolve()
+        pickled_object_path = self.existing_file(param_name)
         with pickled_object_path.open("rb") as pickled_object_file:
             return pickle.load(pickled_object_file)
 
