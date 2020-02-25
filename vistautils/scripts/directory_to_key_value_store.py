@@ -55,7 +55,7 @@ def key_function_from_params(params: Parameters) -> Callable[[Path], str]:
     elif key_function_string == STRIP_ONE_EXTENSION:
         return strip_one_extension_key_function
     else:
-        raise NotImplementedError(f"Unknown key function %s", key_function_string)
+        raise NotImplementedError(f"Unknown key function {key_function_string}")
 
 
 IDENTITY = "identity"
