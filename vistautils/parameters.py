@@ -155,6 +155,53 @@ class Parameters:
                 )
                 yield f"{prefix}{key}", value
 
+    def unify(
+        self, new_params: "Parameters", *, namespace_prefix: Sequence[str] = tuple()
+    ) -> "Parameters":
+        """
+        Get a new `Parameters` whose content is the unification of this `Parameters`
+        and *new_params*.
+
+        All parameters in this `Parameters` will appear in the output.
+        All parameters in *new_params* will appear in the output.
+        The values of each parameter will be the same as in this `Parameters` or *new_params*
+        unless there is a conflict, in which case we take the value from *new_params*.
+
+        The *namespace_prefix* is used to specify a prefix to apply to the parameter names
+        of both parameter sets when generating exception messages.
+        """
+        ret = dict()
+        for (key, old_val) in self._data.items():
+            if key in new_params:
+                new_val = new_params._data[key]
+                if isinstance(old_val, Parameters) != isinstance(new_val, Parameters):
+                    if namespace_prefix:
+                        namespace_prefix_str = ".".join(namespace_prefix)
+                        param_str = f"{namespace_prefix_str}.{key}"
+                    else:
+                        param_str = key
+
+                    raise IOError(
+                        f"When unifying parameters, {param_str} is a parameter on one side and a "
+                        f"namespace on the other"
+                    )
+                elif isinstance(old_val, Parameters):
+                    new_namespace_prefix = list(namespace_prefix)
+                    new_namespace_prefix.append(key)
+                    ret[key] = old_val.unify(
+                        new_val, namespace_prefix=new_namespace_prefix
+                    )
+                else:
+                    ret[key] = new_val
+            else:
+                ret[key] = old_val
+
+        for (key, new_val) in new_params._data.items():
+            if key not in self:
+                ret[key] = new_val
+
+        return Parameters.from_mapping(ret, namespace_prefix=namespace_prefix)
+
     def creatable_directory(self, param: str) -> Path:
         """
         Get a directory which can be written to.
@@ -1234,14 +1281,13 @@ class YAMLParametersLoader:
                             )
                     else:
                         included_file_path = Path(included_file)
-                    previously_loaded = self._unify(
-                        previously_loaded,
+                    previously_loaded = previously_loaded.unify(
                         self._inner_load_from_string(
                             included_file_path.read_text(encoding="utf-8"),
                             error_string=str(included_file_path),
                             includes_are_relative_to=included_file_path.parent,
                             included_context=previously_loaded,
-                        ),
+                        )
                     )
                 del raw_yaml["_includes"]
 
@@ -1252,8 +1298,7 @@ class YAMLParametersLoader:
                     if k not in interpolation_context:
                         interpolation_context[k] = v
 
-            return self._unify(
-                previously_loaded,
+            return previously_loaded.unify(
                 self._interpolate(
                     Parameters.from_mapping(raw_yaml),
                     Parameters.from_mapping(interpolation_context),
@@ -1466,46 +1511,6 @@ class YAMLParametersLoader:
             ),
             namespace_prefix=to_interpolate.namespace_prefix,
         )
-
-    def _unify(
-        self,
-        old: Parameters,
-        new: Parameters,
-        *,
-        namespace_prefix: Sequence[str] = tuple(),
-    ) -> Parameters:
-        # pylint:disable=protected-access
-        ret = dict()
-        for (key, old_val) in old._data.items():
-            if key in new:
-                new_val = new._data[key]
-                if isinstance(old_val, Parameters) != isinstance(new_val, Parameters):
-                    if namespace_prefix:
-                        namespace_prefix_str = ".".join(namespace_prefix)
-                        param_str = f"{namespace_prefix_str}.{key}"
-                    else:
-                        param_str = key
-
-                    raise IOError(
-                        f"When unifying parameters, {param_str} is a parameter on one side and a "
-                        f"namespace on the other"
-                    )
-                elif isinstance(old_val, Parameters):
-                    new_namespace_prefix = list(namespace_prefix)
-                    new_namespace_prefix.append(key)
-                    ret[key] = self._unify(
-                        old_val, new_val, namespace_prefix=new_namespace_prefix
-                    )
-                else:
-                    ret[key] = new_val
-            else:
-                ret[key] = old_val
-
-        for (key, new_val) in new._data.items():
-            if key not in old:
-                ret[key] = new_val
-
-        return Parameters.from_mapping(ret, namespace_prefix=namespace_prefix)
 
 
 @attrs(frozen=True)
