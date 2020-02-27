@@ -11,7 +11,7 @@ class TestMiscUtils(TestCase):
             context_modules=["datetime"],
             expected_type=object,
         )
-        import datetime
+        import datetime  # pylint:disable=import-outside-toplevel
 
         self.assertTrue(isinstance(evaled, datetime.datetime))
 
