@@ -52,6 +52,29 @@ class TestParameters(TestCase):
             TestParameters.WRITING_REFERENCE, string_buffer.last_string_written
         )
 
+    def test_from_key_value_pairs(self):
+        params = Parameters.from_key_value_pairs(
+            [
+                ("foo", 2),
+                ("ns1.ns2.bar", "meep"),
+                ("ns1.ns2.world", "lala"),
+                ("ns1.ns2.ns3.param", "hello"),
+            ]
+        )
+
+        self.assertEqual(2, params.integer("foo"))
+        self.assertEqual("meep", params.string("ns1.ns2.bar"))
+        self.assertEqual("lala", params.string("ns1.ns2.world"))
+        self.assertEqual("hello", params.string("ns1.ns2.ns3.param"))
+
+        self.assertTrue(params.has_namespace("ns1"))
+        self.assertTrue(
+            "param" in params.namespace("ns1").namespace("ns2").namespace("ns3")
+        )
+
+        with self.assertRaises(RuntimeError):
+            Parameters.from_key_value_pairs([("", "can't have empty key")])
+
     def test_boolean(self):
         params = YAMLParametersLoader().load_string(
             """

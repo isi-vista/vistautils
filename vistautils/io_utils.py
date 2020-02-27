@@ -461,30 +461,37 @@ class _NullCharSink(CharSink):
         def __enter__(self) -> TextIO:
             return self
 
+        @property
         def name(self):
             return "NullCharSink"
 
+        @property
         def mode(self):
             return "w"
 
         def closed(self):
             return False
 
+        @property
         def buffer(self) -> BinaryIO:
             raise NotImplementedError(
                 "This isn't supposed to be part of the TextIO API"
                 " but the type-checker requires it"
             )
 
+        @property
         def encoding(self) -> str:
             return "utf-8"
 
+        @property
         def errors(self) -> Optional[str]:
             return None
 
+        @property
         def line_buffering(self) -> bool:
             return False
 
+        @property
         def newlines(self) -> Any:
             return "\n"
 
