@@ -14,6 +14,7 @@ from typing import (
     List,
     Mapping,
     Match,
+    MutableMapping,
     Optional,
     Pattern,
     Sequence,
@@ -119,6 +120,32 @@ class Parameters:
                 # this case will also be triggered if the value is already a parameters object
                 ret.append((key, val))
         return Parameters(ret, namespace_prefix=namespace_prefix)
+
+    @staticmethod
+    def from_key_value_pairs(
+        kv_pairs: Iterable[Tuple[str, Any]], namespace_separator="."
+    ) -> "Parameters":
+        """
+        Creates a `Parameters` from an `Iterable` of key-value pairs.
+
+        If a key name contains *namespace_separator` (default "."),
+        then the resulting `Parameters` will have the appropriate nested namespaces.
+        """
+        ret: MutableMapping[str, Any] = {}
+        for (k, v) in kv_pairs:
+            if k:
+                key_parts = k.split(namespace_separator)
+                bottom_level_param_name = key_parts[-1]
+                to_set_dict = ret
+                if len(key_parts) > 1:
+                    for key_part in key_parts[:-1]:
+                        if key_part not in to_set_dict:
+                            to_set_dict[key_part] = {}
+                        to_set_dict = to_set_dict[key_part]
+                to_set_dict[bottom_level_param_name] = v
+            else:
+                raise RuntimeError("Parameter names cannot be the empty string")
+        return Parameters.from_mapping(ret)
 
     def as_nested_dicts(self) -> Dict[str, Any]:
         """
