@@ -946,8 +946,8 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
             self._ranges_by_lower_bound, query_rng._lower_bound
         )
         if highest_range_at_or_above:
-            start_idx = self._ranges_by_lower_bound.values().index(
-                highest_range_at_or_above
+            start_idx = self._ranges_by_lower_bound.index(
+                highest_range_at_or_above._lower_bound
             )
             ret: ImmutableSet.Builder[Range[T]] = ImmutableSet.builder()
             for idx in range(start_idx, len(self._ranges_by_lower_bound)):
