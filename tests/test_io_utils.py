@@ -149,18 +149,18 @@ class TestIOUtils(TestCase):
 
         self.assertEqual(mapping, reloaded_map)
 
-    def test_file_lines_to_set(self):
-        tmp_dir = Path(tempfile.mkdtemp())
-        file_path = tmp_dir / "test"
 
-        with file_path.open("w") as wf:
-            wf.write("hello\nworld")
+def test_file_lines_to_set():
+    tmp_dir = Path(tempfile.mkdtemp())
+    file_path = tmp_dir / "test"
 
-        expected = immutableset(["hello", "world"])
-        result = file_lines_to_set(file_path)
+    with file_path.open("w") as wf:
+        wf.write("hello\nworld")
 
-        self.assertEqual(result, expected)
+    expected = immutableset(["hello", "world"])
+    result = file_lines_to_set(file_path)
 
+    assert result == expected
 
 def test_to_file_byte(tmp_path: Path) -> None:
     file_path = tmp_path / "test.txt"

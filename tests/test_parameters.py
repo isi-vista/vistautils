@@ -578,15 +578,15 @@ class TestParameters(TestCase):
         # noinspection PyTypeChecker
         self.assertEqual(obj, params.pickled_object_from_file("pickled_obj_file"))
 
-    def test_sub_namespaces(self):
-        inner_params = Parameters.from_mapping({"foo": "bar"})
-        outer_params = Parameters.from_mapping({"outer_foo": inner_params})
 
-        result = outer_params.sub_namespaces()
-        expected = immutableset([inner_params])
+def test_sub_namespaces():
+    inner_params = Parameters.from_mapping({"foo": "bar"})
+    outer_params = Parameters.from_mapping({"outer_foo": inner_params})
 
-        self.assertEqual(result, expected)
+    result = outer_params.sub_namespaces()
+    expected = immutableset([inner_params])
 
+    assert result == expected
 
 def test_assert_exactly_one_present():
     params = Parameters.from_mapping({"foo": "bar",})
