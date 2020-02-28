@@ -27,7 +27,7 @@ from typing import (
 
 from attr import attrib, attrs, evolve
 
-from immutablecollections import ImmutableDict, immutabledict
+from immutablecollections import ImmutableDict, ImmutableSet, immutabledict, immutableset
 from immutablecollections.converter_utils import _to_tuple
 
 from vistautils._graph import Digraph
@@ -997,6 +997,30 @@ class Parameters:
                 )
         else:
             return default
+
+    def assert_exactly_one_present(self, param_names: Iterable[str]) -> None:
+        params_present = [param for param in param_names if param in self]
+        if params_present:
+            if len(params_present) > 1:
+                raise ParameterError(
+                    f"At most one of {param_names} can be specified but "
+                    f"these were specified: {params_present}"
+                )
+        else:
+            raise ParameterError(
+                f"Exactly one of the parameters {param_names} should be specified, "
+                f"but none were."
+            )
+
+    def sub_namespaces(self) -> ImmutableSet["Parameters"]:
+        """
+        Get all namespaces nested immediately under this one.
+        """
+        return immutableset(
+            self.namespace(param_name)
+            for param_name in self._data
+            if self.has_namespace(param_name)
+        )
 
     def path_list_from_file(
         self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
