@@ -588,8 +588,9 @@ def test_sub_namespaces():
 
     assert result == expected
 
+
 def test_assert_exactly_one_present():
-    params = Parameters.from_mapping({"foo": "bar",})
+    params = Parameters.from_mapping({"foo": "bar"})
 
     params.assert_exactly_one_present(["foo", "foo2"])
 

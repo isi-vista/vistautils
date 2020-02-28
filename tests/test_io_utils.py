@@ -162,6 +162,7 @@ def test_file_lines_to_set():
 
     assert result == expected
 
+
 def test_to_file_byte(tmp_path: Path) -> None:
     file_path = tmp_path / "test.txt"
     byte_sink = ByteSink.to_file(file_path)
