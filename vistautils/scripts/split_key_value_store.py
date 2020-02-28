@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Split any key-value store in multiple key-value stores.
+Split a key-value store into multiple key-value stores.
 
 This is useful when splitting up input for parallel processing.
 
@@ -9,11 +9,26 @@ Currently the output stores are always zip file stores. This might become config
 in the future.
 
 The "input" namespace specifies the input key-value store. Please see
-byte_key_value_source_from_params for details on the parameters used to specify input.
+`byte_key_value_source_from_params` for details on the parameters used to specify input.
 
-The "num_slices" param specifies how many slices to create.
+There are two options for how the split should be done.
 
+If *num_slices* is specified, the input will be split into *num_slices* output stores
+of size as equal as possible.
 The list of zip files created will be stored in "_slices.txt" in the output directory.
+
+
+If an *explicit_split* namespace is specified, each sub-namespace of it will specified one split.
+The names of these sub-namespaces are ignored.
+Each sub-namespace will result in an output store being written to
+the file specified by its *output_file* parameter
+containing those mappings from the original key-value store
+whose keys are found in the file specified by its `keys_file` parameter.
+That file is expected to list one key per line.
+The split is expected to be exhaustive
+(that is, to include every mapping from the original key-value store)
+unless the parameter *explicit_split.must_be_exhaustive* is set to *False*.
+*explicit_split* is useful for tasks which have standard train/test splits.
 """
 from contextlib import ExitStack
 
