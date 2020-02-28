@@ -638,6 +638,8 @@ class BufferByteSink(ByteSink):
 def file_lines_to_set(file: Path) -> ImmutableSet[str]:
     """
     Gets a set consisting of all the lines in the specified file.
+
+    The iteration order of the returned set will match the order of the items in the file.
     """
     return immutableset(file.read_text(encoding="utf-8").split("\n"))
 
