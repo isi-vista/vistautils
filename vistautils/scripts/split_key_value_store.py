@@ -70,7 +70,7 @@ def _explicit_split(source: KeyValueSource[str, bytes], params: Parameters):
 
     for split_namespace in explicit_split_namespace.sub_namespaces():
         keys_for_split = file_lines_to_set(
-            explicit_split_namespace.existing_file("keys_file")
+            split_namespace.existing_file("keys_file")
         )
         with KeyValueSink.zip_bytes_sink(
             explicit_split_namespace.creatable_file("output_file")
