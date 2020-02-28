@@ -267,7 +267,7 @@ class KeyValueSource(Generic[K, V], KeyValueLinearSource[K, V], metaclass=ABCMet
         raise NotImplementedError()
 
     @abstractmethod
-    def get(self, key: K, _default: Optional[V]) -> Optional[V]:
+    def get(self, key: K, _default: Optional[V] = None) -> Optional[V]:
         """
         Get the value associated with the key.
 
@@ -529,7 +529,7 @@ class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
     def __getitem__(self, key: str) -> str:
         return CharSource.from_file(self.id_to_path[key]).read_all()
 
-    def get(self, key: str, _default: Optional[str]) -> Optional[str]:
+    def get(self, key: str, _default: Optional[str] = None) -> Optional[str]:
         if key in self.id_to_path:
             return self[key]
         else:
@@ -548,7 +548,7 @@ class _PathMappingBytesKeyValueSource(KeyValueSource[str, bytes]):
     def __getitem__(self, key: str) -> bytes:
         return ByteSource.from_file(self.id_to_path[key]).read()
 
-    def get(self, key: str, _default: Optional[bytes]) -> Optional[bytes]:
+    def get(self, key: str, _default: Optional[bytes] = None) -> Optional[bytes]:
         if key in self.id_to_path:
             return self[key]
         else:
@@ -581,7 +581,7 @@ class _ZipFileKeyValueSource(Generic[V], KeyValueSource[str, V], metaclass=ABCMe
             key, has_default_val=False, default_val=None
         )
 
-    def get(self, key: str, _default: Optional[V]) -> Optional[V]:
+    def get(self, key: str, _default: Optional[V] = None) -> Optional[V]:
         return self._internal_get(key, has_default_val=True, default_val=_default)
 
     def _internal_get(
@@ -772,7 +772,7 @@ class InterpretedLinearKeyValueSource(Generic[V], KeyValueLinearSource[str, V]):
 
 class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
     """
-    Key-value source which interprets the valus of another
+    Key-value source which interprets the values of another
     """
 
     def __init__(
@@ -786,9 +786,10 @@ class _InterpretedKeyValueSource(Generic[K, V], KeyValueSource[K, V]):
     def keys(self) -> Optional[AbstractSet[K]]:
         return self.wrapped_source.keys()
 
-    def get(self, key: K, _default: Optional[V]) -> Optional[V]:
+    def get(self, key: K, _default: Optional[V] = None) -> Optional[V]:
         # cannot use None as a "this is missing" marked in case underlying source really
-        # does return None as a value for some non-missing key.
+        # does return None as a value for some non-missing key
+        # and the user has a non-None default.
         sentinel = object()
         inner_get = self.wrapped_source.get(key, sentinel)  # type: ignore
         if inner_get is not sentinel:
