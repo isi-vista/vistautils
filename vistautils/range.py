@@ -941,7 +941,7 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
             return highest_range_beginning_at_or_below
         return None
 
-    def ranges_enclosed_by(self, query_rng) -> ImmutableSet[Range[T]]:
+    def ranges_enclosed_by(self, query_rng: Range[T]) -> ImmutableSet[Range[T]]:
         highest_range_at_or_above = _value_at_or_above(
             self._ranges_by_lower_bound, query_rng._lower_bound
         )
