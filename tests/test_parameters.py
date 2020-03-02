@@ -580,13 +580,23 @@ class TestParameters(TestCase):
 
 
 def test_sub_namespaces():
-    inner_params = Parameters.from_mapping({"foo": "bar"})
-    outer_params = Parameters.from_mapping({"outer_foo": inner_params})
+    foo_params = Parameters.from_mapping({"foo": "boo"})
+    bar_params = Parameters.from_mapping({"bar": "far"})
 
-    result = outer_params.sub_namespaces()
-    expected = immutableset([inner_params])
+    one_params = Parameters.from_mapping({"one_foo": foo_params})
+    deep_params = Parameters.from_mapping({"bariest": bar_params, "one": one_params})
 
-    assert result == expected
+    result_one = one_params.sub_namespaces()
+    result_deep = deep_params.sub_namespaces()
+    result_none = foo_params.sub_namespaces()
+    
+    expected_one = immutableset([foo_params])
+    expected_deep = immutableset([bar_params, one_params])
+    expected_none = immutableset()
+
+    assert result_one == expected_one
+    assert result_deep == expected_deep
+    assert result_none == expected_none
 
 
 def test_assert_exactly_one_present():
