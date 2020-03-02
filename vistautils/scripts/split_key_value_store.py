@@ -101,8 +101,8 @@ def _explicit_split(source: KeyValueSource[str, bytes], params: Parameters):
                     available_keys = source.keys()
                     if available_keys is not None:
                         error_message = (
-                            f"{error_message} Here are a few"
-                            "available keys: {str_list_limited(source.keys(), 10)}"
+                            f"{error_message} Here are a few"  # type: ignore
+                            f"available keys: {str_list_limited(source.keys(), 10)}"
                         )
                     raise RuntimeError(error_message)
 
