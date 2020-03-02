@@ -15,10 +15,7 @@ See `byte_key_value_sink_from_params` for details.
 """
 from typing import Set
 
-from vistautils.key_value import (
-    KeyValueSource,
-    byte_key_value_sink_from_params,
-)
+from vistautils.key_value import KeyValueSource, byte_key_value_sink_from_params
 from vistautils.parameters import Parameters
 from vistautils.parameters_only_entrypoint import parameters_only_entry_point
 

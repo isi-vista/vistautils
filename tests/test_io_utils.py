@@ -154,10 +154,17 @@ def test_file_lines_to_set():
     tmp_dir = Path(tempfile.mkdtemp())
     file_path = tmp_dir / "test"
 
-    with file_path.open("w") as wf:
-        wf.write("hello\nworld")
-
     expected = immutableset(["hello", "world"])
+
+    # without trailing newline
+    with file_path.open("w") as wf:
+        wf.write("hello\nworld\nhello")
+
+    result = file_lines_to_set(file_path)
+
+    # with trailing newline
+    with file_path.open("w") as wf:
+        wf.write("hello\nworld\nhello\n")
     result = file_lines_to_set(file_path)
 
     assert result == expected
