@@ -590,9 +590,21 @@ def test_sub_namespaces():
 
 
 def test_assert_exactly_one_present():
-    params = Parameters.from_mapping({"foo": "bar"})
+    params = Parameters.from_mapping({"foo": "bar", "moo": "cow"})
 
     params.assert_exactly_one_present(["foo", "foo2"])
+
+    with pytest.raises(
+        ParameterError,
+        match="At most one of .* can be specified " "but these were specified: .*",
+    ):
+        params.assert_exactly_one_present(["foo", "moo"])
+
+    with pytest.raises(
+        ParameterError,
+        match="Exactly one of the parameters .* " "should be specified, but none were",
+    ):
+        params.assert_exactly_one_present(["not-here"])
 
 
 def test_interpolating_nested_parameters(tmp_path):
