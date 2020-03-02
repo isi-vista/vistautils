@@ -583,20 +583,19 @@ def test_sub_namespaces():
     foo_params = Parameters.from_mapping({"foo": "boo"})
     bar_params = Parameters.from_mapping({"bar": "far"})
 
-    one_params = Parameters.from_mapping({"one_foo": foo_params})
-    deep_params = Parameters.from_mapping({"bariest": bar_params, "one": one_params})
+    result_none = foo_params.sub_namespaces()
+    expected_none = immutableset()
+    assert result_none == expected_none
 
+    one_params = Parameters.from_mapping({"one_foo": foo_params})
     result_one = one_params.sub_namespaces()
     expected_one = immutableset([foo_params])
     assert result_one == expected_one
 
+    deep_params = Parameters.from_mapping({"bariest": bar_params, "one": one_params})
     result_deep = deep_params.sub_namespaces()
     expected_deep = immutableset([bar_params, one_params])
     assert result_deep == expected_deep
-
-    result_none = foo_params.sub_namespaces()
-    expected_none = immutableset()
-    assert result_none == expected_none
 
 
 def test_assert_exactly_one_present():
