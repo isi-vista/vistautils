@@ -1,9 +1,10 @@
 from pathlib import Path
-from pytest import raises
 
 from vistautils.key_value import KeyValueSink, KeyValueSource
 from vistautils.parameters import Parameters
 from vistautils.scripts import split_key_value_store
+
+from pytest import raises
 
 
 def test_split_key_value_store_explicit_split(tmp_path: Path):
@@ -25,7 +26,10 @@ def test_split_key_value_store_explicit_split(tmp_path: Path):
     input_params = Parameters.from_mapping({"type": "zip", "path": str(key_value_path)})
 
     non_exhaustive = Parameters.from_mapping(
-        {"input": input_params, "explicit_split": Parameters.from_mapping({"foo": foo_params})}
+        {
+            "input": input_params,
+            "explicit_split": Parameters.from_mapping({"foo": foo_params}),
+        }
     )
     with raises(
         RuntimeError,
@@ -33,7 +37,7 @@ def test_split_key_value_store_explicit_split(tmp_path: Path):
             "Expected the split to be a partition, but .* were not included in any output split, "
             "including .*. If you did not intend the split to be exhaustive, please specify set "
             "parameter must_be_exhaustive to False"
-        )
+        ),
     ):
         split_key_value_store.main(non_exhaustive)
 
