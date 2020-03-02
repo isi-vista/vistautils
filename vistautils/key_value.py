@@ -21,7 +21,7 @@ from zipfile import ZipFile
 
 from attr import attrib, attrs
 
-from immutablecollections import ImmutableDict, ImmutableSet, immutabledict
+from immutablecollections import ImmutableDict, immutabledict, immutableset
 
 from vistautils.io_utils import (
     ByteSink,
@@ -47,7 +47,11 @@ def _identity(x: str) -> str:
 def _read_keys_from_keys_file(zip_file: ZipFile) -> Optional[AbstractSet[str]]:
     try:
         keys_data = zip_file.read("__keys")
-        return ImmutableSet.of(keys_data.decode("utf-8").split("\n"))
+        if keys_data:
+            return immutableset(keys_data.decode("utf-8").split("\n"))
+        else:
+            # If keys_data is empty, the "split" above will return [''], which is wrong.
+            return immutableset()
     except KeyError:
         return None
 
