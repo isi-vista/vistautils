@@ -587,15 +587,15 @@ def test_sub_namespaces():
     deep_params = Parameters.from_mapping({"bariest": bar_params, "one": one_params})
 
     result_one = one_params.sub_namespaces()
-    result_deep = deep_params.sub_namespaces()
-    result_none = foo_params.sub_namespaces()
-    
     expected_one = immutableset([foo_params])
-    expected_deep = immutableset([bar_params, one_params])
-    expected_none = immutableset()
-
     assert result_one == expected_one
+
+    result_deep = deep_params.sub_namespaces()
+    expected_deep = immutableset([bar_params, one_params])
     assert result_deep == expected_deep
+
+    result_none = foo_params.sub_namespaces()
+    expected_none = immutableset()
     assert result_none == expected_none
 
 
