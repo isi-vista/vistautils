@@ -25,7 +25,7 @@ def test_split_key_value_store_explicit_split(tmp_path: Path):
 
     input_params = Parameters.from_mapping({"type": "zip", "path": str(key_value_path)})
 
-    non_exhaustive = Parameters.from_mapping(
+    non_exhaustive_disallowed = Parameters.from_mapping(
         {
             "input": input_params,
             "explicit_split": Parameters.from_mapping({"foo": foo_params}),
@@ -43,7 +43,7 @@ def test_split_key_value_store_explicit_split(tmp_path: Path):
 
     output_foo.unlink()
 
-    non_exhaustive = Parameters.from_mapping(
+    non_exhaustive_allowed = Parameters.from_mapping(
         {
             "input": input_params,
             "explicit_split": Parameters.from_mapping({"foo": foo_params}),
@@ -62,6 +62,7 @@ def test_split_key_value_store_explicit_split(tmp_path: Path):
 
     output_foo.unlink()
 
+    # Testing full exhaustive script and handling of an empty keys file
     output_bar = tmp_path / "bar"
     keys_bar = tmp_path / "bar_keys"
     with keys_bar.open("w") as keys:
