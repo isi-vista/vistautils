@@ -40,10 +40,10 @@ def test_split_key_value_store_explicit_split(tmp_path: Path):
 
     key_value_path = tmp_path / "key_value"
     with KeyValueSink.zip_character_sink(key_value_path) as sink:
-        sink.put("key1", "value1")
-        sink.put("key2", "value2")
-        sink.put("key3", "value3")
-        sink.put("key4", "value4")
+        sink["key1"] = "value1"
+        sink["key2"] = "value2"
+        sink["key3"] = "value3"
+        sink["key4"] = "value4"
 
     input_params = Parameters.from_mapping({"type": "zip", "path": str(key_value_path)})
 
