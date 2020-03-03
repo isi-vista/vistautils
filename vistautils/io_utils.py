@@ -26,7 +26,7 @@ from zipfile import ZipFile
 
 from attr import attrib, attrs, validators
 
-from immutablecollections import ImmutableDict
+from immutablecollections import ImmutableDict, ImmutableSet, immutableset
 
 from vistautils.misc_utils import pathify
 
@@ -633,6 +633,19 @@ class BufferByteSink(ByteSink):
                 super().__exit__(exc_type, exc_val, exc_tb)
 
         return BytesFileLike()
+
+
+def file_lines_to_set(file: Path) -> ImmutableSet[str]:
+    """
+    Gets a set consisting of all the lines in the specified file.
+
+    The iteration order of the returned set will match the order of the items in the file.
+
+    Any blank lines are omitted.
+    """
+    return immutableset(
+        line for line in file.read_text(encoding="utf-8").split("\n") if line
+    )
 
 
 def write_doc_id_to_file_map(

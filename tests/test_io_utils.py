@@ -4,13 +4,14 @@ from pathlib import Path
 from unittest import TestCase
 from zipfile import ZipFile
 
-from immutablecollections import ImmutableDict
+from immutablecollections import ImmutableDict, immutableset
 
 from vistautils.io_utils import (
     ByteSink,
     ByteSource,
     CharSink,
     CharSource,
+    file_lines_to_set,
     read_doc_id_to_file_map,
     write_doc_id_to_file_map,
 )
@@ -147,6 +148,26 @@ class TestIOUtils(TestCase):
         )
 
         self.assertEqual(mapping, reloaded_map)
+
+
+def test_file_lines_to_set():
+    tmp_dir = Path(tempfile.mkdtemp())
+    file_path = tmp_dir / "test"
+
+    expected = immutableset(["hello", "world"])
+
+    # without trailing newline
+    with file_path.open("w") as wf:
+        wf.write("hello\nworld\nhello")
+
+    result = file_lines_to_set(file_path)
+
+    # with trailing newline
+    with file_path.open("w") as wf:
+        wf.write("hello\nworld\nhello\n")
+    result = file_lines_to_set(file_path)
+
+    assert result == expected
 
 
 def test_to_file_byte(tmp_path: Path) -> None:

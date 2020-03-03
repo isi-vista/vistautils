@@ -8,7 +8,7 @@ from unittest import TestCase
 
 from attr import attrib, attrs, validators
 
-from immutablecollections import immutabledict
+from immutablecollections import immutabledict, immutableset
 
 from vistautils._graph import ParameterInterpolationError
 from vistautils.io_utils import CharSink
@@ -577,6 +577,43 @@ class TestParameters(TestCase):
 
         # noinspection PyTypeChecker
         self.assertEqual(obj, params.pickled_object_from_file("pickled_obj_file"))
+
+
+def test_sub_namespaces():
+    foo_params = Parameters.from_mapping({"foo": "boo"})
+    bar_params = Parameters.from_mapping({"bar": "far"})
+
+    result_none = foo_params.sub_namespaces()
+    expected_none = immutableset()
+    assert result_none == expected_none
+
+    one_params = Parameters.from_mapping({"one_foo": foo_params})
+    result_one = one_params.sub_namespaces()
+    expected_one = immutableset([foo_params])
+    assert result_one == expected_one
+
+    deep_params = Parameters.from_mapping({"bariest": bar_params, "one": one_params})
+    result_deep = deep_params.sub_namespaces()
+    expected_deep = immutableset([bar_params, one_params])
+    assert result_deep == expected_deep
+
+
+def test_assert_exactly_one_present():
+    params = Parameters.from_mapping({"foo": "bar", "moo": "cow"})
+
+    params.assert_exactly_one_present(["foo", "foo2"])
+
+    with pytest.raises(
+        ParameterError,
+        match="At most one of .* can be specified " "but these were specified: .*",
+    ):
+        params.assert_exactly_one_present(["foo", "moo"])
+
+    with pytest.raises(
+        ParameterError,
+        match="Exactly one of the parameters .* " "should be specified, but none were",
+    ):
+        params.assert_exactly_one_present(["not-here"])
 
 
 def test_interpolating_nested_parameters(tmp_path):

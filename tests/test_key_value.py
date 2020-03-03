@@ -211,3 +211,14 @@ def test_doc_id_from_file(tmp_path: Path) -> None:
     ) as sink:
         assert sink["world"].decode("utf-8") == "hello"
         assert sink["ping"].decode("utf-8") == "pong"
+
+
+def test_empty_zip_key_value(tmp_path: Path) -> None:
+    zip_path = tmp_path / "store.zip"
+
+    # Make any empty store.
+    with KeyValueSink.zip_bytes_sink(zip_path) as _:
+        pass
+
+    with KeyValueSource.zip_bytes_source(zip_path) as source:
+        assert set(source.keys()) == set()
