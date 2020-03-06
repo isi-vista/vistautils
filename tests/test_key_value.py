@@ -205,14 +205,14 @@ def test_doc_id_from_file(tmp_path: Path) -> None:
     with KeyValueSource.binary_from_doc_id_to_file_map(tmp_path / "example.tab") as sink:
         assert sink.get("world").decode("utf-8") == "hello"
         assert sink.get("ping").decode("utf-8") == "pong"
-        assert sink.get("nonexistent") == None
+        assert sink.get("nonexistent") is None
 
     with KeyValueSource.binary_from_doc_id_to_file_map(
         str(tmp_path / "example.tab")
     ) as sink:
         assert sink.get("world").decode("utf-8") == "hello"
         assert sink.get("ping").decode("utf-8") == "pong"
-        assert sink.get("nonexistent") == None
+        assert sink.get("nonexistent") is None
 
 
 def test_empty_zip_key_value(tmp_path: Path) -> None:
@@ -251,4 +251,4 @@ def test_from_path_mapping_char(tmp_path: Path):
         for (k, v) in reference.items():
             assert source.get(k) == v
 
-        assert source.get("Nonexistent") == None
+        assert source.get("Nonexistent") is None
