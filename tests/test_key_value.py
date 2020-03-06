@@ -222,3 +222,29 @@ def test_empty_zip_key_value(tmp_path: Path) -> None:
 
     with KeyValueSource.zip_bytes_source(zip_path) as source:
         assert set(source.keys()) == set()
+
+
+def test_from_path_mapping(tmp_path: Path):
+    value1 = tmp_path / "value1"
+    with value1.open("w") as vf:
+        vf.write("hello")
+
+    value2 = tmp_path / "value2"
+    with value2.open("w") as vf:
+        vf.write("world")
+
+    value3 = tmp_path / "value3"
+    with value3.open("w") as vf:
+        vf.write("fooey")
+
+    value4 = tmp_path / "value4"
+    with value4.open("w") as vf:
+        vf.write("batty")
+
+    reference = {"key1": "hello", "key2": "world", "key3": "fooey", "key4": "batty"}
+
+    with KeyValueSource.from_path_mapping(
+        {"key1": value1, "key2": value2, "key3": value3, "key4": value4}
+    ) as source:
+        for (k, v) in reference.items():
+            assert source[k] == v
