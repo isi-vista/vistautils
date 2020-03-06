@@ -247,4 +247,6 @@ def test_from_path_mapping(tmp_path: Path):
         {"key1": value1, "key2": value2, "key3": value3, "key4": value4}
     ) as source:
         for (k, v) in reference.items():
-            assert source[k] == v
+            assert source.get(k) == v
+
+    assert source.get("Nonexistent") == None
