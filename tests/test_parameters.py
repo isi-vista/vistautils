@@ -680,6 +680,13 @@ def test_relative_path_list(tmp_path):
     ) == [Path("/hello/world/fred/bob.txt"), Path("/hello/world/foo.txt")]
 
 
+def test_relative_path_from_yaml_list():
+    params = Parameters.from_mapping({"file_list": ["fred/bob.txt", "foo.txt"]})
+    assert list(
+        params.path_list_from_file("file_list", resolve_relative_to=Path("/hello/world"))
+    ) == [Path("/hello/world/fred/bob.txt"), Path("/hello/world/foo.txt")]
+
+
 def test_relative_path_map(tmp_path):
     file_map = tmp_path / "map.txt"
     CharSink.to_file(file_map).write("\n".join(["one\tfred/bob.txt", "two\tfoo.txt"]))

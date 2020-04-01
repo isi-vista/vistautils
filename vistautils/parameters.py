@@ -1026,8 +1026,11 @@ class Parameters:
         self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
     ) -> Sequence[Path]:
         """
-        Gets a list of paths from the file pointed to by param
+        Gets a list of paths from *param*.
 
+        If *param* is list-valued, each element of *param* is interpreted as a *Path*.
+
+        Otherwise, *param* is assumed to point to a file listing paths.
         The paths are assumed to be listed one-per-line. Blank lines and lines
         where the first non-whitespace character is '#' are skipped.
 
@@ -1037,18 +1040,23 @@ class Parameters:
         All the paths in the file
         will be resolved relative to *resolve_relative_to* if it is specified.
         """
-        file_list_file = self.existing_file(param)
-        with open(str(file_list_file), "r", encoding="utf-8") as inp:
-            ret = [
-                resolve_relative_to / line.strip()
-                if resolve_relative_to
-                else Path(line.strip())
-                for line in inp
+        raw_param_value = self._private_get(param)
+        if isinstance(raw_param_value, Sequence):
+            path_strings = self.arbitrary_list(param)
+        else:
+            path_strings = [
+                line.strip()
+                for line in self.existing_file(param)
+                .read_text(encoding="utf-8")
+                .splitlines()
                 if line.strip() and not line.strip().startswith("#")
             ]
-            if log_name:
-                _logger.info("Loaded %s %s from %s", len(ret), log_name, file_list_file)
-            return ret
+        return tuple(
+            resolve_relative_to / path_string.strip()
+            if resolve_relative_to
+            else Path(path_string.strip())
+            for path_string in path_strings
+        )
 
     def path_map_from_file(
         self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
