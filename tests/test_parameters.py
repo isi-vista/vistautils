@@ -36,6 +36,7 @@ class TestParameters(TestCase):
                     - 2
                     - 3
                     meep: 2
+            some_path: /hello/world
         """
     )
 
@@ -44,6 +45,7 @@ class TestParameters(TestCase):
             {
                 "hello": "world",
                 "moo": {"nested_dict": {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]}},
+                "some_path": Path("/hello/world"),
             }
         )
         string_buffer = CharSink.to_string()

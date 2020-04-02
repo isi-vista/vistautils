@@ -1581,7 +1581,7 @@ class YAMLParametersWriter:
             sink = CharSink.to_file(sink)
         with sink.open() as out:
             yaml.dump(
-                params.as_nested_dicts(),
+                self._preprocess_dicts(params.as_nested_dicts()),
                 out,
                 # prevents leaf dictionaries from being written in the
                 # human unfriendly compact style
@@ -1589,3 +1589,21 @@ class YAMLParametersWriter:
                 indent=4,
                 width=78,
             )
+
+    def _preprocess_dicts(self, param_node: Any) -> Any:
+        r"""
+        Ensure that objects are written to param files in certain canonical ways.
+
+        Right now this just ensures that `Path`\ s are written out as strings
+        instead of as YAML objects,
+        but it could do other things in the future.
+
+        We don't do this using pyyaml representers because there doesn't seem to be a documented way
+        to register a representer non-globally.
+        """
+        if isinstance(param_node, Path):
+            return str(param_node)
+        elif isinstance(param_node, Dict):
+            return {k: self._preprocess_dicts(v) for (k, v) in param_node.items()}
+        else:
+            return param_node
