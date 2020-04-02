@@ -1041,22 +1041,30 @@ class Parameters:
         will be resolved relative to *resolve_relative_to* if it is specified.
         """
         raw_param_value = self._private_get(param)
-        if isinstance(raw_param_value, Sequence):
-            path_strings = self.arbitrary_list(param)
-        else:
+        if isinstance(raw_param_value, str):
+            list_file = self.existing_file(param)
             path_strings = [
                 line.strip()
-                for line in self.existing_file(param)
-                .read_text(encoding="utf-8")
-                .splitlines()
+                for line in list_file.read_text(encoding="utf-8").splitlines()
                 if line.strip() and not line.strip().startswith("#")
             ]
-        return tuple(
+            location_read_from = f"file {list_file.absolute()!s}"
+        else:
+            path_strings = self.arbitrary_list(param)
+            location_read_from = "parameter file directly"
+        ret = tuple(
             resolve_relative_to / path_string.strip()
             if resolve_relative_to
             else Path(path_string.strip())
             for path_string in path_strings
         )
+        logging.info(
+            "Got list of %s %ss from %s",
+            len(ret),
+            log_name if log_name else "file",
+            location_read_from,
+        )
+        return ret
 
     def path_map_from_file(
         self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
