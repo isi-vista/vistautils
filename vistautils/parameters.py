@@ -16,7 +16,6 @@ from typing import (
     Match,
     MutableMapping,
     Optional,
-    Pattern,
     Sequence,
     Tuple,
     Type,
@@ -25,7 +24,7 @@ from typing import (
     overload,
 )
 
-from attr import attrib, attrs, evolve
+from attr import attrib, attrs
 
 from immutablecollections import ImmutableDict, ImmutableSet, immutabledict, immutableset
 from immutablecollections.converter_utils import _to_tuple
@@ -1596,6 +1595,7 @@ class YAMLParametersWriter:
                 default_flow_style=False,
                 indent=4,
                 width=78,
+                sort_keys=False,
             )
 
     def _preprocess_dicts(self, param_node: Any) -> Any:
@@ -1613,5 +1613,15 @@ class YAMLParametersWriter:
             return str(param_node)
         elif isinstance(param_node, Dict):
             return {k: self._preprocess_dicts(v) for (k, v) in param_node.items()}
-        else:
+        elif isinstance(param_node, (str, int, float)):
             return param_node
+        # we need to check this explicitly because otherwise
+        # they would trigger the check for sequences below
+        elif isinstance(param_node, (bytes, bytearray)):
+            raise RuntimeError("bytes and bytearrays are not legal parameter values")
+        elif isinstance(param_node, Sequence):
+            return [self._preprocess_dicts(item) for item in param_node]
+        else:
+            raise RuntimeError(
+                f"Don't know how to serialized out {param_node} as a parameter value"
+            )

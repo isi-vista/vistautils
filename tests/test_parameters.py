@@ -31,13 +31,16 @@ class TestParameters(TestCase):
             moo:
                 nested_dict:
                     lalala: fooo
+                    meep: 2
                     list:
                     - 1
                     - 2
                     - 3
-                    meep: 2
             some_path: /hello/world
-        """
+            path_list:
+            - /meep/lalala
+            - /moo/cow
+            """
     )
 
     def test_writing_to_yaml(self):
@@ -46,6 +49,7 @@ class TestParameters(TestCase):
                 "hello": "world",
                 "moo": {"nested_dict": {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]}},
                 "some_path": Path("/hello/world"),
+                "path_list": [Path("/meep/lalala"), Path("/moo/cow")],
             }
         )
         string_buffer = CharSink.to_string()
@@ -53,6 +57,21 @@ class TestParameters(TestCase):
         self.assertEqual(
             TestParameters.WRITING_REFERENCE, string_buffer.last_string_written
         )
+
+        with self.assertRaises(RuntimeError):
+            YAMLParametersWriter().write(
+                Parameters.from_mapping({"illegal": b"bytes"}), CharSink.to_nowhere()
+            )
+
+        with self.assertRaises(RuntimeError):
+            YAMLParametersWriter().write(
+                Parameters.from_mapping({"illegal": bytearray()}), CharSink.to_nowhere()
+            )
+
+        with self.assertRaises(RuntimeError):
+            YAMLParametersWriter().write(
+                Parameters.from_mapping({"illegal": Parameters}), CharSink.to_nowhere()
+            )
 
     def test_from_key_value_pairs(self):
         params = Parameters.from_key_value_pairs(
