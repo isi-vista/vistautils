@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from vistautils import class_utils
 from vistautils.class_utils import fully_qualified_name, fully_qualified_name_of_type
 from vistautils.range import ImmutableRangeSet
 
@@ -25,3 +26,5 @@ class TestClassUtils(TestCase):
         # test mypy accepts passing type names to fully_qualified_name
         fully_qualified_name(ImmutableRangeSet)
         fully_qualified_name(int)
+
+        self.assertEqual("vistautils.class_utils", fully_qualified_name(class_utils))
