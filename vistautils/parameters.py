@@ -1611,7 +1611,7 @@ class YAMLParametersWriter:
         """
         if isinstance(param_node, Path):
             return str(param_node)
-        elif isinstance(param_node, Dict):
+        elif isinstance(param_node, Mapping):
             return {k: self._preprocess_dicts(v) for (k, v) in param_node.items()}
         elif isinstance(param_node, (str, int, float)):
             return param_node
