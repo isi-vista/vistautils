@@ -16,7 +16,6 @@ from typing import (
     Match,
     MutableMapping,
     Optional,
-    Pattern,
     Sequence,
     Tuple,
     Type,
@@ -25,7 +24,7 @@ from typing import (
     overload,
 )
 
-from attr import attrib, attrs, evolve
+from attr import attrib, attrs
 
 from immutablecollections import ImmutableDict, ImmutableSet, immutabledict, immutableset
 from immutablecollections.converter_utils import _to_tuple
@@ -1026,8 +1025,11 @@ class Parameters:
         self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
     ) -> Sequence[Path]:
         """
-        Gets a list of paths from the file pointed to by param
+        Gets a list of paths from *param*.
 
+        If *param* is list-valued, each element of *param* is interpreted as a *Path*.
+
+        Otherwise, *param* is assumed to point to a file listing paths.
         The paths are assumed to be listed one-per-line. Blank lines and lines
         where the first non-whitespace character is '#' are skipped.
 
@@ -1037,18 +1039,31 @@ class Parameters:
         All the paths in the file
         will be resolved relative to *resolve_relative_to* if it is specified.
         """
-        file_list_file = self.existing_file(param)
-        with open(str(file_list_file), "r", encoding="utf-8") as inp:
-            ret = [
-                resolve_relative_to / line.strip()
-                if resolve_relative_to
-                else Path(line.strip())
-                for line in inp
+        raw_param_value = self._private_get(param)
+        if isinstance(raw_param_value, str):
+            list_file = self.existing_file(param)
+            path_strings = [
+                line.strip()
+                for line in list_file.read_text(encoding="utf-8").splitlines()
                 if line.strip() and not line.strip().startswith("#")
             ]
-            if log_name:
-                _logger.info("Loaded %s %s from %s", len(ret), log_name, file_list_file)
-            return ret
+            location_read_from = f"file {list_file.absolute()!s}"
+        else:
+            path_strings = self.arbitrary_list(param)
+            location_read_from = "parameter file directly"
+        ret = tuple(
+            resolve_relative_to / path_string.strip()
+            if resolve_relative_to
+            else Path(path_string.strip())
+            for path_string in path_strings
+        )
+        logging.info(
+            "Got list of %s %ss from %s",
+            len(ret),
+            log_name if log_name else "file",
+            location_read_from,
+        )
+        return ret
 
     def path_map_from_file(
         self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
@@ -1573,11 +1588,40 @@ class YAMLParametersWriter:
             sink = CharSink.to_file(sink)
         with sink.open() as out:
             yaml.dump(
-                params.as_nested_dicts(),
+                self._preprocess_dicts(params.as_nested_dicts()),
                 out,
                 # prevents leaf dictionaries from being written in the
                 # human unfriendly compact style
                 default_flow_style=False,
                 indent=4,
                 width=78,
+                sort_keys=False,
+            )
+
+    def _preprocess_dicts(self, param_node: Any) -> Any:
+        r"""
+        Ensure that objects are written to param files in certain canonical ways.
+
+        Right now this just ensures that `Path`\ s are written out as strings
+        instead of as YAML objects,
+        but it could do other things in the future.
+
+        We don't do this using pyyaml representers because there doesn't seem to be a documented way
+        to register a representer non-globally.
+        """
+        if isinstance(param_node, Path):
+            return str(param_node)
+        elif isinstance(param_node, Mapping):
+            return {k: self._preprocess_dicts(v) for (k, v) in param_node.items()}
+        elif isinstance(param_node, (str, int, float)):
+            return param_node
+        # we need to check this explicitly because otherwise
+        # they would trigger the check for sequences below
+        elif isinstance(param_node, (bytes, bytearray)):
+            raise RuntimeError("bytes and bytearrays are not legal parameter values")
+        elif isinstance(param_node, Sequence):
+            return [self._preprocess_dicts(item) for item in param_node]
+        else:
+            raise RuntimeError(
+                f"Don't know how to serialize out {param_node} as a parameter value"
             )

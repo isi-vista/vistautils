@@ -21,6 +21,7 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
 )
 from zipfile import ZipFile
 
@@ -283,6 +284,10 @@ class CharSink(metaclass=ABCMeta):
 
         UTF-8 encoding will be used.
         """
+        if isinstance(p, str):
+            p = Path(p)
+        if p.parent:
+            p.parent.mkdir(parents=True, exist_ok=True)
         return _FileCharSink(p)
 
     @staticmethod
@@ -431,10 +436,12 @@ class ByteSink(metaclass=ABCMeta):
         return BufferByteSink()
 
     @staticmethod
-    def to_file(path: Union[str, Path]) -> "ByteSink":
+    def to_file(path: Path) -> "ByteSink":
         """
         Get a sink which writes to the given file.
         """
+        if path.parent:
+            path.parent.mkdir(parents=True, exist_ok=True)
         return _FileByteSink(path)
 
     def write(self, data: bytes) -> None:
@@ -578,18 +585,18 @@ class StringCharSink(CharSink):
 
 @attrs(slots=True, frozen=True)
 class _FileCharSink(CharSink):
-    _path: Union[Path, str] = attrib(validator=validators.instance_of(tuple((Path, str))))
+    _path: Path = attrib(validator=validators.instance_of(Path))
 
     def open(self) -> TextIO:
-        return open(self._path, "w")
+        return cast(TextIO, self._path.open(mode="w", encoding="utf-8"))
 
 
 @attrs(slots=True, frozen=True)
 class _FileByteSink(ByteSink):
-    _path: Union[Path, str] = attrib(validator=validators.instance_of(tuple((Path, str))))
+    _path: Path = attrib(validator=validators.instance_of(Path))
 
     def open(self) -> BinaryIO:
-        return open(self._path, "wb")
+        return cast(BinaryIO, self._path.open(mode="wb"))
 
 
 @attrs(slots=True, frozen=True)

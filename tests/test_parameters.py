@@ -31,12 +31,16 @@ class TestParameters(TestCase):
             moo:
                 nested_dict:
                     lalala: fooo
+                    meep: 2
                     list:
                     - 1
                     - 2
                     - 3
-                    meep: 2
-        """
+            some_path: /hello/world
+            path_list:
+            - /meep/lalala
+            - /moo/cow
+            """
     )
 
     def test_writing_to_yaml(self):
@@ -44,6 +48,8 @@ class TestParameters(TestCase):
             {
                 "hello": "world",
                 "moo": {"nested_dict": {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]}},
+                "some_path": Path("/hello/world"),
+                "path_list": [Path("/meep/lalala"), Path("/moo/cow")],
             }
         )
         string_buffer = CharSink.to_string()
@@ -51,6 +57,27 @@ class TestParameters(TestCase):
         self.assertEqual(
             TestParameters.WRITING_REFERENCE, string_buffer.last_string_written
         )
+
+        with self.assertRaisesRegex(
+            RuntimeError, "bytes and bytearrays are not legal parameter values"
+        ):
+            YAMLParametersWriter().write(
+                Parameters.from_mapping({"illegal": b"bytes"}), CharSink.to_nowhere()
+            )
+
+        with self.assertRaisesRegex(
+            RuntimeError, "bytes and bytearrays are not legal parameter values"
+        ):
+            YAMLParametersWriter().write(
+                Parameters.from_mapping({"illegal": bytearray()}), CharSink.to_nowhere()
+            )
+
+        with self.assertRaisesRegex(
+            RuntimeError, "Don't know how to serialize out .* as a parameter value"
+        ):
+            YAMLParametersWriter().write(
+                Parameters.from_mapping({"illegal": Parameters}), CharSink.to_nowhere()
+            )
 
     def test_from_key_value_pairs(self):
         params = Parameters.from_key_value_pairs(
@@ -675,6 +702,13 @@ def test_relative_path_list(tmp_path):
     file_list = tmp_path / "list.txt"
     CharSink.to_file(file_list).write("\n".join(["fred/bob.txt", "foo.txt"]))
     params = Parameters.from_mapping({"file_list": str(file_list)})
+    assert list(
+        params.path_list_from_file("file_list", resolve_relative_to=Path("/hello/world"))
+    ) == [Path("/hello/world/fred/bob.txt"), Path("/hello/world/foo.txt")]
+
+
+def test_relative_path_from_yaml_list():
+    params = Parameters.from_mapping({"file_list": ["fred/bob.txt", "foo.txt"]})
     assert list(
         params.path_list_from_file("file_list", resolve_relative_to=Path("/hello/world"))
     ) == [Path("/hello/world/fred/bob.txt"), Path("/hello/world/foo.txt")]
