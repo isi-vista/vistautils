@@ -1623,5 +1623,5 @@ class YAMLParametersWriter:
             return [self._preprocess_dicts(item) for item in param_node]
         else:
             raise RuntimeError(
-                f"Don't know how to serialized out {param_node} as a parameter value"
+                f"Don't know how to serialize out {param_node} as a parameter value"
             )

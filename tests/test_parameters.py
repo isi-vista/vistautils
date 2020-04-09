@@ -58,17 +58,17 @@ class TestParameters(TestCase):
             TestParameters.WRITING_REFERENCE, string_buffer.last_string_written
         )
 
-        with self.assertRaises(RuntimeError):
+        with self.assertRaisesRegex(RuntimeError, "bytes and bytearrays are not legal parameter values"):
             YAMLParametersWriter().write(
                 Parameters.from_mapping({"illegal": b"bytes"}), CharSink.to_nowhere()
             )
 
-        with self.assertRaises(RuntimeError):
+        with self.assertRaisesRegex(RuntimeError, "bytes and bytearrays are not legal parameter values"):
             YAMLParametersWriter().write(
                 Parameters.from_mapping({"illegal": bytearray()}), CharSink.to_nowhere()
             )
 
-        with self.assertRaises(RuntimeError):
+        with self.assertRaisesRegex(RuntimeError, "Don't know how to serialize out .* as a parameter value"):
             YAMLParametersWriter().write(
                 Parameters.from_mapping({"illegal": Parameters}), CharSink.to_nowhere()
             )
