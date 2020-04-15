@@ -182,7 +182,10 @@ class Parameters:
                 yield f"{prefix}{key}", value
 
     def unify(
-        self, new_params: "Parameters", *, namespace_prefix: Sequence[str] = tuple()
+        self,
+        new_params: Union[Mapping[Any, Any], "Parameters"],
+        *,
+        namespace_prefix: Sequence[str] = tuple(),
     ) -> "Parameters":
         """
         Get a new `Parameters` whose content is the unification of this `Parameters`
@@ -195,7 +198,13 @@ class Parameters:
 
         The *namespace_prefix* is used to specify a prefix to apply to the parameter names
         of both parameter sets when generating exception messages.
+
+        For convenience, if a non-`Parameters` mapping is specified for `new_params`,
+        `Parameters.from_mapping` will be applied to it.
         """
+        if not isinstance(new_params, Parameters):
+            new_params = Parameters.from_mapping(new_params)
+
         ret = dict()
         for (key, old_val) in self._data.items():
             if key in new_params:
