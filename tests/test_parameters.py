@@ -498,7 +498,7 @@ class TestParameters(TestCase):
                 return TestObj(params.integer("my_int"))
 
         simple_params = Parameters.from_mapping(
-            {"test": {"value": "TestObj", "my_int": 5}}
+            {"test": {"factory": "TestObj", "my_int": 5}}
         )
 
         self.assertEqual(
@@ -511,7 +511,7 @@ class TestParameters(TestCase):
         class ArglessTestObj:
             pass
 
-        argless_params = Parameters.from_mapping({"test": "ArglessTestObj"})
+        argless_params = Parameters.from_mapping({"test": {"factory": "ArglessTestObj"}})
         self.assertEqual(
             ArglessTestObj(),
             argless_params.object_from_parameters(
@@ -528,7 +528,7 @@ class TestParameters(TestCase):
         self.assertEqual(
             42,
             Parameters.empty().object_from_parameters(
-                "missing_param", expected_type=int, default_creator=default_creator
+                "missing_param", expected_type=int, default_factory=default_creator
             ),
         )
 
@@ -537,7 +537,7 @@ class TestParameters(TestCase):
             self.assertEqual(
                 "fred",
                 Parameters.empty().object_from_parameters(
-                    "missing_param", default_creator=None, expected_type=str
+                    "missing_param", default_factory=None, expected_type=str
                 ),
             )
 
@@ -549,7 +549,7 @@ class TestParameters(TestCase):
         bad_default_creator = "foo"
         with self.assertRaises(ParameterError):
             Parameters.empty().object_from_parameters(
-                "missing_param", expected_type=int, default_creator=bad_default_creator
+                "missing_param", expected_type=int, default_factory=bad_default_creator
             )
 
     def test_optional_defaults(self):

@@ -869,10 +869,10 @@ def char_key_value_linear_source_from_params(
     return params.object_from_parameters(
         input_namespace,
         KeyValueLinearSource,
-        special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
-        default_creator=_doc_id_source_from_params,
+        special_factories=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_factory=_doc_id_source_from_params,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
 
 
@@ -912,10 +912,10 @@ def byte_key_value_linear_source_from_params(
     return params.object_from_parameters(
         input_namespace,
         KeyValueLinearSource,
-        special_creator_values=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
-        default_creator=_doc_id_binary_source_from_params,
+        special_factories=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_factory=_doc_id_binary_source_from_params,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
 
 
@@ -951,10 +951,10 @@ def char_key_value_source_from_params(
     return params.object_from_parameters(  # type: ignore
         input_namespace,
         KeyValueSource,
-        special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
-        default_creator=_doc_id_source_from_params,
+        special_factories=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_factory=_doc_id_source_from_params,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
 
 
@@ -990,10 +990,10 @@ def byte_key_value_source_from_params(
     return params.object_from_parameters(  # type: ignore
         input_namespace,
         KeyValueSource,
-        special_creator_values=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
-        default_creator=_doc_id_source_from_params,
+        special_factories=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_factory=_doc_id_source_from_params,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
 
 
@@ -1038,10 +1038,10 @@ def char_key_value_sink_from_params(
     return params.object_from_parameters(  # type: ignore
         output_namespace,
         KeyValueSink,
-        special_creator_values=_CHAR_KEY_VALUE_SINK_SPECIAL_VALUES,
-        default_creator=_DirectoryCharKeyValueSink,
+        special_factories=_CHAR_KEY_VALUE_SINK_SPECIAL_VALUES,
+        default_factory=_DirectoryCharKeyValueSink,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
 
 
@@ -1075,8 +1075,8 @@ def byte_key_value_sink_from_params(
     return params.object_from_parameters(  # type: ignore
         output_namespace,
         KeyValueSink,
-        special_creator_values=_BYTE_KEY_VALUE_SINK_SPECIAL_VALUES,
-        default_creator=_DirectoryBytesKeyValueSink,
+        special_factories=_BYTE_KEY_VALUE_SINK_SPECIAL_VALUES,
+        default_factory=_DirectoryBytesKeyValueSink,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )

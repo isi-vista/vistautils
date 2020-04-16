@@ -857,90 +857,164 @@ class Parameters:
         expected_type: Type[_ParamType],
         *,
         context: Optional[Mapping] = None,
-        creator_namepace_param_name: str = "value",
-        special_creator_values: Mapping[str, str] = ImmutableDict.empty(),
-        default_creator: Optional[Any] = None,
+        value_namespace_param_name: str = "value",
+        factory_namespace_param_name: str = "factory",
+        special_values: Mapping[str, Any] = immutabledict(),
+        special_factories: Mapping[str, Any] = immutabledict(),
+        default_value: Optional[Any] = None,
+        default_factory: Optional[Any] = None,
     ) -> _ParamType:
         """
-        Get an object of `expected_type`, initialized by the parameters in `name`.
+        Get an object of *expected_type*, initialized by the parameter with name *name*.
 
-        If `name` is a namespace, the `value` parameter within it is evaluated to get a "creator".
-        If the result of the evaluation is a function, that function is itself the creator. If
-        the result of the evaluation is a class, its `from_parameters` static method
-        taking a single `Parameters` object will be used as the creator, if it exists. Otherwise
-        its constructor will be used without parameters. The creator is then
-        called with the namespace as its argument and the result is returned.  If the result does
-        not match `expected_type` an exception will be raised. Do not include generic type arguments
-        in `expected_type`.
+        If the parameter value is a string,
+        that string is evaluated directly to get the value to return.
 
-        If `name` is a string, the same process is followed exception the string is evaluated
-        directly to get the "creator" and an empty `Parameters` is passed.
+        If the parameter value is a namespace,
+        it is first checked for a parameter with the name given by
+        *value_namespace_param_name* (default: *value*).
+        If present, its value is evaluated directly to get the value to return.
 
-        You can specify a different field within a namespace to be evaluated besides 'value' by
-        specifying `creator_namespace_param_name`.
+        Otherwise, the parameter *factory_namespace_param_name* (default: *factory*)
+        is evaluated to get a "factory".
+        If the result of the evaluation is a function, that function is itself the factory.
+        If the result of the evaluation is a class,
+        its *from_parameters* static method taking a single *Parameters* object
+        will be used as the factory, if it exists.
+        Otherwise its constructor will be used without parameters.
+        The factory is then called with the namespace as its argument and the result is returned.
+        If the result does not match *expected_type* an exception will be raised.
+        Do not include generic type arguments in *expected_type*.
 
-        You can specify a default creator to be used if none is specified with `default_creator`.
+        You can specify a default value to be used if no value or factory is specified
+        with *default_value*.
+        You can specify a default factory to be used if no value, default value, or factory
+        is specified with *default_factory*.
 
-        You may specify additional context within which evaluation should happen with `context`.
-        If you want evaluation to happen in the calling context, set this to `locals()`.
-        If the namespace contains the parameter *import*, it will be interpreted
-        as a list of modules to import into the context before evaluation.
+        You may specify additional context within which evaluation should happen
+        with the *context* argument.
+        If you want evaluation to happen in the calling context, set this to *locals()*.
 
-        For the user's convenience, you may include a map of special values to expression strings.
-        If the expression to be evaluated exactly matches any key of this map, the value from the
-        map will be evaluated instead.
+        If the namespace value of *name* contains the parameter *import*,
+        it will be interpreted as a list of modules to import into the context before evaluation.
 
-        If the namespace contains the field `import`, it will be treated as a comma-separated list
-        of modules to be imported before evaluation.
+        For the user's convenience, you may include a map of *special_values*.
+        If the *name* parameter (or the *value* parameter within its namespace)
+        exactly matches a key in this map, the corresponding value will be returned.
+
+        Similarly, you may include a map of *special_factories*.
+        If the *name* parameter (or the *value* parameter within its namespace)
+        exactly matches a key in this map,
+        the corresponding value will be used as a factory.
         """
-        if name in self:
-            creator = self.evaluate(
-                name,
-                object,
-                context=context,
-                namespace_param_name=creator_namepace_param_name,
-                special_values=special_creator_values,
-            )
-            if self.has_namespace(name):
-                params_to_pass = self.namespace(name)
+        # Utility to validate candidate results against the user's requested type
+        # before returning them.
+        def validate(candidate_ret):
+            if isinstance(candidate_ret, expected_type):
+                return candidate_ret
             else:
-                params_to_pass = Parameters.empty(
-                    namespace_prefix=_extend_prefix(self.namespace_prefix, name)
+                raise ParameterError(
+                    "When instantiating using from_parameters, expected {!s} but"
+                    " got {!s}".format(expected_type, candidate_ret)
                 )
-        elif default_creator:
-            creator = default_creator
-            params_to_pass = Parameters.empty(
-                namespace_prefix=_extend_prefix(self.namespace_prefix, name)
+
+        def apply_factory(factory, params_to_pass):
+            if inspect.isclass(factory):
+                if hasattr(factory, "from_parameters"):
+                    return getattr(factory, "from_parameters")(params_to_pass)
+                else:
+                    return factory()  # type: ignore
+            elif callable(factory):
+                return factory(params_to_pass)
+            else:
+                raise ParameterError(
+                    "Expected a class with from_parameters or a callable but got {!s}".format(
+                        factory
+                    )
+                )
+
+        if name in self:
+            if self.has_namespace(name):
+                # The general case is that the user has a namespace providing all the information
+                # for evaluation.
+                namespace = self.namespace(name)
+                if value_namespace_param_name in namespace:
+                    # The user specifies the value to be evaluated directly
+                    return validate(
+                        self.evaluate(
+                            name,
+                            object,
+                            context=context,
+                            namespace_param_name=value_namespace_param_name,
+                            special_values=special_values,
+                        )
+                    )
+                elif factory_namespace_param_name in namespace:
+                    # The user specifies an expression to be evaluated which yields
+                    # a factory which can create an object which this namespace.
+                    return validate(
+                        apply_factory(
+                            self.evaluate(
+                                name,
+                                object,
+                                context=context,
+                                namespace_param_name=factory_namespace_param_name,
+                                special_values=special_factories,
+                            ),
+                            namespace,
+                        )
+                    )
+                else:
+                    raise RuntimeError(
+                        f"Namespace {name} specifies neither "
+                        f"{value_namespace_param_name}"
+                        f"nor {factory_namespace_param_name}"
+                    )
+            else:
+                # If the user doesn't need to specify additional modules or anything else special,
+                # they can provide a string the be matched against our special values
+                # or else evaluated directly.
+                requested_param_string_value = self.string(name)
+                if requested_param_string_value in special_values:
+                    return validate(special_values[requested_param_string_value])
+                elif requested_param_string_value in special_factories:
+                    return validate(
+                        apply_factory(
+                            default_factory,
+                            Parameters.empty(
+                                namespace_prefix=_extend_prefix(
+                                    self.namespace_prefix, name
+                                )
+                            ),
+                        )
+                    )
+                else:
+                    return validate(
+                        eval_in_context_of_modules(
+                            requested_param_string_value,
+                            context if context else dict(globals()),
+                            context_modules=[],
+                            expected_type=expected_type,
+                        )
+                    )
+        # If the requested parameter is not present, we need to fall back on defaults...
+        elif default_value is not None:
+            return validate(default_value)
+        elif default_factory is not None:
+            return validate(
+                apply_factory(
+                    default_factory,
+                    Parameters.empty(
+                        namespace_prefix=_extend_prefix(self.namespace_prefix, name)
+                    ),
+                )
             )
         else:
+            # or fail.
             raise ParameterError(
-                "No creator class specified when creating an object from {!s}".format(
+                "No value, factory, or default specified when creating an object from {!s}".format(
                     name
                 )
-            )
-
-        if inspect.isclass(creator):
-            if hasattr(creator, "from_parameters"):
-                ret: Callable[[Optional[Parameters]], _ParamType] = getattr(
-                    creator, "from_parameters"
-                )(params_to_pass)
-            else:
-                ret = creator()  # type: ignore
-        elif callable(creator):
-            ret = creator(params_to_pass)
-        else:
-            raise ParameterError(
-                "Expected a class with from_parameters or a callable but got {!s}".format(
-                    creator
-                )
-            )
-
-        if isinstance(ret, expected_type):
-            return ret
-        else:
-            raise ParameterError(
-                "When instantiating using from_parameters, expected {!s} but"
-                " got {!s}".format(expected_type, ret)
             )
 
     def get(
