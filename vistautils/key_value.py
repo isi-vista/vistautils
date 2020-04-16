@@ -649,6 +649,9 @@ class _ZipBytesFileKeyValuesSource(_ZipFileKeyValueSource[bytes]):
         """
         return KeyValueSource.zip_bytes_source(params.existing_file("path"))
 
+    def __repr__(self) -> str:
+        return f"_ZipBytesFileKeyValueSource({self.path})"
+
 
 class _ZipCharFileKeyValuesSource(_ZipFileKeyValueSource[str]):
     def __init__(
