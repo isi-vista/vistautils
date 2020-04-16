@@ -525,11 +525,17 @@ class _ZipBytesFileKeyValueSink(_ZipKeyValueSink[bytes]):
 
 
 @attrs(frozen=True)
-class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
+class _AbstractPathMappingKeyValueSource(Generic[V], KeyValueSource[str, V]):
     id_to_path: ImmutableDict[str, Path] = attrib(
         converter=immutabledict, default=immutabledict()
     )
 
+    def keys(self) -> AbstractSet[str]:
+        return self.id_to_path.keys()
+
+
+@attrs(frozen=True)
+class _PathMappingCharKeyValueSource(_AbstractPathMappingKeyValueSource[str]):
     def __getitem__(self, key: str) -> str:
         return CharSource.from_file(self.id_to_path[key]).read_all()
 
@@ -544,11 +550,7 @@ class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
 
 
 @attrs(frozen=True)
-class _PathMappingBytesKeyValueSource(KeyValueSource[str, bytes]):
-    id_to_path: ImmutableDict[str, Path] = attrib(
-        converter=immutabledict, default=immutabledict()
-    )
-
+class _PathMappingBytesKeyValueSource(_AbstractPathMappingKeyValueSource[bytes]):
     def __getitem__(self, key: str) -> bytes:
         return ByteSource.from_file(self.id_to_path[key]).read()
 
