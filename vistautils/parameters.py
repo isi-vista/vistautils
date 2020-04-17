@@ -1214,7 +1214,7 @@ class Parameters:
         namespaces_processed = []
         for param_component in param_components:
             if not isinstance(current, Parameters):
-                if default:
+                if default is not None:
                     return default
                 elif optional:
                     return None
