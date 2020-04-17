@@ -914,7 +914,7 @@ class MutableRangeSet(RangeSet[T], metaclass=ABCMeta):
 class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
     # pylint:disable=protected-access
 
-    def __init__(self, ranges_by_lower_bound: SortedDict) -> None:
+    def __init__(self, ranges_by_lower_bound: SortedDict) -> None:  # type: ignore
         # we store the ranges as a map sorted by their lower bound
         # Note that because we enforce that there are no overlapping or connected ranges,
         # this sorts the ranges by upper bound as well
@@ -1039,7 +1039,7 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
         # an AboveValue cut corresponds to a closed upper interval, which catches containment
         # as desired
         # I have no idea why mypy is asking for an explicit type assignment here
-        limit_as_bound: _AboveValue = _AboveValue(lower_limit)
+        limit_as_bound: _AboveValue[Any] = _AboveValue(lower_limit)
 
         # insertion index into the sorted list of sets
         idx = sorted_dict.bisect_left(limit_as_bound)
@@ -1410,7 +1410,7 @@ def immutablerangemap(
 
 
 # utility functions for SortedDict to give it an interface more like Java's NavigableMap
-def _value_below(sorted_dict: SortedDict, key: T) -> Optional[Any]:
+def _value_below(sorted_dict: SortedDict, key: T) -> Optional[Any]:  # type: ignore
     """
     Get item for greatest key strictly less than the given key
 
@@ -1426,7 +1426,7 @@ def _value_below(sorted_dict: SortedDict, key: T) -> Optional[Any]:
         return None
 
 
-def _value_at_or_below(sorted_dict: SortedDict, key: T) -> Optional[Any]:
+def _value_at_or_below(sorted_dict: SortedDict, key: T) -> Optional[Any]:  # type: ignore
     """
     Get item for greatest key less than or equal to a given key.
 
@@ -1445,7 +1445,7 @@ def _value_at_or_below(sorted_dict: SortedDict, key: T) -> Optional[Any]:
     return sorted_dict[key]
 
 
-def _value_at_or_above(sorted_dict: SortedDict, key: T) -> Optional[Any]:
+def _value_at_or_above(sorted_dict: SortedDict, key: T) -> Optional[Any]:  # type: ignore
     if not sorted_dict:
         return None
     idx = sorted_dict.bisect_left(key)
@@ -1455,7 +1455,7 @@ def _value_at_or_above(sorted_dict: SortedDict, key: T) -> Optional[Any]:
     return sorted_dict[sorted_dict.keys()[idx]]
 
 
-def _clear(
+def _clear(  # type: ignore
     sorted_dict: SortedDict, start_key_inclusive: T, stop_key_exclusive: T
 ) -> None:
     # we copy to a list first in case sorted_dict is not happy with modification during iteration

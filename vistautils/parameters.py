@@ -93,7 +93,7 @@ class Parameters:
 
     @staticmethod
     def from_mapping(
-        mapping: Mapping, *, namespace_prefix: Iterable[str] = tuple()
+        mapping: Mapping[Any, Any], *, namespace_prefix: Iterable[str] = tuple()
     ) -> "Parameters":
         """
         Convert a dictionary of dictionaries into a `Parameter`s
@@ -734,21 +734,23 @@ class Parameters:
                 f"Expected a namespace, but got a regular parameters for {name}"
             )
 
-    def arbitrary_list(self, name: str, *, default: Optional[List] = None) -> List:
+    def arbitrary_list(
+        self, name: str, *, default: Optional[List[Any]] = None
+    ) -> List[Any]:
         """
         Get a list with arbitrary structure.
         """
         return self.get(name, List, default=default)
 
     @overload
-    def optional_arbitrary_list(self, name: str) -> Optional[List]:
+    def optional_arbitrary_list(self, name: str) -> Optional[List[Any]]:
         ...
 
     @overload
-    def optional_arbitrary_list(self, name: str, *, default: List) -> List:
+    def optional_arbitrary_list(self, name: str, *, default: List[Any]) -> List[Any]:
         ...
 
-    def optional_arbitrary_list(self, name: str, *, default: Optional[List] = None):
+    def optional_arbitrary_list(self, name: str, *, default: Optional[List[Any]] = None):
         """
         Get a list with arbitrary structure, if available
         """
@@ -793,7 +795,7 @@ class Parameters:
         name: str,
         expected_type: Type[_ParamType],
         *,
-        context: Optional[Mapping] = None,
+        context: Optional[Mapping[Any, Any]] = None,
         namespace_param_name: str = "value",
         special_values: Mapping[str, str] = ImmutableDict.empty(),
         default: Optional[_ParamType] = None,
@@ -826,7 +828,7 @@ class Parameters:
         namespace = self.optional_namespace(name)
         try:
             to_evaluate = None
-            context_modules: List = []
+            context_modules: List[Any] = []
 
             if namespace:
                 to_evaluate = namespace.string(namespace_param_name)
@@ -856,7 +858,7 @@ class Parameters:
         name: str,
         expected_type: Type[_ParamType],
         *,
-        context: Optional[Mapping] = None,
+        context: Optional[Mapping[Any, Any]] = None,
         creator_namepace_param_name: str = "value",
         special_creator_values: Mapping[str, str] = ImmutableDict.empty(),
         default_creator: Optional[Any] = None,
@@ -1384,7 +1386,7 @@ class YAMLParametersLoader:
             raise IOError(f"Failure while loading parameter file {error_string}") from e
 
     @staticmethod
-    def _validate(raw_yaml: Mapping):
+    def _validate(raw_yaml: Mapping[Any, Any]):
         # we don't use check_isinstance so we can have a custom error message
         check_arg(
             isinstance(raw_yaml, Mapping),
@@ -1393,7 +1395,7 @@ class YAMLParametersLoader:
         YAMLParametersLoader._check_all_keys_strings(raw_yaml)
 
     @staticmethod
-    def _check_all_keys_strings(mapping: Mapping, path=None):
+    def _check_all_keys_strings(mapping: Mapping[Any, Any], path=None):
         if path is None:
             path = []
 
