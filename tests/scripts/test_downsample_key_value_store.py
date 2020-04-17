@@ -20,7 +20,7 @@ def test_downsample_key_value_store(tmp_path: Path):
     output = tmp_path / "output.zip"
 
     main_params = Parameters.from_mapping(
-        {"input": input_params, "num_to_sample": 1, "output_zip_path": str(output)}
+        {"input": input_params, "num_to_sample": 2, "output_zip_path": str(output)}
     )
 
     downsample_key_value_store.main(main_params)
@@ -34,6 +34,7 @@ def test_downsample_key_value_store(tmp_path: Path):
 
     with KeyValueSource.zip_character_source(output) as source:
         contents = source.items()
+        assert next(contents) in reference
         assert next(contents) in reference
         with raises(StopIteration):
             next(contents)
