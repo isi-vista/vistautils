@@ -862,7 +862,7 @@ class Parameters:
         special_values: Mapping[str, Any] = immutabledict(),
         special_factories: Mapping[str, Any] = immutabledict(),
         default_value: Optional[Any] = None,
-        default_factory: Optional[Any] = None,
+        default_factory: Optional[Union[Callable[[Any], Any], Type[Any]]] = None,
     ) -> _ParamType:
         """
         Get an object of *expected_type*, initialized by the parameter with name *name*.
