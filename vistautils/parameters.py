@@ -933,6 +933,9 @@ class Parameters:
 
         if name in self:
             if self.has_namespace(name):
+                self.assert_exactly_one_present(
+                    [value_namespace_param_name, factory_namespace_param_name]
+                )
                 # The general case is that the user has a namespace providing all the information
                 # for evaluation.
                 namespace = self.namespace(name)
@@ -963,6 +966,7 @@ class Parameters:
                         )
                     )
                 else:
+                    # This should be impossible due to the assertion above.
                     raise RuntimeError(
                         f"Namespace {name} specifies neither "
                         f"{value_namespace_param_name}"
