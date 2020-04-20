@@ -914,8 +914,8 @@ class Parameters:
                 return candidate_ret
             else:
                 raise ParameterError(
-                    "When instantiating using from_parameters, expected {!s} but"
-                    " got {!s}".format(expected_type, candidate_ret)
+                    f"When instantiating using from_parameters, expected {expected_type} but"
+                    f" got {candidate_ret}"
                 )
 
         def apply_factory(factory, params_to_pass):
@@ -928,9 +928,7 @@ class Parameters:
                 return factory(params_to_pass)
             else:
                 raise ParameterError(
-                    "Expected a class with from_parameters or a callable but got {!s}".format(
-                        factory
-                    )
+                    f"Expected a class with from_parameters or a callable but got {factory}"
                 )
 
         if name in self:
