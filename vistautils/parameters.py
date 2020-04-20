@@ -933,12 +933,12 @@ class Parameters:
 
         if name in self:
             if self.has_namespace(name):
-                self.assert_exactly_one_present(
-                    [value_namespace_param_name, factory_namespace_param_name]
-                )
                 # The general case is that the user has a namespace providing all the information
                 # for evaluation.
                 namespace = self.namespace(name)
+                namespace.assert_exactly_one_present(
+                    [value_namespace_param_name, factory_namespace_param_name]
+                )
                 if value_namespace_param_name in namespace:
                     # The user specifies the value to be evaluated directly
                     return validate(
