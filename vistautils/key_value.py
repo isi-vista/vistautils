@@ -525,11 +525,17 @@ class _ZipBytesFileKeyValueSink(_ZipKeyValueSink[bytes]):
 
 
 @attrs(frozen=True)
-class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
+class _AbstractPathMappingKeyValueSource(Generic[V], KeyValueSource[str, V]):
     id_to_path: ImmutableDict[str, Path] = attrib(
         converter=immutabledict, default=immutabledict()
     )
 
+    def keys(self) -> AbstractSet[str]:
+        return self.id_to_path.keys()
+
+
+@attrs(frozen=True)
+class _PathMappingCharKeyValueSource(_AbstractPathMappingKeyValueSource[str]):
     def __getitem__(self, key: str) -> str:
         return CharSource.from_file(self.id_to_path[key]).read_all()
 
@@ -544,11 +550,7 @@ class _PathMappingCharKeyValueSource(KeyValueSource[str, str]):
 
 
 @attrs(frozen=True)
-class _PathMappingBytesKeyValueSource(KeyValueSource[str, bytes]):
-    id_to_path: ImmutableDict[str, Path] = attrib(
-        converter=immutabledict, default=immutabledict()
-    )
-
+class _PathMappingBytesKeyValueSource(_AbstractPathMappingKeyValueSource[bytes]):
     def __getitem__(self, key: str) -> bytes:
         return ByteSource.from_file(self.id_to_path[key]).read()
 
@@ -646,6 +648,9 @@ class _ZipBytesFileKeyValuesSource(_ZipFileKeyValueSource[bytes]):
         functions will be added in the future.
         """
         return KeyValueSource.zip_bytes_source(params.existing_file("path"))
+
+    def __repr__(self) -> str:
+        return f"_ZipBytesFileKeyValueSource({self.path})"
 
 
 class _ZipCharFileKeyValuesSource(_ZipFileKeyValueSource[str]):
@@ -869,10 +874,10 @@ def char_key_value_linear_source_from_params(
     return params.object_from_parameters(
         input_namespace,
         KeyValueLinearSource,
-        special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
-        default_creator=_doc_id_source_from_params,
+        special_factories=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_factory=_doc_id_source_from_params,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
 
 
@@ -912,10 +917,10 @@ def byte_key_value_linear_source_from_params(
     return params.object_from_parameters(
         input_namespace,
         KeyValueLinearSource,
-        special_creator_values=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
-        default_creator=_doc_id_binary_source_from_params,
+        special_factories=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_factory=_doc_id_binary_source_from_params,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
 
 
@@ -951,10 +956,10 @@ def char_key_value_source_from_params(
     return params.object_from_parameters(  # type: ignore
         input_namespace,
         KeyValueSource,
-        special_creator_values=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
-        default_creator=_doc_id_source_from_params,
+        special_factories=_CHAR_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_factory=_doc_id_source_from_params,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
 
 
@@ -990,10 +995,10 @@ def byte_key_value_source_from_params(
     return params.object_from_parameters(  # type: ignore
         input_namespace,
         KeyValueSource,
-        special_creator_values=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
-        default_creator=_doc_id_source_from_params,
+        special_factories=_BYTE_KEY_VALUE_SOURCE_SPECIAL_VALUES,
+        default_factory=_doc_id_source_from_params,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
 
 
@@ -1038,10 +1043,10 @@ def char_key_value_sink_from_params(
     return params.object_from_parameters(  # type: ignore
         output_namespace,
         KeyValueSink,
-        special_creator_values=_CHAR_KEY_VALUE_SINK_SPECIAL_VALUES,
-        default_creator=_DirectoryCharKeyValueSink,
+        special_factories=_CHAR_KEY_VALUE_SINK_SPECIAL_VALUES,
+        default_factory=_DirectoryCharKeyValueSink,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
 
 
@@ -1075,8 +1080,8 @@ def byte_key_value_sink_from_params(
     return params.object_from_parameters(  # type: ignore
         output_namespace,
         KeyValueSink,
-        special_creator_values=_BYTE_KEY_VALUE_SINK_SPECIAL_VALUES,
-        default_creator=_DirectoryBytesKeyValueSink,
+        special_factories=_BYTE_KEY_VALUE_SINK_SPECIAL_VALUES,
+        default_factory=_DirectoryBytesKeyValueSink,
         context=effective_context,
-        creator_namepace_param_name="type",
+        factory_namespace_param_name="type",
     )
