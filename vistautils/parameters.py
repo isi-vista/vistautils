@@ -787,6 +787,18 @@ class Parameters:
         else:
             return None
 
+    @staticmethod
+    def _context_modules_from_prefix(maybe_fully_qualified_name: str) -> Sequence[str]:
+        """
+        Get the names of the packages which need to be imported to resolve
+        *maybe_fully_qualified_name*.
+
+        For example, for *foo.bar.baz.meep_function*, these are
+        *foo*, *foo.bar*, and *foo.bar.baz*.
+        """
+        parts = maybe_fully_qualified_name.split(".")[:-1]
+        return [".".join(parts[0 : i + 1]) for i in range(len(parts))]
+
     # type ignored because ImmutableDict.empty() has type Dict[Any, Any]
     def evaluate(
         self,
@@ -818,6 +830,13 @@ class Parameters:
         Sometimes is it convenient to provide shortcuts for common cases. These can be specified
         in a `special_values` map whose keys are the special case values and whose values are the
         strings of expressions to be evaluated.
+
+        As a special case for convenience, if the parameter value is a *.*-separated string,
+        it is interpreted as a "fully-qualified" reference to a Python object
+        and the appropriate modules will be imported.
+        For example, for *foo.bar.baz.some_function*,
+        the packages *foo*, *foo.bar*, and *foo.bar.baz* will be imported,
+        allowing the evaluation of *foot.bar.baz.some_function* to succeed.
         """
 
         def handle_special_values(val: str) -> str:
@@ -826,14 +845,17 @@ class Parameters:
         namespace = self.optional_namespace(name)
         try:
             to_evaluate = None
-            context_modules: List = []
+            context_modules: Sequence = []
 
             if namespace:
                 to_evaluate = namespace.string(namespace_param_name)
                 context_modules = namespace.optional_arbitrary_list("import") or []
             elif name in self:
                 to_evaluate = self.string(name)
-                context_modules = []
+                # See special case in docstring.
+                context_modules = Parameters._context_modules_from_prefix(
+                    self.string(name)
+                )
             elif default is not None:
                 return default
             else:
@@ -869,6 +891,11 @@ class Parameters:
 
         If the parameter value is a string,
         that string is evaluated directly to get the value to return.
+        For convenience, if the string appears to be the "fully qualified name" of something
+        (that is, its name prefixed by the package path to its module),
+        the necessary packages will be automatically imported
+        (e.g. *foo.bar.baz.meep_function* will import *foo*, *foo.bar*,
+        and *foo.bar.baz* before attempting to evaluate the expression).
 
         If the parameter value is a namespace,
         it is first checked for a parameter with the name given by
@@ -995,7 +1022,9 @@ class Parameters:
                         eval_in_context_of_modules(
                             requested_param_string_value,
                             context if context else dict(globals()),
-                            context_modules=[],
+                            context_modules=self._context_modules_from_prefix(
+                                requested_param_string_value
+                            ),
                             expected_type=expected_type,
                         )
                     )
