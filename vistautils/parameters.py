@@ -1069,7 +1069,7 @@ class Parameters:
             raise ParameterError(
                 f"{self._namespace_message()}When looking up parameter '{param_name}', "
                 f"expected a value of type {param_type}, but got {ret} "
-                "of type {type(ret)}"
+                f"of type {type(ret)}"
             )
 
     @overload
