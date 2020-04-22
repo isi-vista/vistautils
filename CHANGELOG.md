@@ -1,3 +1,16 @@
+Vistautils 0.21.0 (2020-04-22)
+==============================
+
+New Features
+------------
+
+- - split_key_value_store now works with binary key-value stores as well (`#120 <https://github.com/isi-vista/vistautils/issues/120>`_)
+- - in `Parameters`, the user can now assert exactly one of a set of parameters is present. (`#121 <https://github.com/isi-vista/vistautils/issues/121>`_)
+- - alters `Parameters.object_from_parameters` to make it easier to specify constant values as well as factories
+  - implements `.keys()` for path-mapping key-value sources
+  - Better `repr` for `ZipBytesFileKeyValueSource` (`#131 <https://github.com/isi-vista/vistautils/issues/131>`_)
+
+
 Vistautils 0.20.0 (2020-02-24)
 ==============================
 

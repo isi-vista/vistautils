@@ -1,3 +1,0 @@
-- alters `Parameters.object_from_parameters` to make it easier to specify constant values as well as factories
-- implements `.keys()` for path-mapping key-value sources
-- Better `repr` for `ZipBytesFileKeyValueSource`

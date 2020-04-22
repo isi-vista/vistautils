@@ -1,1 +1,0 @@
-- split_key_value_store now works with binary key-value stores as well
