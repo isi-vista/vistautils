@@ -6,6 +6,7 @@ import pickle
 import re
 import shutil
 from datetime import date
+from enum import Enum, EnumMeta
 from pathlib import Path
 from typing import (
     Any,
@@ -433,6 +434,29 @@ class Parameters:
             return self.existing_directory(param)
         else:
             return None
+
+    def enum_member(
+        self, param_name: str, enum_class: EnumMeta, default: Optional[Enum] = None
+    ) -> Enum:
+        """
+        Gets a valid enumeration member
+
+        `param_name` is interpreted as a valid member of the provided
+        enumeration class. If the member is not found within the
+        larger class, then a ParameterError is raised.
+        """
+        ret: Enum
+        enum_name = self.string(param_name)
+        if enum_name in enum_class.__members__:
+            ret = enum_class.__members__[enum_name]
+        elif default:
+            ret = default
+        else:
+            raise ParameterError(
+                f"For parameter {param_name}, {enum_name} could not be found in "
+                f"{list(enum_class.__members__)}"
+            )
+        return ret
 
     def string(
         self,
