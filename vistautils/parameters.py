@@ -436,7 +436,7 @@ class Parameters:
             return None
 
     def enum_member(
-        self, param_name: str, enum_class: EnumMeta, default: Optional[Enum] = None
+        self, param_name: str, enum_class: EnumMeta, *, default: Optional[Enum] = None
     ) -> Enum:
         """
         Gets a valid enumeration member
