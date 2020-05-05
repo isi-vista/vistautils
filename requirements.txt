@@ -17,3 +17,4 @@ isort==4.3.21
 towncrier
 sphinx
 sphinx-autodoc-typehints
+deprecation

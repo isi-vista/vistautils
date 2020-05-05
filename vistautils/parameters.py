@@ -5,6 +5,7 @@ import os
 import pickle
 import re
 import shutil
+from datetime import date
 from pathlib import Path
 from typing import (
     Any,
@@ -35,6 +36,7 @@ from vistautils.misc_utils import eval_in_context_of_modules
 from vistautils.preconditions import check_arg, check_isinstance
 from vistautils.range import Range
 
+import deprecation
 import yaml
 
 _logger = logging.getLogger(__name__)  # pylint:disable=invalid-name
@@ -652,12 +654,14 @@ class Parameters:
         else:
             return None
 
+    @deprecation.deprecated(
+        deprecated_in="0.19.0",
+        removed_in=date(2020, 8, 10),
+        details="Deprecated, prefer `optional_floating_point` for more consistent naming.",
+    )
     def optional_float(
         self, name: str, valid_range: Optional[Range[float]] = None
     ) -> Optional[float]:
-        """
-        Deprecated, prefer `optional_floating_point` for more consistent naming.
-        """
         return self.optional_floating_point(name, valid_range)
 
     def boolean(self, name: str, *, default: Optional[bool] = None) -> bool:
@@ -685,10 +689,13 @@ class Parameters:
 
         return self.get_optional(name, bool, default=default)
 
+    @deprecation.deprecated(
+        deprecated_in="0.19.0",
+        removed_in=date(2020, 8, 10),
+        details="Deprecated. Prefer `boolean` with default as a parameter.",
+    )
     def optional_boolean_with_default(self, name: str, default_value: bool) -> bool:
         """
-        Deprecated. Prefer `boolean` with default as a parameter.
-
         Gets a boolean parameter if present; otherwise returns the provided default.
         """
         if default_value is not None:  # pragma: no cover
@@ -1312,10 +1319,12 @@ class Parameters:
         else:
             return ""
 
+    @deprecation.deprecated(
+        deprecated_in="0.19.0",
+        removed_in=date(2020, 8, 10),
+        details="Deprecated and may be removed. Prefer `Parameters.as_nested_dicts`.",
+    )
     def as_mapping(self) -> Mapping[str, Any]:
-        """
-        Deprecated and may be removed. Prefer `Parameters.as_nested_dicts`.
-        """
         return self._data
 
     def _warn_about_default(self) -> None:

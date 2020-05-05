@@ -1,6 +1,6 @@
 # really needs to be totally-ordered
-import warnings
 from abc import ABCMeta, abstractmethod
+from datetime import date
 from typing import (
     Any,
     Container,
@@ -23,6 +23,7 @@ from immutablecollections import ImmutableDict, ImmutableSet, immutabledict, imm
 # Port of Guava's Range data type and associated classes
 from vistautils.preconditions import check_arg, check_not_none
 
+import deprecation
 from sortedcontainers import SortedDict
 
 # will be initialized after bound type declarations
@@ -747,30 +748,22 @@ class RangeSet(
          range_set.leftmost_containing_or_above(16) // returns None
         """
 
+    @deprecation.deprecated(
+        deprecated_in="0.19.0",
+        removed_in=date(2020, 8, 10),
+        details="Deprecated, use rightmost_containing_or_below(upper_limit). "
+        "This method may be removed in a future release.",
+    )
     def maximal_containing_or_below(self, upper_limit: T) -> Optional[Range[T]]:
-        """
-        Deprecated. Instead, use rightmost_containing_or_below().
-
-        This may be removed in future versions.
-        """
-        warnings.warn(
-            "Deprecated, use rightmost_containing_or_below(upper_limit). "
-            "This method may be removed in a future release.",
-            DeprecationWarning,
-        )
         return self.rightmost_containing_or_below(upper_limit)
 
+    @deprecation.deprecated(
+        deprecated_in="0.19.0",
+        removed_in=date(2020, 8, 10),
+        details="Deprecated, use leftmost_containing_or_above(upper_limit). "
+        "This method may be removed in a future release.",
+    )
     def minimal_containing_or_above(self, lower_limit: T) -> Optional[Range[T]]:
-        """
-        Deprecated. Instead, use leftmost_containing_or_below().
-
-        This may be removed in future versions.
-        """
-        warnings.warn(
-            "Deprecated, use leftmost_containing_or_above(upper_limit). "
-            "This method may be removed in a future release.",
-            DeprecationWarning,
-        )
         return self.leftmost_containing_or_above(lower_limit)
 
     @abstractmethod
@@ -1270,30 +1263,22 @@ class RangeMap(Generic[K, V], metaclass=ABCMeta):
          range_map.get_from_leftmost_containing_or_above(16) // returns None
         """
 
+    @deprecation.deprecated(
+        deprecated_in="0.19.0",
+        removed_in=date(2020, 8, 10),
+        details="Deprecated, use get_from_rightmost_containing_or_below(upper_limit). "
+        "This method may be removed in a future release.",
+    )
     def get_from_maximal_containing_or_below(self, key: K):
-        """
-        Deprecated. Instead, use get_from_rightmost_containing_or_below(key).
-
-        This may be removed in future versions.
-        """
-        warnings.warn(
-            "Deprecated, use get_from_rightmost_containing_or_below(upper_limit). "
-            "This method may be removed in a future release.",
-            DeprecationWarning,
-        )
         return self.get_from_rightmost_containing_or_below(key)
 
+    @deprecation.deprecated(
+        deprecated_in="0.19.0",
+        removed_in=date(2020, 8, 10),
+        details="Deprecated, use get_from_leftmost_containing_or_below(key). "
+        "This method may be removed in a future release.",
+    )
     def get_from_minimal_containing_or_above(self, key: K):
-        """
-        Deprecated. Instead, use get_from_leftmost_containing_or_above(key).
-
-        This may be removed in future versions.
-        """
-        warnings.warn(
-            "Deprecated, use get_from_leftmost_containing_or_below(key). "
-            "This method may be removed in a future release.",
-            DeprecationWarning,
-        )
         return self.get_from_leftmost_containing_or_above(key)
 
     def __eq__(self, other) -> bool:
@@ -1341,8 +1326,13 @@ class ImmutableRangeMap(Generic[K, V], RangeMap[K, V]):
             )
 
     @staticmethod
+    @deprecation.deprecated(
+        deprecated_in="0.19.0",
+        removed_in=date(2020, 8, 10),
+        details="Deprecated - prefer the module-level factory ``immutablerangemap`` with no "
+        "arguments.",
+    )
     def empty() -> "ImmutableRangeMap[K, V]":
-        """Deprecated - prefer the module-level factory ``immutablerangemap`` with no arguments."""
         return ImmutableRangeMap(immutabledict())
 
     @staticmethod
