@@ -21,12 +21,13 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
 )
 from zipfile import ZipFile
 
 from attr import attrib, attrs, validators
 
-from immutablecollections import ImmutableDict
+from immutablecollections import ImmutableDict, ImmutableSet, immutableset
 
 from vistautils.misc_utils import pathify
 
@@ -283,6 +284,10 @@ class CharSink(metaclass=ABCMeta):
 
         UTF-8 encoding will be used.
         """
+        if isinstance(p, str):
+            p = Path(p)
+        if p.parent:
+            p.parent.mkdir(parents=True, exist_ok=True)
         return _FileCharSink(p)
 
     @staticmethod
@@ -431,10 +436,12 @@ class ByteSink(metaclass=ABCMeta):
         return BufferByteSink()
 
     @staticmethod
-    def to_file(path: Union[str, Path]) -> "ByteSink":
+    def to_file(path: Path) -> "ByteSink":
         """
         Get a sink which writes to the given file.
         """
+        if path.parent:
+            path.parent.mkdir(parents=True, exist_ok=True)
         return _FileByteSink(path)
 
     def write(self, data: bytes) -> None:
@@ -461,30 +468,37 @@ class _NullCharSink(CharSink):
         def __enter__(self) -> TextIO:
             return self
 
+        @property
         def name(self):
             return "NullCharSink"
 
+        @property
         def mode(self):
             return "w"
 
         def closed(self):
             return False
 
+        @property
         def buffer(self) -> BinaryIO:
             raise NotImplementedError(
                 "This isn't supposed to be part of the TextIO API"
                 " but the type-checker requires it"
             )
 
+        @property
         def encoding(self) -> str:
             return "utf-8"
 
+        @property
         def errors(self) -> Optional[str]:
             return None
 
+        @property
         def line_buffering(self) -> bool:
             return False
 
+        @property
         def newlines(self) -> Any:
             return "\n"
 
@@ -571,18 +585,18 @@ class StringCharSink(CharSink):
 
 @attrs(slots=True, frozen=True)
 class _FileCharSink(CharSink):
-    _path: Union[Path, str] = attrib(validator=validators.instance_of(tuple((Path, str))))
+    _path: Path = attrib(validator=validators.instance_of(Path))
 
     def open(self) -> TextIO:
-        return open(self._path, "w")
+        return cast(TextIO, self._path.open(mode="w", encoding="utf-8"))
 
 
 @attrs(slots=True, frozen=True)
 class _FileByteSink(ByteSink):
-    _path: Union[Path, str] = attrib(validator=validators.instance_of(tuple((Path, str))))
+    _path: Path = attrib(validator=validators.instance_of(Path))
 
     def open(self) -> BinaryIO:
-        return open(self._path, "wb")
+        return cast(BinaryIO, self._path.open(mode="wb"))
 
 
 @attrs(slots=True, frozen=True)
@@ -626,6 +640,19 @@ class BufferByteSink(ByteSink):
                 super().__exit__(exc_type, exc_val, exc_tb)
 
         return BytesFileLike()
+
+
+def file_lines_to_set(file: Path) -> ImmutableSet[str]:
+    """
+    Gets a set consisting of all the lines in the specified file.
+
+    The iteration order of the returned set will match the order of the items in the file.
+
+    Any blank lines are omitted.
+    """
+    return immutableset(
+        line for line in file.read_text(encoding="utf-8").split("\n") if line
+    )
 
 
 def write_doc_id_to_file_map(

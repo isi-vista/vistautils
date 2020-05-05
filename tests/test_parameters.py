@@ -1,4 +1,5 @@
 import os
+import pickle
 import shutil
 import tempfile
 from pathlib import Path
@@ -7,7 +8,7 @@ from unittest import TestCase
 
 from attr import attrib, attrs, validators
 
-from immutablecollections import immutabledict
+from immutablecollections import immutabledict, immutableset
 
 from vistautils._graph import ParameterInterpolationError
 from vistautils.io_utils import CharSink
@@ -30,12 +31,16 @@ class TestParameters(TestCase):
             moo:
                 nested_dict:
                     lalala: fooo
+                    meep: 2
                     list:
                     - 1
                     - 2
                     - 3
-                    meep: 2
-        """
+            some_path: /hello/world
+            path_list:
+            - /meep/lalala
+            - /moo/cow
+            """
     )
 
     def test_writing_to_yaml(self):
@@ -43,6 +48,8 @@ class TestParameters(TestCase):
             {
                 "hello": "world",
                 "moo": {"nested_dict": {"lalala": "fooo", "meep": 2, "list": [1, 2, 3]}},
+                "some_path": Path("/hello/world"),
+                "path_list": [Path("/meep/lalala"), Path("/moo/cow")],
             }
         )
         string_buffer = CharSink.to_string()
@@ -50,6 +57,50 @@ class TestParameters(TestCase):
         self.assertEqual(
             TestParameters.WRITING_REFERENCE, string_buffer.last_string_written
         )
+
+        with self.assertRaisesRegex(
+            RuntimeError, "bytes and bytearrays are not legal parameter values"
+        ):
+            YAMLParametersWriter().write(
+                Parameters.from_mapping({"illegal": b"bytes"}), CharSink.to_nowhere()
+            )
+
+        with self.assertRaisesRegex(
+            RuntimeError, "bytes and bytearrays are not legal parameter values"
+        ):
+            YAMLParametersWriter().write(
+                Parameters.from_mapping({"illegal": bytearray()}), CharSink.to_nowhere()
+            )
+
+        with self.assertRaisesRegex(
+            RuntimeError, "Don't know how to serialize out .* as a parameter value"
+        ):
+            YAMLParametersWriter().write(
+                Parameters.from_mapping({"illegal": Parameters}), CharSink.to_nowhere()
+            )
+
+    def test_from_key_value_pairs(self):
+        params = Parameters.from_key_value_pairs(
+            [
+                ("foo", 2),
+                ("ns1.ns2.bar", "meep"),
+                ("ns1.ns2.world", "lala"),
+                ("ns1.ns2.ns3.param", "hello"),
+            ]
+        )
+
+        self.assertEqual(2, params.integer("foo"))
+        self.assertEqual("meep", params.string("ns1.ns2.bar"))
+        self.assertEqual("lala", params.string("ns1.ns2.world"))
+        self.assertEqual("hello", params.string("ns1.ns2.ns3.param"))
+
+        self.assertTrue(params.has_namespace("ns1"))
+        self.assertTrue(
+            "param" in params.namespace("ns1").namespace("ns2").namespace("ns3")
+        )
+
+        with self.assertRaises(RuntimeError):
+            Parameters.from_key_value_pairs([("", "can't have empty key")])
 
     def test_boolean(self):
         params = YAMLParametersLoader().load_string(
@@ -64,6 +115,10 @@ class TestParameters(TestCase):
         self.assertFalse(params.boolean("false_param"))
         with self.assertRaises(ParameterError):
             params.boolean("non_boolean_param")
+
+        self.assertTrue(params.boolean("not-appearing", default=True))
+        # test with a False-y default
+        self.assertFalse(params.boolean("not-appearing", default=False))
 
     def test_optional_existing_file(self):
         test_dir = Path(tempfile.mkdtemp()).absolute()
@@ -443,7 +498,7 @@ class TestParameters(TestCase):
                 return TestObj(params.integer("my_int"))
 
         simple_params = Parameters.from_mapping(
-            {"test": {"value": "TestObj", "my_int": 5}}
+            {"test": {"factory": "TestObj", "my_int": 5}}
         )
 
         self.assertEqual(
@@ -456,7 +511,7 @@ class TestParameters(TestCase):
         class ArglessTestObj:
             pass
 
-        argless_params = Parameters.from_mapping({"test": "ArglessTestObj"})
+        argless_params = Parameters.from_mapping({"test": {"factory": "ArglessTestObj"}})
         self.assertEqual(
             ArglessTestObj(),
             argless_params.object_from_parameters(
@@ -473,7 +528,7 @@ class TestParameters(TestCase):
         self.assertEqual(
             42,
             Parameters.empty().object_from_parameters(
-                "missing_param", expected_type=int, default_creator=default_creator
+                "missing_param", expected_type=int, default_factory=default_creator
             ),
         )
 
@@ -482,7 +537,7 @@ class TestParameters(TestCase):
             self.assertEqual(
                 "fred",
                 Parameters.empty().object_from_parameters(
-                    "missing_param", default_creator=None, expected_type=str
+                    "missing_param", default_factory=None, expected_type=str
                 ),
             )
 
@@ -494,7 +549,7 @@ class TestParameters(TestCase):
         bad_default_creator = "foo"
         with self.assertRaises(ParameterError):
             Parameters.empty().object_from_parameters(
-                "missing_param", expected_type=int, default_creator=bad_default_creator
+                "missing_param", expected_type=int, default_factory=bad_default_creator
             )
 
     def test_optional_defaults(self):
@@ -535,6 +590,57 @@ class TestParameters(TestCase):
         assert Parameters.empty().namespace_or_empty("foo").namespace_or_empty(
             "bar"
         ).namespace_prefix == ("foo", "bar")
+
+    def test_pickled_object_from_file(self):
+        temp_dir = Path(tempfile.mkdtemp()).absolute()
+        pickled_obj_file = temp_dir / "pickle"
+        obj = {"foo": "bar", "thing": "amabob"}
+        with pickled_obj_file.open("wb") as bf:
+            pickle.dump(obj, bf)
+
+        params = Parameters.from_mapping(
+            {"pickled_obj_file": str(pickled_obj_file.absolute())}
+        )
+
+        # noinspection PyTypeChecker
+        self.assertEqual(obj, params.pickled_object_from_file("pickled_obj_file"))
+
+
+def test_sub_namespaces():
+    foo_params = Parameters.from_mapping({"foo": "boo"})
+    bar_params = Parameters.from_mapping({"bar": "far"})
+
+    result_none = foo_params.sub_namespaces()
+    expected_none = immutableset()
+    assert result_none == expected_none
+
+    one_params = Parameters.from_mapping({"one_foo": foo_params})
+    result_one = one_params.sub_namespaces()
+    expected_one = immutableset([foo_params])
+    assert result_one == expected_one
+
+    deep_params = Parameters.from_mapping({"bariest": bar_params, "one": one_params})
+    result_deep = deep_params.sub_namespaces()
+    expected_deep = immutableset([bar_params, one_params])
+    assert result_deep == expected_deep
+
+
+def test_assert_exactly_one_present():
+    params = Parameters.from_mapping({"foo": "bar", "moo": "cow"})
+
+    params.assert_exactly_one_present(["foo", "foo2"])
+
+    with pytest.raises(
+        ParameterError,
+        match="At most one of .* can be specified " "but these were specified: .*",
+    ):
+        params.assert_exactly_one_present(["foo", "moo"])
+
+    with pytest.raises(
+        ParameterError,
+        match="Exactly one of the parameters .* " "should be specified, but none were",
+    ):
+        params.assert_exactly_one_present(["not-here"])
 
 
 def test_interpolating_nested_parameters(tmp_path):
@@ -596,6 +702,13 @@ def test_relative_path_list(tmp_path):
     file_list = tmp_path / "list.txt"
     CharSink.to_file(file_list).write("\n".join(["fred/bob.txt", "foo.txt"]))
     params = Parameters.from_mapping({"file_list": str(file_list)})
+    assert list(
+        params.path_list_from_file("file_list", resolve_relative_to=Path("/hello/world"))
+    ) == [Path("/hello/world/fred/bob.txt"), Path("/hello/world/foo.txt")]
+
+
+def test_relative_path_from_yaml_list():
+    params = Parameters.from_mapping({"file_list": ["fred/bob.txt", "foo.txt"]})
     assert list(
         params.path_list_from_file("file_list", resolve_relative_to=Path("/hello/world"))
     ) == [Path("/hello/world/fred/bob.txt"), Path("/hello/world/foo.txt")]

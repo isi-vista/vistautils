@@ -2,6 +2,7 @@
 import inspect
 import logging
 import os
+import pickle
 import re
 import shutil
 from datetime import date
@@ -14,8 +15,8 @@ from typing import (
     List,
     Mapping,
     Match,
+    MutableMapping,
     Optional,
-    Pattern,
     Sequence,
     Tuple,
     Type,
@@ -24,9 +25,9 @@ from typing import (
     overload,
 )
 
-from attr import attrib, attrs, evolve
+from attr import attrib, attrs
 
-from immutablecollections import ImmutableDict, immutabledict
+from immutablecollections import ImmutableDict, ImmutableSet, immutabledict, immutableset
 from immutablecollections.converter_utils import _to_tuple
 
 from vistautils._graph import Digraph
@@ -121,6 +122,32 @@ class Parameters:
                 ret.append((key, val))
         return Parameters(ret, namespace_prefix=namespace_prefix)
 
+    @staticmethod
+    def from_key_value_pairs(
+        kv_pairs: Iterable[Tuple[str, Any]], namespace_separator="."
+    ) -> "Parameters":
+        """
+        Creates a `Parameters` from an `Iterable` of key-value pairs.
+
+        If a key name contains *namespace_separator` (default "."),
+        then the resulting `Parameters` will have the appropriate nested namespaces.
+        """
+        ret: MutableMapping[str, Any] = {}
+        for (k, v) in kv_pairs:
+            if k:
+                key_parts = k.split(namespace_separator)
+                bottom_level_param_name = key_parts[-1]
+                to_set_dict = ret
+                if len(key_parts) > 1:
+                    for key_part in key_parts[:-1]:
+                        if key_part not in to_set_dict:
+                            to_set_dict[key_part] = {}
+                        to_set_dict = to_set_dict[key_part]
+                to_set_dict[bottom_level_param_name] = v
+            else:
+                raise RuntimeError("Parameter names cannot be the empty string")
+        return Parameters.from_mapping(ret)
+
     def as_nested_dicts(self) -> Dict[str, Any]:
         """
         A nested dictionary representing this `Parameters`.
@@ -155,6 +182,62 @@ class Parameters:
                     "." if self.namespace_prefix else ""
                 )
                 yield f"{prefix}{key}", value
+
+    def unify(
+        self,
+        new_params: Union[Mapping[Any, Any], "Parameters"],
+        *,
+        namespace_prefix: Sequence[str] = tuple(),
+    ) -> "Parameters":
+        """
+        Get a new `Parameters` whose content is the unification of this `Parameters`
+        and *new_params*.
+
+        All parameters in this `Parameters` will appear in the output.
+        All parameters in *new_params* will appear in the output.
+        The values of each parameter will be the same as in this `Parameters` or *new_params*
+        unless there is a conflict, in which case we take the value from *new_params*.
+
+        The *namespace_prefix* is used to specify a prefix to apply to the parameter names
+        of both parameter sets when generating exception messages.
+
+        For convenience, if a non-`Parameters` mapping is specified for `new_params`,
+        `Parameters.from_mapping` will be applied to it.
+        """
+        if not isinstance(new_params, Parameters):
+            new_params = Parameters.from_mapping(new_params)
+
+        ret = dict()
+        for (key, old_val) in self._data.items():
+            if key in new_params:
+                new_val = new_params._data[key]
+                if isinstance(old_val, Parameters) != isinstance(new_val, Parameters):
+                    if namespace_prefix:
+                        namespace_prefix_str = ".".join(namespace_prefix)
+                        param_str = f"{namespace_prefix_str}.{key}"
+                    else:
+                        param_str = key
+
+                    raise IOError(
+                        f"When unifying parameters, {param_str} is a parameter on one side and a "
+                        f"namespace on the other"
+                    )
+                elif isinstance(old_val, Parameters):
+                    new_namespace_prefix = list(namespace_prefix)
+                    new_namespace_prefix.append(key)
+                    ret[key] = old_val.unify(
+                        new_val, namespace_prefix=new_namespace_prefix
+                    )
+                else:
+                    ret[key] = new_val
+            else:
+                ret[key] = old_val
+
+        for (key, new_val) in new_params._data.items():
+            if key not in self:
+                ret[key] = new_val
+
+        return Parameters.from_mapping(ret, namespace_prefix=namespace_prefix)
 
     def creatable_directory(self, param: str) -> Path:
         """
@@ -711,6 +794,18 @@ class Parameters:
         else:
             return None
 
+    @staticmethod
+    def _context_modules_from_prefix(maybe_fully_qualified_name: str) -> Sequence[str]:
+        """
+        Get the names of the packages which need to be imported to resolve
+        *maybe_fully_qualified_name*.
+
+        For example, for *foo.bar.baz.meep_function*, these are
+        *foo*, *foo.bar*, and *foo.bar.baz*.
+        """
+        parts = maybe_fully_qualified_name.split(".")[:-1]
+        return [".".join(parts[0 : i + 1]) for i in range(len(parts))]
+
     # type ignored because ImmutableDict.empty() has type Dict[Any, Any]
     def evaluate(
         self,
@@ -742,6 +837,13 @@ class Parameters:
         Sometimes is it convenient to provide shortcuts for common cases. These can be specified
         in a `special_values` map whose keys are the special case values and whose values are the
         strings of expressions to be evaluated.
+
+        As a special case for convenience, if the parameter value is a *.*-separated string,
+        it is interpreted as a "fully-qualified" reference to a Python object
+        and the appropriate modules will be imported.
+        For example, for *foo.bar.baz.some_function*,
+        the packages *foo*, *foo.bar*, and *foo.bar.baz* will be imported,
+        allowing the evaluation of *foot.bar.baz.some_function* to succeed.
         """
 
         def handle_special_values(val: str) -> str:
@@ -750,14 +852,17 @@ class Parameters:
         namespace = self.optional_namespace(name)
         try:
             to_evaluate = None
-            context_modules: List = []
+            context_modules: Sequence = []
 
             if namespace:
                 to_evaluate = namespace.string(namespace_param_name)
                 context_modules = namespace.optional_arbitrary_list("import") or []
             elif name in self:
                 to_evaluate = self.string(name)
-                context_modules = []
+                # See special case in docstring.
+                context_modules = Parameters._context_modules_from_prefix(
+                    self.string(name)
+                )
             elif default is not None:
                 return default
             else:
@@ -781,90 +886,173 @@ class Parameters:
         expected_type: Type[_ParamType],
         *,
         context: Optional[Mapping] = None,
-        creator_namepace_param_name: str = "value",
-        special_creator_values: Mapping[str, str] = ImmutableDict.empty(),
-        default_creator: Optional[Any] = None,
+        value_namespace_param_name: str = "value",
+        factory_namespace_param_name: str = "factory",
+        special_values: Mapping[str, Any] = immutabledict(),
+        special_factories: Mapping[str, Any] = immutabledict(),
+        default_value: Optional[Any] = None,
+        default_factory: Optional[Union[Callable[[Any], Any], Type[Any]]] = None,
     ) -> _ParamType:
         """
-        Get an object of `expected_type`, initialized by the parameters in `name`.
+        Get an object of *expected_type*, initialized by the parameter with name *name*.
 
-        If `name` is a namespace, the `value` parameter within it is evaluated to get a "creator".
-        If the result of the evaluation is a function, that function is itself the creator. If
-        the result of the evaluation is a class, its `from_parameters` static method
-        taking a single `Parameters` object will be used as the creator, if it exists. Otherwise
-        its constructor will be used without parameters. The creator is then
-        called with the namespace as its argument and the result is returned.  If the result does
-        not match `expected_type` an exception will be raised. Do not include generic type arguments
-        in `expected_type`.
+        If the parameter value is a string,
+        that string is evaluated directly to get the value to return.
+        For convenience, if the string appears to be the "fully qualified name" of something
+        (that is, its name prefixed by the package path to its module),
+        the necessary packages will be automatically imported
+        (e.g. *foo.bar.baz.meep_function* will import *foo*, *foo.bar*,
+        and *foo.bar.baz* before attempting to evaluate the expression).
 
-        If `name` is a string, the same process is followed exception the string is evaluated
-        directly to get the "creator" and an empty `Parameters` is passed.
+        If the parameter value is a namespace,
+        it is first checked for a parameter with the name given by
+        *value_namespace_param_name* (default: *value*).
+        If present, its value is evaluated directly to get the value to return.
 
-        You can specify a different field within a namespace to be evaluated besides 'value' by
-        specifying `creator_namespace_param_name`.
+        Otherwise, the parameter *factory_namespace_param_name* (default: *factory*)
+        is evaluated to get a "factory".
+        If the result of the evaluation is a function, that function is itself the factory.
+        If the result of the evaluation is a class,
+        its *from_parameters* static method taking a single *Parameters* object
+        will be used as the factory, if it exists.
+        Otherwise its constructor will be used without parameters.
+        The factory is then called with the namespace as its argument and the result is returned.
+        If the result does not match *expected_type* an exception will be raised.
+        Do not include generic type arguments in *expected_type*.
 
-        You can specify a default creator to be used if none is specified with `default_creator`.
+        You can specify a default value to be used if no value or factory is specified
+        with *default_value*.
+        You can specify a default factory to be used if no value, default value, or factory
+        is specified with *default_factory*.
 
-        You may specify additional context within which evaluation should happen with `context`.
-        If you want evaluation to happen in the calling context, set this to `locals()`.
-        If the namespace contains the parameter *import*, it will be interpreted
-        as a list of modules to import into the context before evaluation.
+        You may specify additional context within which evaluation should happen
+        with the *context* argument.
+        If you want evaluation to happen in the calling context, set this to *locals()*.
 
-        For the user's convenience, you may include a map of special values to expression strings.
-        If the expression to be evaluated exactly matches any key of this map, the value from the
-        map will be evaluated instead.
+        If the namespace value of *name* contains the parameter *import*,
+        it will be interpreted as a list of modules to import into the context before evaluation.
 
-        If the namespace contains the field `import`, it will be treated as a comma-separated list
-        of modules to be imported before evaluation.
+        For the user's convenience, you may include a map of *special_values*.
+        If the *name* parameter (or the *value* parameter within its namespace)
+        exactly matches a key in this map, the corresponding value will be returned.
+
+        Similarly, you may include a map of *special_factories*.
+        If the *name* parameter (or the *value* parameter within its namespace)
+        exactly matches a key in this map,
+        the corresponding value will be used as a factory.
         """
-        if name in self:
-            creator = self.evaluate(
-                name,
-                object,
-                context=context,
-                namespace_param_name=creator_namepace_param_name,
-                special_values=special_creator_values,
-            )
-            if self.has_namespace(name):
-                params_to_pass = self.namespace(name)
+        # Utility to validate candidate results against the user's requested type
+        # before returning them.
+        def validate(candidate_ret):
+            if isinstance(candidate_ret, expected_type):
+                return candidate_ret
             else:
-                params_to_pass = Parameters.empty(
-                    namespace_prefix=_extend_prefix(self.namespace_prefix, name)
+                raise ParameterError(
+                    f"When instantiating using from_parameters, expected {expected_type} but"
+                    f" got {candidate_ret}"
                 )
-        elif default_creator:
-            creator = default_creator
-            params_to_pass = Parameters.empty(
-                namespace_prefix=_extend_prefix(self.namespace_prefix, name)
+
+        def apply_factory(factory, params_to_pass):
+            if inspect.isclass(factory):
+                if hasattr(factory, "from_parameters"):
+                    return getattr(factory, "from_parameters")(params_to_pass)
+                else:
+                    return factory()  # type: ignore
+            elif callable(factory):
+                return factory(params_to_pass)
+            else:
+                raise ParameterError(
+                    f"Expected a class with from_parameters or a callable but got {factory}"
+                )
+
+        if name in self:
+            if self.has_namespace(name):
+                # The general case is that the user has a namespace providing all the information
+                # for evaluation.
+                namespace = self.namespace(name)
+                namespace.assert_exactly_one_present(
+                    [value_namespace_param_name, factory_namespace_param_name]
+                )
+                if value_namespace_param_name in namespace:
+                    # The user specifies the value to be evaluated directly
+                    return validate(
+                        self.evaluate(
+                            name,
+                            object,
+                            context=context,
+                            namespace_param_name=value_namespace_param_name,
+                            special_values=special_values,
+                        )
+                    )
+                elif factory_namespace_param_name in namespace:
+                    # The user specifies an expression to be evaluated which yields
+                    # a factory which can create an object which this namespace.
+                    return validate(
+                        apply_factory(
+                            self.evaluate(
+                                name,
+                                object,
+                                context=context,
+                                namespace_param_name=factory_namespace_param_name,
+                                special_values=special_factories,
+                            ),
+                            namespace,
+                        )
+                    )
+                else:
+                    # This should be impossible due to the assertion above.
+                    raise RuntimeError(
+                        f"Namespace {name} specifies neither "
+                        f"{value_namespace_param_name}"
+                        f"nor {factory_namespace_param_name}"
+                    )
+            else:
+                # If the user doesn't need to specify additional modules or anything else special,
+                # they can provide a string the be matched against our special values
+                # or else evaluated directly.
+                requested_param_string_value = self.string(name)
+                if requested_param_string_value in special_values:
+                    return validate(special_values[requested_param_string_value])
+                elif requested_param_string_value in special_factories:
+                    return validate(
+                        apply_factory(
+                            default_factory,
+                            Parameters.empty(
+                                namespace_prefix=_extend_prefix(
+                                    self.namespace_prefix, name
+                                )
+                            ),
+                        )
+                    )
+                else:
+                    return validate(
+                        eval_in_context_of_modules(
+                            requested_param_string_value,
+                            context if context else dict(globals()),
+                            context_modules=self._context_modules_from_prefix(
+                                requested_param_string_value
+                            ),
+                            expected_type=expected_type,
+                        )
+                    )
+        # If the requested parameter is not present, we need to fall back on defaults...
+        elif default_value is not None:
+            return validate(default_value)
+        elif default_factory is not None:
+            return validate(
+                apply_factory(
+                    default_factory,
+                    Parameters.empty(
+                        namespace_prefix=_extend_prefix(self.namespace_prefix, name)
+                    ),
+                )
             )
         else:
+            # or fail.
             raise ParameterError(
-                "No creator class specified when creating an object from {!s}".format(
+                "No value, factory, or default specified when creating an object from {!s}".format(
                     name
                 )
-            )
-
-        if inspect.isclass(creator):
-            if hasattr(creator, "from_parameters"):
-                ret: Callable[[Optional[Parameters]], _ParamType] = getattr(
-                    creator, "from_parameters"
-                )(params_to_pass)
-            else:
-                ret = creator()  # type: ignore
-        elif callable(creator):
-            ret = creator(params_to_pass)
-        else:
-            raise ParameterError(
-                "Expected a class with from_parameters or a callable but got {!s}".format(
-                    creator
-                )
-            )
-
-        if isinstance(ret, expected_type):
-            return ret
-        else:
-            raise ParameterError(
-                "When instantiating using from_parameters, expected {!s} but"
-                " got {!s}".format(expected_type, ret)
             )
 
     def get(
@@ -888,7 +1076,7 @@ class Parameters:
             raise ParameterError(
                 f"{self._namespace_message()}When looking up parameter '{param_name}', "
                 f"expected a value of type {param_type}, but got {ret} "
-                "of type {type(ret)}"
+                f"of type {type(ret)}"
             )
 
     @overload
@@ -930,12 +1118,39 @@ class Parameters:
         else:
             return default
 
+    def assert_exactly_one_present(self, param_names: Iterable[str]) -> None:
+        params_present = [param for param in param_names if param in self]
+        if params_present:
+            if len(params_present) > 1:
+                raise ParameterError(
+                    f"At most one of {param_names} can be specified but "
+                    f"these were specified: {params_present}"
+                )
+        else:
+            raise ParameterError(
+                f"Exactly one of the parameters {param_names} should be specified, "
+                f"but none were."
+            )
+
+    def sub_namespaces(self) -> ImmutableSet["Parameters"]:
+        """
+        Get all namespaces nested immediately under this one.
+        """
+        return immutableset(
+            self.namespace(param_name)
+            for param_name in self._data
+            if self.has_namespace(param_name)
+        )
+
     def path_list_from_file(
         self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
     ) -> Sequence[Path]:
         """
-        Gets a list of paths from the file pointed to by param
+        Gets a list of paths from *param*.
 
+        If *param* is list-valued, each element of *param* is interpreted as a *Path*.
+
+        Otherwise, *param* is assumed to point to a file listing paths.
         The paths are assumed to be listed one-per-line. Blank lines and lines
         where the first non-whitespace character is '#' are skipped.
 
@@ -945,18 +1160,31 @@ class Parameters:
         All the paths in the file
         will be resolved relative to *resolve_relative_to* if it is specified.
         """
-        file_list_file = self.existing_file(param)
-        with open(str(file_list_file), "r", encoding="utf-8") as inp:
-            ret = [
-                resolve_relative_to / line.strip()
-                if resolve_relative_to
-                else Path(line.strip())
-                for line in inp
+        raw_param_value = self._private_get(param)
+        if isinstance(raw_param_value, str):
+            list_file = self.existing_file(param)
+            path_strings = [
+                line.strip()
+                for line in list_file.read_text(encoding="utf-8").splitlines()
                 if line.strip() and not line.strip().startswith("#")
             ]
-            if log_name:
-                _logger.info("Loaded %s %s from %s", len(ret), log_name, file_list_file)
-            return ret
+            location_read_from = f"file {list_file.absolute()!s}"
+        else:
+            path_strings = self.arbitrary_list(param)
+            location_read_from = "parameter file directly"
+        ret = tuple(
+            resolve_relative_to / path_string.strip()
+            if resolve_relative_to
+            else Path(path_string.strip())
+            for path_string in path_strings
+        )
+        logging.info(
+            "Got list of %s %ss from %s",
+            len(ret),
+            log_name if log_name else "file",
+            location_read_from,
+        )
+        return ret
 
     def path_map_from_file(
         self, param: str, *, log_name=None, resolve_relative_to: Optional[Path] = None
@@ -1004,6 +1232,14 @@ class Parameters:
                 _logger.info("Loaded %s %s from %s", len(ret), log_name, file_map_file)
             return ret
 
+    def pickled_object_from_file(self, param_name: str) -> Any:
+        """
+        Returns an unpickled object from file containing a pickled object at param_name
+        """
+        pickled_object_path = self.existing_file(param_name)
+        with pickled_object_path.open("rb") as pickled_object_file:
+            return pickle.load(pickled_object_file)
+
     def _private_get(
         self, param_name: str, *, optional: bool = False, default: Optional[Any] = None
     ) -> Any:
@@ -1016,7 +1252,7 @@ class Parameters:
         namespaces_processed = []
         for param_component in param_components:
             if not isinstance(current, Parameters):
-                if default:
+                if default is not None:
                     return default
                 elif optional:
                     return None
@@ -1035,7 +1271,7 @@ class Parameters:
             if param_component in current._data:
                 current = current._data[param_component]
                 namespaces_processed.append(param_component)
-            elif default:
+            elif default is not None:
                 return default
             elif optional:
                 return None
@@ -1234,14 +1470,13 @@ class YAMLParametersLoader:
                             )
                     else:
                         included_file_path = Path(included_file)
-                    previously_loaded = self._unify(
-                        previously_loaded,
+                    previously_loaded = previously_loaded.unify(
                         self._inner_load_from_string(
                             included_file_path.read_text(encoding="utf-8"),
                             error_string=str(included_file_path),
                             includes_are_relative_to=included_file_path.parent,
                             included_context=previously_loaded,
-                        ),
+                        )
                     )
                 del raw_yaml["_includes"]
 
@@ -1252,8 +1487,7 @@ class YAMLParametersLoader:
                     if k not in interpolation_context:
                         interpolation_context[k] = v
 
-            return self._unify(
-                previously_loaded,
+            return previously_loaded.unify(
                 self._interpolate(
                     Parameters.from_mapping(raw_yaml),
                     Parameters.from_mapping(interpolation_context),
@@ -1467,46 +1701,6 @@ class YAMLParametersLoader:
             namespace_prefix=to_interpolate.namespace_prefix,
         )
 
-    def _unify(
-        self,
-        old: Parameters,
-        new: Parameters,
-        *,
-        namespace_prefix: Sequence[str] = tuple(),
-    ) -> Parameters:
-        # pylint:disable=protected-access
-        ret = dict()
-        for (key, old_val) in old._data.items():
-            if key in new:
-                new_val = new._data[key]
-                if isinstance(old_val, Parameters) != isinstance(new_val, Parameters):
-                    if namespace_prefix:
-                        namespace_prefix_str = ".".join(namespace_prefix)
-                        param_str = f"{namespace_prefix_str}.{key}"
-                    else:
-                        param_str = key
-
-                    raise IOError(
-                        f"When unifying parameters, {param_str} is a parameter on one side and a "
-                        f"namespace on the other"
-                    )
-                elif isinstance(old_val, Parameters):
-                    new_namespace_prefix = list(namespace_prefix)
-                    new_namespace_prefix.append(key)
-                    ret[key] = self._unify(
-                        old_val, new_val, namespace_prefix=new_namespace_prefix
-                    )
-                else:
-                    ret[key] = new_val
-            else:
-                ret[key] = old_val
-
-        for (key, new_val) in new._data.items():
-            if key not in old:
-                ret[key] = new_val
-
-        return Parameters.from_mapping(ret, namespace_prefix=namespace_prefix)
-
 
 @attrs(frozen=True)
 class YAMLParametersWriter:
@@ -1517,11 +1711,40 @@ class YAMLParametersWriter:
             sink = CharSink.to_file(sink)
         with sink.open() as out:
             yaml.dump(
-                params.as_nested_dicts(),
+                self._preprocess_dicts(params.as_nested_dicts()),
                 out,
                 # prevents leaf dictionaries from being written in the
                 # human unfriendly compact style
                 default_flow_style=False,
                 indent=4,
                 width=78,
+                sort_keys=False,
+            )
+
+    def _preprocess_dicts(self, param_node: Any) -> Any:
+        r"""
+        Ensure that objects are written to param files in certain canonical ways.
+
+        Right now this just ensures that `Path`\ s are written out as strings
+        instead of as YAML objects,
+        but it could do other things in the future.
+
+        We don't do this using pyyaml representers because there doesn't seem to be a documented way
+        to register a representer non-globally.
+        """
+        if isinstance(param_node, Path):
+            return str(param_node)
+        elif isinstance(param_node, Mapping):
+            return {k: self._preprocess_dicts(v) for (k, v) in param_node.items()}
+        elif isinstance(param_node, (str, int, float)):
+            return param_node
+        # we need to check this explicitly because otherwise
+        # they would trigger the check for sequences below
+        elif isinstance(param_node, (bytes, bytearray)):
+            raise RuntimeError("bytes and bytearrays are not legal parameter values")
+        elif isinstance(param_node, Sequence):
+            return [self._preprocess_dicts(item) for item in param_node]
+        else:
+            raise RuntimeError(
+                f"Don't know how to serialize out {param_node} as a parameter value"
             )

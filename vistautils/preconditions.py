@@ -98,7 +98,7 @@ def check_in(item: Any, legal_values: Iterable[Any], item_name: str = None) -> N
         # dynamic import here to break circular dependency
         # performance impact is minimal since import only happens on precondition failure,
         # which will presumably crash the program
-        import vistautils.misc_utils
+        import vistautils.misc_utils  # pylint:disable=import-outside-toplevel
 
         item_msg = " {!s} to be".format(item_name) if item_name else ""
         raise ValueError(
