@@ -49,6 +49,7 @@ class ParameterError(Exception):
 
 _ParamType = TypeVar("_ParamType")  # pylint:disable=invalid-name
 _U = TypeVar("_U")  # pylint:disable=invalid-name
+_EnumType = TypeVar("_EnumType", bound=Enum)
 
 
 @attrs(frozen=True, slots=True)
@@ -435,9 +436,13 @@ class Parameters:
         else:
             return None
 
-    def enum_member(
-        self, param_name: str, enum_class: EnumMeta, *, default: Optional[Enum] = None
-    ) -> Enum:
+    def enum(
+        self,
+        param_name: str,
+        enum_class: Type[_EnumType],
+        *,
+        default: Optional[_EnumType] = None,
+    ) -> _EnumType:
         """
         Gets a valid enumeration member
 
@@ -445,18 +450,15 @@ class Parameters:
         enumeration class. If the member is not found within the
         larger class, then a ParameterError is raised.
         """
-        ret: Enum
-        enum_name = self.string(param_name)
+        enum_name = self.string(  # type:ignore
+            param_name, default=default.name if default else default
+        )
         if enum_name in enum_class.__members__:
-            ret = enum_class.__members__[enum_name]
-        elif default:
-            ret = default
-        else:
-            raise ParameterError(
-                f"For parameter {param_name}, {enum_name} could not be found in "
-                f"{list(enum_class.__members__)}"
-            )
-        return ret
+            return enum_class[enum_name]
+        raise ParameterError(
+            f"For parameter {param_name}, {enum_name} could not be found in "
+            f"{list(enum_class.__members__)}"
+        )
 
     def string(
         self,

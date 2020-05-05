@@ -615,16 +615,16 @@ def test_enum_members():
 
     params = Parameters.from_mapping({"member": "boo", "invalid": "cat"})
 
-    success = params.enum_member("member", TestEnum)
+    success = params.enum("member", TestEnum)
     assert success == TestEnum.boo
 
-    default = params.enum_member("invalid", TestEnum, default=TestEnum.far)
+    default = params.enum("not_there", TestEnum, default=TestEnum.far)
     assert default == TestEnum.far
 
     with pytest.raises(
         ParameterError, match="For parameter .*, .* could not be found in .*"
     ):
-        params.enum_member("invalid", TestEnum)
+        params.enum("invalid", TestEnum)
 
 
 def test_sub_namespaces():
