@@ -446,19 +446,21 @@ class Parameters:
         """
         Gets a valid enumeration member
 
-        `param_name` is interpreted as a valid member of the provided
-        enumeration class. If the member is not found within the
-        larger class, then a ParameterError is raised.
+        `param_name` is interpreted as a valid member of the provided enumeration class.
+        If the member is not found within the larger class, then a ParameterError is raised.
         """
-        enum_name = self.string(  # type:ignore
-            param_name, default=default.name if default else default
-        )
+        enum_name = self.optional_string(param_name)
         if enum_name in enum_class.__members__:
             return enum_class[enum_name]
-        raise ParameterError(
-            f"For parameter {param_name}, {enum_name} could not be found in "
-            f"{list(enum_class.__members__)}"
-        )
+        elif enum_name is not None:
+            raise ParameterError(
+                f"For parameter {param_name}, {enum_name} could not be found in "
+                f"{list(enum_class.__members__)}"
+            )
+        elif default:
+            return default
+        else:
+            self.string(param_name)
 
     def string(
         self,
