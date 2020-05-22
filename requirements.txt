@@ -4,6 +4,7 @@ pyyaml==5.1
 immutablecollections==0.9.0
 typing_extensions  # for Protocol
 sortedcontainers==2.1.0
+deprecation==2.1.0
 
 # extras for development
 black==19.3b0
@@ -17,4 +18,3 @@ isort==4.3.21
 towncrier
 sphinx
 sphinx-autodoc-typehints
-deprecation

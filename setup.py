@@ -23,6 +23,7 @@ setup(name='vistautils',
           'pyyaml>=5.1',
           'typing_extensions',
           'sortedcontainers>=2.1.0',
+          'deprecation>=2.1.0'
       ],
       package_data={'vistautils': ['py.typed']},
     scripts=["vistautils/scripts/join_key_value_stores.py",
