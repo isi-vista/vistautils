@@ -80,6 +80,15 @@ class Span(Sized):
         # if they don't overlap, one must precede the other
         return not (self.precedes(other) or other.precedes(self))
 
+    def intersection(self, other: "Span") -> Optional["Span"]:
+        if self.overlaps(other):
+            range_intersection = self.as_range().intersection(other.as_range())
+            return Span(
+                range_intersection.lower_endpoint, range_intersection.upper_endpoint + 1
+            )
+        else:
+            return None
+
     def as_range(self) -> Range[int]:
         return Range.closed(self.start, self.end - 1)
 
