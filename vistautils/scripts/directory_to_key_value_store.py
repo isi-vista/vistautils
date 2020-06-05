@@ -35,14 +35,10 @@ def main(params: Parameters) -> None:
     key_function = key_function_from_params(params)
 
     with byte_key_value_sink_from_params(params, eval_context=locals()) as sink:
-        for item_path in input_directory.glob("*"):
-            if item_path.is_dir():
-                raise NotImplementedError(
-                    f"We don't know how to handle sub-directories in the input, but got "
-                    f"{item_path}"
-                )
-            logging.info("Copying %s to output sink", item_path)
-            sink.put(key=key_function(item_path), value=item_path.read_bytes())
+        for item_path in input_directory.rglob("*"):
+            if item_path.is_file():
+                logging.info("Copying %s to output sink", item_path)
+                sink.put(key=key_function(item_path), value=item_path.read_bytes())
 
 
 def key_function_from_params(params: Parameters) -> Callable[[Path], str]:
