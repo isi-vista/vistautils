@@ -95,9 +95,12 @@ class TestSpan(TestCase):
         self.assertEqual(fs2, index.get_containing(s2_within))
 
     def test_intersection(self) -> None:
-        s1, s2, s3 = (Span(0, 3), Span(2, 25), Span(25, 30))
+        s1, s2, s3, s4 = (Span(0, 3), Span(2, 25), Span(25, 30), Span(10, 20))
         s1_s2_intersection = Span(2, 3)
+        s2_s4_intersection = Span(10, 20)
 
         self.assertIsNone(s1.intersection(s3))
         self.assertIsNone(s2.intersection(s3))
         self.assertEqual(s1.intersection(s2), s1_s2_intersection)
+        self.assertEqual(s2.intersection(s4), s2_s4_intersection)
+        self.assertEqual(s4.intersection(s2), s2_s4_intersection)
