@@ -416,6 +416,13 @@ class _DirectoryCharKeyValueSink(KeyValueSink[str, str]):
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         write_doc_id_to_file_map(self.id_to_file, CharSink.to_file(self._path / "_index"))
 
+    @staticmethod
+    def from_parameters(params: Parameters) -> KeyValueSink[str, str]:
+        """
+        Create a key-value sink writing to a directory.
+        """
+        return _DirectoryCharKeyValueSink(params.existing_directory("path"))
+
 
 class _DirectoryBytesKeyValueSink(KeyValueSink[str, bytes]):
     def __init__(self, path: Path) -> None:
@@ -435,6 +442,13 @@ class _DirectoryBytesKeyValueSink(KeyValueSink[str, bytes]):
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         write_doc_id_to_file_map(self.id_to_file, CharSink.to_file(self._path / "_index"))
+
+    @staticmethod
+    def from_parameters(params: Parameters) -> KeyValueSink[str, bytes]:
+        """
+        Create a key-value sink writing to a directory.
+        """
+        return _DirectoryBytesKeyValueSink(params.existing_directory("path"))
 
 
 class _ZipKeyValueSink(Generic[V], KeyValueSink[str, V]):

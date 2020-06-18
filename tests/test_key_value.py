@@ -12,12 +12,16 @@ from vistautils.key_value import (
     KeyValueLinearSource,
     KeyValueSink,
     KeyValueSource,
+    byte_key_value_linear_source_from_params,
     byte_key_value_sink_from_params,
     byte_key_value_source_from_params,
+    char_key_value_linear_source_from_params,
     char_key_value_sink_from_params,
     char_key_value_source_from_params,
 )
 from vistautils.parameters import YAMLParametersLoader
+
+from pytest import raises
 
 
 class TestKeyValue(TestCase):
@@ -157,12 +161,14 @@ output:
         """
     source_params = YAMLParametersLoader().load_string(source_params_text)
 
+    reference = {"hello": "world", "goodbye": "fred"}
+
     # we test specifying an alternate namespace
     with char_key_value_source_from_params(
         source_params, input_namespace="altinput"
     ) as source:
-        assert source["hello"] == "world"
-        assert source["goodbye"] == "fred"
+        for key, value in source.items():
+            assert reference[key] == source[key]
 
 
 def test_binary_source_sink_from_params(tmp_path: Path) -> None:
@@ -252,3 +258,80 @@ def test_from_path_mapping_char(tmp_path: Path):
             assert source.get(k) == v
 
         assert source.get("Nonexistent") is None
+
+
+def test_directory_char_key_value_sink(tmp_path: Path):
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    sink_params_txt = f"""
+output:
+   type: file-map
+   path: {output_dir}
+    """
+    sink_params = YAMLParametersLoader().load_string(sink_params_txt)
+    with char_key_value_sink_from_params(sink_params) as dir_sink:
+        dir_sink.put("foo", "bar")
+        dir_sink.put("hello", "world")
+
+    source_params_txt = f"""
+input:
+   type: _doc_id_source_from_params
+   path: {output_dir / "_index"}
+    """
+    source_params = YAMLParametersLoader().load_string(source_params_txt)
+    with char_key_value_linear_source_from_params(source_params) as dir_source:
+        assert dir_source["foo"] == "bar"
+        assert dir_source["hello"] == "world"
+
+
+def test_directory_byte_key_value_sink(tmp_path: Path):
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    sink_params_txt = f"""
+output:
+   type: file-map
+   path: {output_dir}
+    """
+    sink_params = YAMLParametersLoader().load_string(sink_params_txt)
+    with byte_key_value_sink_from_params(sink_params) as dir_sink:
+        dir_sink.put("foo", b"bar")
+        dir_sink.put("hello", b"world")
+
+    source_params_txt = f"""
+input:
+   type: _doc_id_binary_source_from_params
+   path: {output_dir / "_index"}
+    """
+    source_params = YAMLParametersLoader().load_string(source_params_txt)
+    with byte_key_value_linear_source_from_params(source_params) as dir_source:
+        assert dir_source["foo"] == b"bar"
+        assert dir_source["hello"] == b"world"
+
+
+def test_interpret_values_non_linear_soruce(tmp_path: Path):
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    sink_params_txt = f"""
+output:
+   type: file-map
+   path: {output_dir}
+    """
+    sink_params = YAMLParametersLoader().load_string(sink_params_txt)
+    with byte_key_value_sink_from_params(sink_params) as dir_sink:
+        dir_sink.put("foo", b"bar")
+        dir_sink.put("hello", b"world")
+
+    source_params_txt = f"""
+input:
+   type: _doc_id_binary_source_from_params
+   path: {output_dir / "_index"}
+    """
+    source_params = YAMLParametersLoader().load_string(source_params_txt)
+    with KeyValueSource.interpret_values(
+        char_key_value_linear_source_from_params(source_params),
+        lambda _, x: x.decode("utf-8"),
+    ) as dir_source:
+        assert dir_source.get("foo") == "bar"
+        assert dir_source["hello"] == "world"
+        assert dir_source.get("absent", "default") == "default"
+        assert dir_source.keys() is None
