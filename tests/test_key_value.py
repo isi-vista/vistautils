@@ -304,32 +304,3 @@ input:
     with byte_key_value_linear_source_from_params(source_params) as dir_source:
         assert dir_source["foo"] == b"bar"
         assert dir_source["hello"] == b"world"
-
-
-# def test_interpret_values_non_linear_soruce(tmp_path: Path):
-#     output_dir = tmp_path / "output"
-#     output_dir.mkdir()
-#     sink_params_txt = f"""
-# output:
-#    nottype: file-map
-#    path: {output_dir}
-#     """
-#     sink_params = YAMLParametersLoader().load_string(sink_params_txt)
-#     with byte_key_value_sink_from_params(sink_params) as dir_sink:
-#         dir_sink.put("foo", b"bar")
-#         dir_sink.put("hello", b"world")
-#
-#     source_params_txt = f"""
-# input:
-#    nottype: _doc_id_binary_source_from_params
-#    path: {output_dir / "_index"}
-#     """
-#     source_params = YAMLParametersLoader().load_string(source_params_txt)
-#     with KeyValueSource.interpret_values(
-#         char_key_value_linear_source_from_params(source_params),
-#         lambda _, x: x.decode("utf-8"),
-#     ) as dir_source:
-#         assert dir_source.get("foo") == "bar"
-#         assert dir_source["hello"] == "world"
-#         assert dir_source.get("absent", "default") == "default"
-#         assert dir_source.keys() is None
