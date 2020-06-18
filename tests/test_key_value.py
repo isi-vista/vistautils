@@ -21,8 +21,6 @@ from vistautils.key_value import (
 )
 from vistautils.parameters import YAMLParametersLoader
 
-from pytest import raises
-
 
 class TestKeyValue(TestCase):
     def test_zip_bytes(self):
@@ -167,8 +165,8 @@ output:
     with char_key_value_source_from_params(
         source_params, input_namespace="altinput"
     ) as source:
-        for key, value in source.items():
-            assert reference[key] == source[key]
+        for k, v in source.items():
+            assert reference[k] == v
 
 
 def test_binary_source_sink_from_params(tmp_path: Path) -> None:
@@ -308,30 +306,30 @@ input:
         assert dir_source["hello"] == b"world"
 
 
-def test_interpret_values_non_linear_soruce(tmp_path: Path):
-    output_dir = tmp_path / "output"
-    output_dir.mkdir()
-    sink_params_txt = f"""
-output:
-   type: file-map
-   path: {output_dir}
-    """
-    sink_params = YAMLParametersLoader().load_string(sink_params_txt)
-    with byte_key_value_sink_from_params(sink_params) as dir_sink:
-        dir_sink.put("foo", b"bar")
-        dir_sink.put("hello", b"world")
-
-    source_params_txt = f"""
-input:
-   type: _doc_id_binary_source_from_params
-   path: {output_dir / "_index"}
-    """
-    source_params = YAMLParametersLoader().load_string(source_params_txt)
-    with KeyValueSource.interpret_values(
-        char_key_value_linear_source_from_params(source_params),
-        lambda _, x: x.decode("utf-8"),
-    ) as dir_source:
-        assert dir_source.get("foo") == "bar"
-        assert dir_source["hello"] == "world"
-        assert dir_source.get("absent", "default") == "default"
-        assert dir_source.keys() is None
+# def test_interpret_values_non_linear_soruce(tmp_path: Path):
+#     output_dir = tmp_path / "output"
+#     output_dir.mkdir()
+#     sink_params_txt = f"""
+# output:
+#    nottype: file-map
+#    path: {output_dir}
+#     """
+#     sink_params = YAMLParametersLoader().load_string(sink_params_txt)
+#     with byte_key_value_sink_from_params(sink_params) as dir_sink:
+#         dir_sink.put("foo", b"bar")
+#         dir_sink.put("hello", b"world")
+#
+#     source_params_txt = f"""
+# input:
+#    nottype: _doc_id_binary_source_from_params
+#    path: {output_dir / "_index"}
+#     """
+#     source_params = YAMLParametersLoader().load_string(source_params_txt)
+#     with KeyValueSource.interpret_values(
+#         char_key_value_linear_source_from_params(source_params),
+#         lambda _, x: x.decode("utf-8"),
+#     ) as dir_source:
+#         assert dir_source.get("foo") == "bar"
+#         assert dir_source["hello"] == "world"
+#         assert dir_source.get("absent", "default") == "default"
+#         assert dir_source.keys() is None
