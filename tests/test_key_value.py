@@ -12,8 +12,10 @@ from vistautils.key_value import (
     KeyValueLinearSource,
     KeyValueSink,
     KeyValueSource,
+    byte_key_value_linear_source_from_params,
     byte_key_value_sink_from_params,
     byte_key_value_source_from_params,
+    char_key_value_linear_source_from_params,
     char_key_value_sink_from_params,
     char_key_value_source_from_params,
 )
@@ -157,12 +159,14 @@ output:
         """
     source_params = YAMLParametersLoader().load_string(source_params_text)
 
+    reference = {"hello": "world", "goodbye": "fred"}
+
     # we test specifying an alternate namespace
     with char_key_value_source_from_params(
         source_params, input_namespace="altinput"
     ) as source:
-        assert source["hello"] == "world"
-        assert source["goodbye"] == "fred"
+        for k, v in source.items():
+            assert reference[k] == v
 
 
 def test_binary_source_sink_from_params(tmp_path: Path) -> None:
@@ -203,14 +207,16 @@ def test_doc_id_from_file(tmp_path: Path) -> None:
         tmp_file.write("pong")
 
     with KeyValueSource.binary_from_doc_id_to_file_map(tmp_path / "example.tab") as sink:
-        assert sink["world"].decode("utf-8") == "hello"
-        assert sink["ping"].decode("utf-8") == "pong"
+        assert sink.get("world").decode("utf-8") == "hello"
+        assert sink.get("ping").decode("utf-8") == "pong"
+        assert sink.get("nonexistent") is None
 
     with KeyValueSource.binary_from_doc_id_to_file_map(
         str(tmp_path / "example.tab")
     ) as sink:
-        assert sink["world"].decode("utf-8") == "hello"
-        assert sink["ping"].decode("utf-8") == "pong"
+        assert sink.get("world").decode("utf-8") == "hello"
+        assert sink.get("ping").decode("utf-8") == "pong"
+        assert sink.get("nonexistent") is None
 
 
 def test_empty_zip_key_value(tmp_path: Path) -> None:
@@ -222,3 +228,79 @@ def test_empty_zip_key_value(tmp_path: Path) -> None:
 
     with KeyValueSource.zip_bytes_source(zip_path) as source:
         assert set(source.keys()) == set()
+
+
+def test_from_path_mapping_char(tmp_path: Path):
+    value1 = tmp_path / "value1"
+    with value1.open("w") as vf:
+        vf.write("hello")
+
+    value2 = tmp_path / "value2"
+    with value2.open("w") as vf:
+        vf.write("world")
+
+    value3 = tmp_path / "value3"
+    with value3.open("w") as vf:
+        vf.write("fooey")
+
+    value4 = tmp_path / "value4"
+    with value4.open("w") as vf:
+        vf.write("batty")
+
+    reference = {"key1": "hello", "key2": "world", "key3": "fooey", "key4": "batty"}
+
+    with KeyValueSource.from_path_mapping(
+        {"key1": value1, "key2": value2, "key3": value3, "key4": value4}
+    ) as source:
+        for (k, v) in reference.items():
+            assert source.get(k) == v
+
+        assert source.get("Nonexistent") is None
+
+
+def test_directory_char_key_value_sink(tmp_path: Path):
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    sink_params_txt = f"""
+output:
+   type: file-map
+   path: {output_dir}
+    """
+    sink_params = YAMLParametersLoader().load_string(sink_params_txt)
+    with char_key_value_sink_from_params(sink_params) as dir_sink:
+        dir_sink.put("foo", "bar")
+        dir_sink.put("hello", "world")
+
+    source_params_txt = f"""
+input:
+   type: _doc_id_source_from_params
+   path: {output_dir / "_index"}
+    """
+    source_params = YAMLParametersLoader().load_string(source_params_txt)
+    with char_key_value_linear_source_from_params(source_params) as dir_source:
+        assert dir_source["foo"] == "bar"
+        assert dir_source["hello"] == "world"
+
+
+def test_directory_byte_key_value_sink(tmp_path: Path):
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    sink_params_txt = f"""
+output:
+   type: file-map
+   path: {output_dir}
+    """
+    sink_params = YAMLParametersLoader().load_string(sink_params_txt)
+    with byte_key_value_sink_from_params(sink_params) as dir_sink:
+        dir_sink.put("foo", b"bar")
+        dir_sink.put("hello", b"world")
+
+    source_params_txt = f"""
+input:
+   type: _doc_id_binary_source_from_params
+   path: {output_dir / "_index"}
+    """
+    source_params = YAMLParametersLoader().load_string(source_params_txt)
+    with byte_key_value_linear_source_from_params(source_params) as dir_source:
+        assert dir_source["foo"] == b"bar"
+        assert dir_source["hello"] == b"world"
