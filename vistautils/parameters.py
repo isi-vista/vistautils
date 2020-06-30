@@ -6,6 +6,7 @@ import pickle
 import re
 import shutil
 from datetime import date
+from enum import Enum, EnumMeta
 from pathlib import Path
 from typing import (
     Any,
@@ -30,13 +31,13 @@ from attr import attrib, attrs
 from immutablecollections import ImmutableDict, ImmutableSet, immutabledict, immutableset
 from immutablecollections.converter_utils import _to_tuple
 
+import deprecation
 from vistautils._graph import Digraph
 from vistautils.io_utils import CharSink, is_empty_directory
 from vistautils.misc_utils import eval_in_context_of_modules
 from vistautils.preconditions import check_arg, check_isinstance
 from vistautils.range import Range
 
-import deprecation
 import yaml
 
 _logger = logging.getLogger(__name__)  # pylint:disable=invalid-name
@@ -48,6 +49,7 @@ class ParameterError(Exception):
 
 _ParamType = TypeVar("_ParamType")  # pylint:disable=invalid-name
 _U = TypeVar("_U")  # pylint:disable=invalid-name
+_EnumType = TypeVar("_EnumType", bound=Enum)
 
 
 @attrs(frozen=True, slots=True)
@@ -433,6 +435,33 @@ class Parameters:
             return self.existing_directory(param)
         else:
             return None
+
+    def enum(
+        self,
+        param_name: str,
+        enum_class: Type[_EnumType],
+        *,
+        default: Optional[_EnumType] = None,
+    ) -> _EnumType:
+        """
+        Gets a valid enumeration member
+
+        `param_name` is interpreted as a valid member of the provided enumeration class.
+        If the member is not found within the larger class, then a ParameterError is raised.
+        """
+        enum_name = self.optional_string(param_name)
+        if enum_name in enum_class.__members__:
+            return enum_class[enum_name]  # type: ignore
+        elif enum_name is not None:
+            raise ParameterError(
+                f"For parameter {param_name}, {enum_name} could not be found in "
+                f"{list(enum_class.__members__)}"
+            )
+        elif default:
+            return default
+        else:
+            # Always raises error since param_name returned None on `optional_string()`
+            return self.string(param_name)  # type: ignore
 
     def string(
         self,

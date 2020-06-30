@@ -2,6 +2,7 @@ import os
 import pickle
 import shutil
 import tempfile
+from enum import Enum
 from pathlib import Path
 from textwrap import dedent
 from unittest import TestCase
@@ -604,6 +605,26 @@ class TestParameters(TestCase):
 
         # noinspection PyTypeChecker
         self.assertEqual(obj, params.pickled_object_from_file("pickled_obj_file"))
+
+
+def test_enum_members():
+    class TestEnum(Enum):
+        boo = 1
+        far = 2
+        bat = 3
+
+    params = Parameters.from_mapping({"member": "boo", "invalid": "cat"})
+
+    success = params.enum("member", TestEnum)
+    assert success == TestEnum.boo
+
+    default = params.enum("not_there", TestEnum, default=TestEnum.far)
+    assert default == TestEnum.far
+
+    with pytest.raises(
+        ParameterError, match="For parameter .*, .* could not be found in .*"
+    ):
+        params.enum("invalid", TestEnum)
 
 
 def test_sub_namespaces():
