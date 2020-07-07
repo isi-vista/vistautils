@@ -83,6 +83,9 @@ class TestRangeSet(TestCase):
                 Range.closed(18, 20),
             ]
         )
+        self.assertEqual(range_set.ranges_overlapping(Range.closed(19, 21)), immutableset([Range.closed(18, 20)]))
+        self.assertEqual(range_set.ranges_overlapping(Range.closed(11, 19)), immutableset([Range.closed(10, 12),
+                Range.closed(18, 20)]))
         self.assertEqual(range_set.ranges_overlapping(Range.closed(0, 1)), immutableset())
         self.assertEqual(
             range_set.ranges_overlapping(Range.closed(21, 23)), immutableset()
