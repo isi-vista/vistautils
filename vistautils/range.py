@@ -1018,7 +1018,9 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
             [
                 rlb[rlb.keys()[index]]
                 # The ranges at the extreme indices do not necessarily overlap,
-                for index in range(max(0, from_index - 1), min(to_index, len(rlb) - 1))
+                for index in range(
+                    max(0, from_index - 1), to_index
+                )  # range method is not inclusive
                 # so this explicit check is needed.
                 if rlb[rlb.keys()[index]].intersects(rng)
             ]
