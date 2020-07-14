@@ -75,7 +75,7 @@ def _split_into_even_slices(input_source: KeyValueSource[str, bytes], params: Pa
         for output_sink in output_sinks:
             exit_stack.enter_context(output_sink)
         input_keys = sorted(
-            list(input_source.keys())
+            list(input_source.keys())  # type: ignore
         )  # guarantee deterministic iteration order
         if random_seed:
             random.seed(random_seed)
