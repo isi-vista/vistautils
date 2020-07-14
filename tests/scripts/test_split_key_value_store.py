@@ -136,3 +136,41 @@ def test_split_key_value_store_explicit_split_non_exhaustive_allowed(tmp_path: P
         assert set(source.keys()) == set(reference.keys())
         for key, reference_value in reference.items():
             assert source[key] == reference_value
+
+
+def test_split_key_value_store_even_split_random_seed(tmp_path: Path):
+    output = tmp_path / "foo"
+
+    key_value_path = tmp_path / "key_value"
+    with KeyValueSink.zip_character_sink(key_value_path) as sink:
+        sink.put("key1", "value1")
+        sink.put("key2", "value2")
+        sink.put("key3", "value3")
+        sink.put("key4", "value4")
+
+    input_params = Parameters.from_mapping({"type": "zip", "path": str(key_value_path)})
+
+    final_params = Parameters.from_mapping(
+        {
+            "input": input_params,
+            "num_slices": 2,
+            "random_seed": 2,  # deterministic seed
+            "output_dir": str(output),
+        }
+    )
+
+    split_key_value_store.main(final_params)
+
+    zip1 = {"key1": "value1", "key3": "value3"}
+    zip0 = {"key2": "value2", "key4": "value4"}
+
+    for handle in output.glob("*.zip"):
+        with KeyValueSource.zip_character_source(handle) as source:
+            print(handle.stem, source.keys())
+            assert len(source.keys()) == 2  # num_slices / total keys
+            if handle.stem == 1:
+                for key, reference_value in zip1.items():
+                    assert source[key] == reference_value
+            elif handle.stem == 0:
+                for key, reference_value in zip0.items():
+                    assert source[key] == reference_value
