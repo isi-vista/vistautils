@@ -74,14 +74,14 @@ def _split_into_even_slices(input_source: KeyValueSource[str, bytes], params: Pa
     with ExitStack() as exit_stack:
         for output_sink in output_sinks:
             exit_stack.enter_context(output_sink)
-        input_items = sorted(
-            list(input_source.items())
+        input_keys = sorted(
+            list(input_source.keys())
         )  # guarantee deterministic iteration order
         if random_seed:
             random.seed(random_seed)
-            random.shuffle(input_items)
-        for (i, v) in enumerate(input_items):
-            output_sinks[i % slices].put(v[0], v[1])
+            random.shuffle(input_keys)
+        for (i, k) in enumerate(input_keys):
+            output_sinks[i % slices].put(k, input_source[k])
 
 
 def _explicit_split(source: KeyValueSource[str, bytes], params: Parameters):
