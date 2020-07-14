@@ -30,6 +30,7 @@ The split is expected to be exhaustive
 unless the parameter *explicit_split.must_be_exhaustive* is set to *False*.
 *explicit_split* is useful for tasks which have standard train/test splits.
 """
+import random
 from contextlib import ExitStack
 
 from immutablecollections import immutableset
@@ -63,6 +64,7 @@ def main(params: Parameters):
 def _split_into_even_slices(input_source: KeyValueSource[str, bytes], params: Parameters):
     output_directory = params.creatable_directory("output_dir")
     slices = params.positive_integer("num_slices")
+    random_seed = params.optional_positive_integer("random_seed")
     slice_paths = [output_directory / "{!s}.zip".format(i) for i in range(slices)]
     CharSink.to_file(output_directory / "_slices.txt").write(
         "\n".join(str(x) for x in slice_paths)
@@ -72,8 +74,14 @@ def _split_into_even_slices(input_source: KeyValueSource[str, bytes], params: Pa
     with ExitStack() as exit_stack:
         for output_sink in output_sinks:
             exit_stack.enter_context(output_sink)
-        for (i, v) in enumerate(input_source.items()):
-            output_sinks[i % slices].put(v[0], v[1])
+        input_keys = sorted(
+            list(input_source.keys())  # type: ignore
+        )  # guarantee deterministic iteration order
+        if random_seed:
+            random.seed(random_seed)
+            random.shuffle(input_keys)
+        for (i, k) in enumerate(input_keys):
+            output_sinks[i % slices].put(k, input_source[k])
 
 
 def _explicit_split(source: KeyValueSource[str, bytes], params: Parameters):
