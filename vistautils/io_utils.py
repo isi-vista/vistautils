@@ -40,6 +40,33 @@ def is_empty_directory(path: Path) -> bool:
     return path.is_dir() and next(path.iterdir().__iter__(), sentinel) == sentinel
 
 
+def get_root_dir_name(zip_file: ZipFile) -> Optional[str]:
+    """
+    Given a zip file, gets the single top-level directory it contains.
+
+    This directory name will include a trailing /
+
+    Throws an `RuntimeError` if there is no top-level directory or if there is more than one.
+    """
+    zip_infos = zip_file.infolist()
+    if zip_infos:
+        first_entry_name = zip_infos[0].filename
+        if "/" in first_entry_name:
+            slash_index = first_entry_name.index("/")
+        else:
+            return None
+
+        top_level_directory = first_entry_name[0 : slash_index + 1]
+
+        for zip_info in zip_infos:
+            if not zip_info.filename.startswith(top_level_directory):
+                return None
+
+        return top_level_directory
+    else:
+        return None
+
+
 class CharSource(metaclass=ABCMeta):
     """
     Something which can provide string data.
