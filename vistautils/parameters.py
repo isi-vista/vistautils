@@ -750,7 +750,7 @@ class Parameters:
         else:
             return None
 
-    def namespace_or_empty(self, name: str) -> Optional["Parameters"]:
+    def namespace_or_empty(self, name: str) -> "Parameters":
         """
         Get the namespace with the given name, or an empty one.
 
