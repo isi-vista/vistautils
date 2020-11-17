@@ -1,1 +1,1 @@
-version = "0.24.0"  # pylint:disable=invalid-name
+version = "0.25.0"  # pylint:disable=invalid-name
