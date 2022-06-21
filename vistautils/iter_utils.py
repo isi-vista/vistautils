@@ -73,8 +73,10 @@ def only(it: Union[Iterator[_T], Iterable[_T]]) -> _T:
 
     try:
         ret = next(iterator)
-    except StopIteration:
-        raise ValueError("Expected only a single element in an iterable, but got none")
+    except StopIteration as exc:
+        raise ValueError(
+            "Expected only a single element in an iterable, but got none"
+        ) from exc
 
     second_element = next(iterator, _SENTINEL)
     if second_element != _SENTINEL:

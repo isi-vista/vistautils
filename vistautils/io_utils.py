@@ -37,7 +37,7 @@ def is_empty_directory(path: Path) -> bool:
     Returns if path is a directory with no content.
     """
     sentinel = object()
-    return path.is_dir() and next(path.iterdir().__iter__(), sentinel) == sentinel
+    return path.is_dir() and next(iter(path.iterdir()), sentinel) == sentinel
 
 
 class CharSource(metaclass=ABCMeta):
