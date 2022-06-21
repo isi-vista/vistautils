@@ -197,7 +197,7 @@ output:
 def test_doc_id_from_file(tmp_path: Path) -> None:
     doc_id_text = f"""world\t{tmp_path / "world.txt"}\nping\t{tmp_path / "ping.zip"}"""
 
-    with open(str(tmp_path / "example.tab"), "w") as tmp_file:
+    with open(str(tmp_path / "example.tab"), "w", encoding="utf-8") as tmp_file:
         tmp_file.write(doc_id_text)
 
     with open(str(tmp_path / "world.txt"), "w", encoding="utf-8") as tmp_file:

@@ -28,7 +28,7 @@ def main(params: Parameters):
     with byte_key_value_sink_from_params(params, eval_context=locals()) as out:
         for input_path in input_paths:
             with KeyValueSource.zip_bytes_source(input_path) as inp:
-                for key in inp.keys():
+                for key in inp:
                     if key in keys_written:
                         raise RuntimeError(f"Duplicate key: {key}")
                     keys_written.add(key)

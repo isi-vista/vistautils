@@ -609,9 +609,9 @@ class TestParameters(TestCase):
 
 def test_enum_members():
     class TestEnum(Enum):
-        boo = 1
-        far = 2
-        bat = 3
+        boo = 1  # pylint:disable=invalid-name
+        far = 2  # pylint:disable=invalid-name
+        bat = 3  # pylint:disable=invalid-name
 
     params = Parameters.from_mapping({"member": "boo", "invalid": "cat"})
 
@@ -672,7 +672,7 @@ def test_interpolating_nested_parameters(tmp_path):
         "nested": {"interpolate_me_nested": "%hello.world.foo-foo_foo% nested"},
     }
     included_params_path = tmp_path / "included.params"
-    with open(included_params_path, "w") as included_params_out:
+    with open(included_params_path, "w", encoding="utf-8") as included_params_out:
         yaml.dump(included_params, included_params_out)
 
     reloaded_included_params = YAMLParametersLoader().load(included_params_path)
@@ -690,7 +690,7 @@ def test_interpolating_nested_parameters(tmp_path):
     }
 
     including_params_path = tmp_path / "including.params"
-    with open(including_params_path, "w") as including_params_out:
+    with open(including_params_path, "w", encoding="utf-8") as including_params_out:
         yaml.dump(including_params, including_params_out)
 
     loaded_params = YAMLParametersLoader().load(including_params_path)
@@ -702,7 +702,7 @@ def test_interpolating_nested_parameters(tmp_path):
 def test_exception_when_interpolating_unknown_param(tmp_path) -> None:
     parameters = {"hello": "world", "interpolate_me": "%unknown_param%"}
     params_file = tmp_path / "tmp.params"
-    with open(params_file, "w") as out:
+    with open(params_file, "w", encoding="utf-8") as out:
         yaml.dump(parameters, out)
     with pytest.raises(Exception):
         YAMLParametersLoader().load(params_file)
