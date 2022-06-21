@@ -850,7 +850,7 @@ class MutableRangeSet(RangeSet[T], metaclass=ABCMeta):
          with it. Moreover, if range is empty, this is a no-op.
 
         Returns the RangeSet itself to facilitate chaining operations, especially in tests.
-         """
+        """
         raise NotImplementedError()
 
     def add_all(

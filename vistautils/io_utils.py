@@ -476,6 +476,7 @@ class _NullCharSink(CharSink):
         def mode(self):
             return "w"
 
+        @property
         def closed(self):
             return False
 
@@ -558,7 +559,7 @@ class _NullCharSink(CharSink):
             t: Optional[Type[BaseException]],
             value: Optional[BaseException],
             traceback: Optional[TracebackType],
-        ) -> bool:
+        ) -> None:
             pass
 
 

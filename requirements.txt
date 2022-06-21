@@ -1,20 +1,21 @@
 # core requirements
-attrs==19.2.0
-pyyaml==5.1
-immutablecollections==0.9.0
-typing_extensions  # for Protocol
-sortedcontainers==2.1.0
+attrs==21.4.0
+PyYAML==6.0
+types-PyYAML==6.0.8
+immutablecollections==0.12.0
+typing_extensions==4.2.0
+sortedcontainers==2.4.0
 deprecation==2.1.0
 
 # extras for development
-black==19.3b0
-pytest==5.2.0
-coverage==4.5.4
-pytest-cov==2.8.0
-pylint==2.4.0
-flake8==3.7.8
-mypy==0.701
-isort==4.3.21
+black==22.3.0
+pytest==7.1.2
+coverage==6.4.1
+pytest-cov==3.0.0
+pylint==2.14.3
+flake8==4.0.1
+mypy==0.961
+isort==5.10.1
 towncrier
 sphinx
 sphinx-autodoc-typehints

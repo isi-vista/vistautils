@@ -34,6 +34,8 @@ from vistautils.io_utils import (
 from vistautils.parameters import Parameters
 from vistautils.preconditions import check_arg, check_not_none, check_state
 
+from typing_extensions import Literal
+
 K = TypeVar("K")
 V = TypeVar("V")
 T = TypeVar("T")
@@ -754,7 +756,7 @@ class TarGzipBytesLinearKeyValueSource(KeyValueLinearSource[str, bytes]):
         self.inp = tarfile.open(self.tgz_path, "r")
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> Literal[False]:
         self.inp.close()  # type: ignore
         return False
 

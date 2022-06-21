@@ -17,7 +17,7 @@ MYPY:=mypy $(SOURCE_DIR_NAME) tests
 #
 # we tee the output to a file and test if it is empty so that we can return an error exit code
 # if there are errors (for CI) while still displaying them to the user
-FILTERED_MYPY:=$(MYPY) | perl -ne 'print if !/(Too many arguments|Signature of "__getitem__"|Only concrete class|Unexpected keyword argument|mypy\/typeshed\/stdlib\/3\/builtins.pyi:39: note: "\w+" defined here|Module( '\''\w+'\'')? has no attribute|has no attribute "validator"|has no attribute "default"|SelfType" has no attribute)/' | tee ./.mypy_tmp && test ! -s ./.mypy_tmp
+FILTERED_MYPY:=$(MYPY) | perl -ne 'print if !/(Too many arguments|Signature of "__getitem__"|Only concrete class|Unexpected keyword argument|mypy\/typeshed\/stdlib\/3\/builtins.pyi:39: note: "\w+" defined here|Module( '\''\w+'\'')? has no attribute|has no attribute "validator"|has no attribute "default"|SelfType" has no attribute|Found)/' | tee ./.mypy_tmp && test ! -s ./.mypy_tmp
 
 test:
 	python -m pytest tests
@@ -35,7 +35,7 @@ flake8:
 	flake8 $(SOURCE_DIR_NAME) tests
 
 black-fix:
-	isort -rc .
+	isort .
 	black $(SOURCE_DIR_NAME) tests
 
 black-check:
