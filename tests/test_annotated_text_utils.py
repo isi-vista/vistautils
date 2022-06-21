@@ -13,7 +13,7 @@ class TestAnnotatedTextUtils(TestCase):
             "Are both perhaps present in time future..."
         )
         snippet_text = (
-            "Time present and time past / " "Are both perhaps present in time future..."
+            "Time present and time past / Are both perhaps present in time future..."
         )
 
         annotations = [

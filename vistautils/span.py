@@ -35,7 +35,7 @@ class Span(Sized):
     def _validate_start(self, attr, val):  # pylint:disable=unused-argument
         check_arg(
             self.start < self.end,
-            "Start offset must be strictly less then end offset but " "got [%s,%s)",
+            "Start offset must be strictly less then end offset but got [%s,%s)",
             (self.start, self.end),
         )
 
@@ -137,7 +137,7 @@ class Span(Sized):
         return x.start, -length
 
     def __repr__(self):
-        return "[%s:%s)" % (self.start, self.end)
+        return f"[{self.start}:{self.end})"
 
 
 class HasSpan(Protocol):

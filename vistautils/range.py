@@ -258,13 +258,13 @@ class _BelowValue(_Cut[T]):
         return False
 
     def describe_as_lower_bound(self) -> str:
-        return "[%s" % self._endpoint
+        return f"[{self._endpoint}"
 
     def describe_as_upper_bound(self) -> str:
-        return "%s)" % self._endpoint
+        return f"{self._endpoint})"
 
     def __repr__(self) -> str:
-        return "\\\\%s/" % self._endpoint
+        return f"\\\\{self._endpoint}/"
 
 
 @attrs(frozen=True, slots=True, repr=False, hash=False, eq=False)
@@ -295,13 +295,13 @@ class _AboveValue(_Cut[T]):
         return False
 
     def describe_as_lower_bound(self) -> str:
-        return "(%s" % self._endpoint
+        return f"({self._endpoint}"
 
     def describe_as_upper_bound(self) -> str:
-        return "%s]" % self._endpoint
+        return f"{self._endpoint}]"
 
     def __repr__(self) -> str:
-        return "/%s\\\\" % self._endpoint
+        return f"/{self._endpoint}\\\\"
 
 
 # must initialize after declaring Range

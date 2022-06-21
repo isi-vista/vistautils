@@ -55,8 +55,8 @@ def _config_logging_from_params(params):
         level = _LEVEL_STRINGS_TO_LEVELS[set_root_level_to]
     except KeyError:
         raise ParameterError(
-            "Invalid logging level {!s}. Valid levels "
-            "are {!s}".format(set_root_level_to, list(_LEVEL_STRINGS_TO_LEVELS.keys()))
+            f"Invalid logging level {set_root_level_to}. Valid levels "
+            f"are {list(_LEVEL_STRINGS_TO_LEVELS.keys())}"
         )
     logging.getLogger().setLevel(level)
 

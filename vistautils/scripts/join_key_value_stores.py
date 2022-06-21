@@ -30,7 +30,7 @@ def main(params: Parameters):
             with KeyValueSource.zip_bytes_source(input_path) as inp:
                 for key in inp.keys():
                     if key in keys_written:
-                        raise RuntimeError("Duplicate key: {}".format(key))
+                        raise RuntimeError(f"Duplicate key: {key}")
                     keys_written.add(key)
                     out[key] = inp[key]
 

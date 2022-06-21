@@ -65,7 +65,7 @@ def _split_into_even_slices(input_source: KeyValueSource[str, bytes], params: Pa
     output_directory = params.creatable_directory("output_dir")
     slices = params.positive_integer("num_slices")
     random_seed = params.optional_positive_integer("random_seed")
-    slice_paths = [output_directory / "{!s}.zip".format(i) for i in range(slices)]
+    slice_paths = [output_directory / f"{i}.zip" for i in range(slices)]
     CharSink.to_file(output_directory / "_slices.txt").write(
         "\n".join(str(x) for x in slice_paths)
     )

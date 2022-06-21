@@ -664,9 +664,7 @@ def write_doc_id_to_file_map(
     """
     with sink.open() as out:
         for doc_id in sorted(doc_id_to_file_map.keys()):
-            out.write(
-                "{!s}\t{!s}\n".format(doc_id, doc_id_to_file_map[doc_id].absolute())
-            )
+            out.write(f"{doc_id}\t{doc_id_to_file_map[doc_id].absolute()}\n")
 
 
 def read_doc_id_to_file_map(source: CharSource) -> Mapping[str, Path]:
@@ -681,7 +679,5 @@ def read_doc_id_to_file_map(source: CharSource) -> Mapping[str, Path]:
                 if len(parts) == 2:
                     items.append((parts[0].strip(), Path(parts[1].strip())))
                 else:
-                    raise IOError(
-                        "Bad docID to file map line {!s}: {!s}".format(line_num, line)
-                    )
+                    raise IOError(f"Bad docID to file map line {line_num}: {line}")
     return ImmutableDict.of(items)
