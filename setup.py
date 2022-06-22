@@ -15,14 +15,15 @@ setup(name='vistautils',
       description="Python utilities developed by USC ISI's VISTA center",
       url='https://github.com/isi-vista/vistautils',
       packages=['vistautils', 'vistautils.scripts'],
-      # 3.6 and up, but not Python 4
-      python_requires='~=3.6',
+      # 3.8 and up, but not Python 4
+      python_requires='~=3.8',
       install_requires=[
-          'immutablecollections>=0.9.0',
-          'attrs>=19.2.0',
-          'pyyaml>=5.1',
+          'immutablecollections>=0.12.0',
+          'attrs>=21.4.0',
+          'PyYAML>=6.0',
+          'types-PyYAML==6.0.8',
           'typing_extensions',
-          'sortedcontainers>=2.1.0',
+          'sortedcontainers>=2.4.0',
           'deprecation>=2.1.0'
       ],
       package_data={'vistautils': ['py.typed']},
