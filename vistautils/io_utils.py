@@ -37,7 +37,7 @@ def is_empty_directory(path: Path) -> bool:
     Returns if path is a directory with no content.
     """
     sentinel = object()
-    return path.is_dir() and next(path.iterdir().__iter__(), sentinel) == sentinel
+    return path.is_dir() and next(iter(path.iterdir()), sentinel) == sentinel
 
 
 class CharSource(metaclass=ABCMeta):
@@ -476,6 +476,7 @@ class _NullCharSink(CharSink):
         def mode(self):
             return "w"
 
+        @property
         def closed(self):
             return False
 
@@ -558,7 +559,7 @@ class _NullCharSink(CharSink):
             t: Optional[Type[BaseException]],
             value: Optional[BaseException],
             traceback: Optional[TracebackType],
-        ) -> bool:
+        ) -> None:
             pass
 
 
@@ -663,9 +664,7 @@ def write_doc_id_to_file_map(
     """
     with sink.open() as out:
         for doc_id in sorted(doc_id_to_file_map.keys()):
-            out.write(
-                "{!s}\t{!s}\n".format(doc_id, doc_id_to_file_map[doc_id].absolute())
-            )
+            out.write(f"{doc_id}\t{doc_id_to_file_map[doc_id].absolute()}\n")
 
 
 def read_doc_id_to_file_map(source: CharSource) -> Mapping[str, Path]:
@@ -680,7 +679,5 @@ def read_doc_id_to_file_map(source: CharSource) -> Mapping[str, Path]:
                 if len(parts) == 2:
                     items.append((parts[0].strip(), Path(parts[1].strip())))
                 else:
-                    raise IOError(
-                        "Bad docID to file map line {!s}: {!s}".format(line_num, line)
-                    )
+                    raise IOError(f"Bad docID to file map line {line_num}: {line}")
     return ImmutableDict.of(items)

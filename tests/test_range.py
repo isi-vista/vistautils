@@ -127,7 +127,7 @@ class TestRange(TestCase):
         # how to check for largest negative value? -sys.maxsize -1 should probably work,
         # but as far as I can tell there is no guarantee. For now we check for a large negative
         # value
-        self.assertTrue(-2 ** 30 in rng)
+        self.assertTrue(-(2**30) in rng)
         self.assertTrue(4 in rng)
         self.assertFalse(5 in rng)
         self.assert_unbounded_below(rng)
@@ -166,7 +166,7 @@ class TestRange(TestCase):
         # how to check for largest negative value? -sys.maxsize -1 should probably work,
         # but as far as I can tell there is no guarantee. For now we check for a large negative
         # value
-        self.assertTrue(-2 ** 30 in rng)
+        self.assertTrue(-(2**30) in rng)
         self.assertTrue(4 in rng)
         self.assertFalse(5 in rng)
         self.assert_unbounded_below(rng)
@@ -181,7 +181,7 @@ class TestRange(TestCase):
         # how to check for largest negative value? -sys.maxsize -1 should probably work,
         # but as far as I can tell there is no guarantee. For now we check for a large negative
         # value
-        self.assertTrue(-2 ** 30 in rng)
+        self.assertTrue(-(2**30) in rng)
         self.assertTrue(sys.maxsize in rng)
         self.assert_unbounded_below(rng)
         self.assert_unbounded_above(rng)
@@ -402,13 +402,13 @@ class TestRange(TestCase):
 
     def test_range_set_equality(self) -> None:
         self.assertEqual(
-            ImmutableRangeSet.builder()  # type: ignore
-            .add(Range.at_most(2))
-            .add(Range.at_least(5))
+            ImmutableRangeSet.builder()
+            .add(Range.at_most(2))  # type: ignore
+            .add(Range.at_least(5))  # type: ignore
             .build(),
-            ImmutableRangeSet.builder()  # type: ignore
-            .add(Range.at_least(5))
-            .add(Range.at_most(2))
+            ImmutableRangeSet.builder()
+            .add(Range.at_least(5))  # type: ignore
+            .add(Range.at_most(2))  # type: ignore
             .build(),
         )
 
@@ -437,7 +437,7 @@ class TestRange(TestCase):
     def test_ranges_enclosed_by_out_of_bounds(self) -> None:
         self.assertEqual(
             ImmutableSet.empty(),
-            RangeSet.create_mutable()  # type: ignore
-            .add(Range.closed(0, 10))
+            RangeSet.create_mutable()
+            .add(Range.closed(0, 10))  # type: ignore
             .ranges_enclosed_by(Range.at_least(20)),
         )

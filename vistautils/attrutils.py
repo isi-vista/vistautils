@@ -107,7 +107,7 @@ def attrib_opt_immutable(
         converter=partial(_empty_immutable_if_none, type_=type_),
         default=type_.empty(),
         *args,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -124,7 +124,7 @@ def opt_instance_of(type_: Union[Type, Tuple[Type, ...]]) -> Callable:
 def _check_immutable_collection(type_):
     vistautils.preconditions.check_arg(
         issubclass(type_, immutablecollections.ImmutableCollection),
-        "Type {} is not an immutable collection".format(type_),
+        f"Type {type_} is not an immutable collection",
     )
 
 

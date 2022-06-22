@@ -18,11 +18,11 @@ class TestCollectionUtils(TestCase):
             get_only(empty)
         with self.assertRaisesRegex(
             ValueError,
-            r"Expected one item in sequence but got " r"\['foo', 'bar', 'baz'\]",
+            r"Expected one item in sequence but got \['foo', 'bar', 'baz'\]",
         ):
             get_only(multiple)
         with self.assertRaisesRegex(
             ValueError,
-            "Expected one item in sequence but got " "'foo', 'bar', and possibly more",
+            "Expected one item in sequence but got 'foo', 'bar', and possibly more",
         ):
             get_only(generator)

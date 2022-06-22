@@ -29,12 +29,7 @@ def str_list_limited(_list: Iterable[Any], limit: int) -> str:
     if len(_list) <= limit:
         return str(_list)
     else:
-        return (
-            "["
-            + ", ".join(repr(x) for x in _list[:limit])
-            + " and %s more" % (len(_list) - limit)
-            + "]"
-        )
+        return f"[{', '.join(repr(x) for x in _list[:limit])} and {(len(_list) - limit)} more]"
 
 
 T = TypeVar("T")
@@ -76,8 +71,7 @@ def eval_in_context_of_modules(
         return ret
     else:
         raise TypeError(
-            "Expected result of evaluating {!s} to be of type {!s} but "
-            "got {!s}".format(to_eval, expected_type, ret)
+            f"Expected result of evaluating {to_eval} to be of type {expected_type} but got {ret}"
         )
 
 

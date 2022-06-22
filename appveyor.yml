@@ -1,5 +1,5 @@
 image: ubuntu
-stack: python 3.6
+stack: python 3.8
 
 # we build manually in the install step
 build: off

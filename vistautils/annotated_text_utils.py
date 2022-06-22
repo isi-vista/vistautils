@@ -154,7 +154,7 @@ class HTMLStyleAnnotationFormatter:
 
     @staticmethod
     def _tag_sequence(
-        annotations: Collection[AnnotatedSpan]
+        annotations: Collection[AnnotatedSpan],
     ) -> Iterable["HTMLStyleAnnotationFormatter.Tag"]:
         """
         Provide the tags in order of their occurrence in the formatted text.

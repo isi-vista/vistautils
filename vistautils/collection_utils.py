@@ -11,7 +11,7 @@ def get_only(seq: Iterable[T]) -> T:
     """
     it = iter(seq)
     try:
-        first_element = it.__next__()
+        first_element = next(it)
         # we use the sentinel approach rather than the usual (evil) Python "attempt can catch the
         # exception" approach to avoid raising zillions of spurious exceptions on the expected
         # code path, which makes debugging a pain
@@ -26,5 +26,5 @@ def get_only(seq: Iterable[T]) -> T:
             else:
                 got_msg = f"{first_element!r}, {second_element!r}, and possibly more."
             raise ValueError(f"Expected one item in sequence but got {got_msg}")
-    except StopIteration:
-        raise ValueError("Expected one item in sequence but got none")
+    except StopIteration as exc:
+        raise ValueError("Expected one item in sequence but got none") from exc

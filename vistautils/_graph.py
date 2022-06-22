@@ -108,7 +108,7 @@ class InDegreeView:
         self.nodes = graph.nodes
 
     def __repr__(self) -> str:
-        return "%s(%r)" % (self.__class__.__name__, dict(self))
+        return f"{self.__class__.__name__}({dict(self)})"
 
     def __getitem__(self, n: str) -> int:
         return len(self.pred[n])

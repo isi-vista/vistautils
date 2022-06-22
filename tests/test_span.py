@@ -25,7 +25,7 @@ class TestSpan(TestCase):
             Foo(Span(20, 30)),
             Bar(Span(20, 30)),
         )
-        index = HasSpanIndex.index(overlapping_items)
+        index = HasSpanIndex.index(overlapping_items)  # type: ignore
         self.assertEqual(
             immutableset([overlapping_items[0]]), index.get_exactly_matching(Span(0, 10))
         )
@@ -76,13 +76,13 @@ class TestSpan(TestCase):
         with self.assertRaisesRegex(
             ValueError, "Some range keys are connected or overlapping"
         ):
-            HasSpanIndex.index_disjoint(overlapping_items)
+            HasSpanIndex.index_disjoint(overlapping_items)  # type: ignore
 
         s1, s2, s3 = (Span(0, 3), Span(5, 25), Span(25, 30))
         s2_within = Span(5, 10)
         s4_contains = Span(5, 30)
         fs1, fs2, fs3 = Foo(s1), Foo(s2), Foo(s3)
-        index = HasSpanIndex.index_disjoint((fs1, fs2, fs3))
+        index = HasSpanIndex.index_disjoint((fs1, fs2, fs3))  # type: ignore
 
         self.assertIsNone(index.get_exactly_matching(s2_within))
         self.assertEqual(fs3, index.get_exactly_matching(s3))

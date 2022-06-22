@@ -258,13 +258,13 @@ class _BelowValue(_Cut[T]):
         return False
 
     def describe_as_lower_bound(self) -> str:
-        return "[%s" % self._endpoint
+        return f"[{self._endpoint}"
 
     def describe_as_upper_bound(self) -> str:
-        return "%s)" % self._endpoint
+        return f"{self._endpoint})"
 
     def __repr__(self) -> str:
-        return "\\\\%s/" % self._endpoint
+        return f"\\\\{self._endpoint}/"
 
 
 @attrs(frozen=True, slots=True, repr=False, hash=False, eq=False)
@@ -295,13 +295,13 @@ class _AboveValue(_Cut[T]):
         return False
 
     def describe_as_lower_bound(self) -> str:
-        return "(%s" % self._endpoint
+        return f"({self._endpoint}"
 
     def describe_as_upper_bound(self) -> str:
-        return "%s]" % self._endpoint
+        return f"{self._endpoint}]"
 
     def __repr__(self) -> str:
-        return "/%s\\\\" % self._endpoint
+        return f"/{self._endpoint}\\\\"
 
 
 # must initialize after declaring Range
@@ -850,7 +850,7 @@ class MutableRangeSet(RangeSet[T], metaclass=ABCMeta):
          with it. Moreover, if range is empty, this is a no-op.
 
         Returns the RangeSet itself to facilitate chaining operations, especially in tests.
-         """
+        """
         raise NotImplementedError()
 
     def add_all(
@@ -922,7 +922,9 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
                 return highest_range_beginning_at_or_below
         return None
 
-    def range_enclosing_range(self, rng: Range[T]) -> Optional[Range[T]]:
+    def range_enclosing_range(  # pylint: disable=W0237
+        self, rng: Range[T]
+    ) -> Optional[Range[T]]:
         # this implementation can be sped up
         highest_range_beginning_at_or_below = _value_at_or_below(
             self._ranges_by_lower_bound, rng._lower_bound
@@ -934,7 +936,9 @@ class _SortedDictRangeSet(RangeSet[T], metaclass=ABCMeta):
             return highest_range_beginning_at_or_below
         return None
 
-    def ranges_enclosed_by(self, query_rng: Range[T]) -> ImmutableSet[Range[T]]:
+    def ranges_enclosed_by(  # pylint: disable=W0237
+        self, query_rng: Range[T]
+    ) -> ImmutableSet[Range[T]]:
         highest_range_at_or_above = _value_at_or_above(
             self._ranges_by_lower_bound, query_rng._lower_bound
         )
@@ -1091,7 +1095,9 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
     def create() -> "MutableRangeSet[T]":
         return _MutableSortedDictRangeSet(SortedDict())
 
-    def add(self, range_to_add: Range[T]) -> "MutableRangeSet[T]":
+    def add(  # pylint: disable=W0237
+        self, range_to_add: Range[T]
+    ) -> "MutableRangeSet[T]":
         if range_to_add.is_empty():
             return self
 
@@ -1130,8 +1136,9 @@ class _MutableSortedDictRangeSet(_SortedDictRangeSet[T], MutableRangeSet[T]):
         self._replace_range_with_same_lower_bound(Range(lb_to_add, ub_to_add))
         return self
 
-    def add_all(
-        self, ranges_to_add: Union["RangeSet[T]", Iterable[Range[T]]]
+    def add_all(  # pylint: disable=W0237
+        self,
+        ranges_to_add: Union["RangeSet[T]", Iterable[Range[T]]],
     ) -> "MutableRangeSet[T]":
         if isinstance(ranges_to_add, RangeSet):
             return self.add_all(ranges_to_add.as_ranges())
